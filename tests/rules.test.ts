@@ -1,7 +1,7 @@
 // TASK-002 / INS-001, CHG-001..003 / REQ-001,004,008,010,011,012,013 / NFR-006 / DR-010,011.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyTable, clone, decode, encode, validate, count, atoms, atomsHead, generate, matches, diagnose, coverage, describeChunk, overlappingRules, proposeMerges, proposeStructural, verifyStructural, applyCandidate, replaceCandidate, verifyEquivalent, addRule, migrateRules, lookup, expandRows, inspect, LIMIT, type Table, type Rule, type Clause } from '../src/core.ts';
+import { emptyTable, clone, decode, encode, validate, count, atoms, atomsHead, generate, matches, diagnose, coverage, describeChunk, overlappingRules, proposeMerges, proposeStructural, verifyStructural, applyCandidate, replaceCandidate, verifyEquivalent, simplifyClauses, compressAll, mergeBlockers, trace, addRule, migrateRules, lookup, expandRows, inspect, LIMIT, type Table, type Rule, type Clause } from '../src/core.ts';
 import { documentSchema } from '../src/schema.ts';
 
 function table(sizes: number[]): Table {
@@ -85,7 +85,10 @@ test('DR-011: structural merge candidates agree with full enumeration on random 
 test('DR-011: overlap inside the group or an overlapping rule in between blocks a structural merge', () => {
   const t = table([3, 2]);
   t.rules = [rule('a', { 0: [0] }), rule('b', { 0: [0, 1] })]; assert.equal(proposeStructural(t).length, 0); // same input would fire twice
-  t.rules = [rule('a', { 0: [0] }), rule('x', { 0: [1] }, '9'), rule('b', { 0: [1] })]; assert.equal(proposeStructural(t).length, 0); // b would move above x
+  t.rules = [rule('a', { 0: [0] }), rule('x', { 0: [0, 1] }, '9'), rule('b', { 0: [1] })]; assert.equal(proposeStructural(t).length, 0); // either move would cross x
+  // b cannot move above x, but a can move down to b because x never matches the inputs of a.
+  t.rules = [rule('a', { 0: [0] }), rule('x', { 0: [1] }, '9'), rule('b', { 0: [1] })];
+  { const [down] = proposeStructural(t); assert.equal(down.anchor, 'b'); assert.deepEqual(down.before, ['a', 'b']); const after = replaceCandidate(t, down); assert.deepEqual(after.rules.map(r => r.id), ['x', 'b']); assert.equal(verifyEquivalent(t, after).equal, true); }
   t.rules = [rule('a', { 0: [0] }), rule('x', { 0: [2] }, '9'), rule('b', { 0: [1] })];
   const [c] = proposeStructural(t); assert.deepEqual(c.before, ['a', 'b']); assert.equal(verifyEquivalent(t, replaceCandidate(t, c)).equal, true);
   t.rules = [rule('a', { 0: [0] }), rule('b', { 0: [1] }, null)]; assert.equal(proposeStructural(t).length, 0); // unset outputs are never merged
@@ -93,7 +96,7 @@ test('DR-011: overlap inside the group or an overlapping rule in between blocks 
 test('REQ-011: merges are proposed and applied structurally beyond the enumeration budget; stale or forged candidates fail closed', () => {
   const t = table(Array(12).fill(4)); t.rules = [rule('a', { 0: [0] }), rule('b', { 0: [1], 3: [2] }), rule('x', { 0: [2] }, '7'), rule('c', { 0: [3] })];
   const cs = proposeMerges(t); assert.equal(cs.length, 1); assert.equal(cs[0].proof, 'structural'); assert.deepEqual(cs[0].before, ['a', 'b', 'c']);
-  const merged = applyCandidate(t, cs[0]); assert.deepEqual(merged.rules.map(r => r.id), ['a', 'x']); assert.equal(merged.rules[0].anyOf.length, 3);
+  const merged = applyCandidate(t, cs[0]); assert.deepEqual(merged.rules.map(r => r.id), ['a', 'x']); assert.equal(merged.rules[0].anyOf.length, 2); // 条件0=v0 and 条件0=v3 are joined into one block
   assert.equal(coverage(merged).uncovered, coverage(t).uncovered);
   const changed = clone(t); changed.rules[2] = rule('x', { 0: [2, 3] }, '7'); assert.throws(() => applyCandidate(changed, cs[0]), /失効/);
   const forged = { ...cs[0], base: JSON.stringify(null) }; assert.throws(() => applyCandidate(t, forged));
@@ -194,4 +197,54 @@ test('inspect: works beyond 10,000 combinations, ignores stale choices and does 
   const one = inspect(t, { c0: 'c0p0', c5: 'gone' }); assert.equal(one.total, 4194304n); assert.deepEqual(one.rules.map(x => [x.ruleId, x.always]), [['a', true], ['b', false]]); assert.equal(one.uncovered, 0n); assert.equal(one.exact, false);
   assert.equal(inspect(t, { c0: 'c0p3' }).rules.length, 0); assert.equal(inspect(t, { c0: 'c0p3' }).uncovered, 4194304n);
   assert.equal(JSON.stringify(t), before); assert.deepEqual(inspect(emptyTable(), {}).rules, []);
+});
+// TASK-003 / REQ-011: tidy OR blocks, fold complete selections into "all", repeat merging, explain blockers.
+const hits = (t: Table, anyOf: Clause[]) => atoms(t).map(a => anyOf.some(c => c.selections.every(s => s.partitionIds.includes(a[s.conditionId]))));
+test('simplifyClauses never changes the matched inputs and folds a complete selection into "all"', () => {
+  for (let seed = 1; seed <= 300; seed++) {
+    const t = randomTable(seed), all = t.rules.flatMap(r => r.anyOf), tidy = simplifyClauses(t, all);
+    assert.deepEqual(hits(t, tidy), hits(t, all), `seed ${seed}`); assert.ok(tidy.length <= all.length && tidy.length >= 1);
+    assert.ok(tidy.every(c => c.selections.every(s => s.partitionIds.length < t.conditions.find(x => x.id === s.conditionId)!.partitions.length)), 'a full selection must become "all"');
+  }
+  const t = table([3, 2]);
+  assert.deepEqual(simplifyClauses(t, [0, 1, 2].map(j => ({ selections: [{ conditionId: 'c0', partitionIds: [`c0p${j}`] }, { conditionId: 'c1', partitionIds: ['c1p0'] }] }))), [{ selections: [{ conditionId: 'c1', partitionIds: ['c1p0'] }] }]);
+  assert.deepEqual(simplifyClauses(t, [{ selections: [{ conditionId: 'c0', partitionIds: ['c0p0'] }] }, { selections: [{ conditionId: 'c0', partitionIds: ['c0p0'] }, { conditionId: 'c1', partitionIds: ['c1p1'] }] }]), [{ selections: [{ conditionId: 'c0', partitionIds: ['c0p0'] }] }]);
+});
+test('a fully generated table compresses to one rule per result, written with "all"', () => {
+  const t = generate(table([3, 3, 2, 4])); assert.equal(t.rules.length, 72);
+  t.rules.forEach(r => { r.directives = [{ outputId: 'o', state: 'set', value: r.anyOf[0].selections[0].partitionIds[0] === 'c0p0' ? '100' : '200' }]; });
+  const done = compressAll(t); assert.equal(done.table.rules.length, 2); assert.equal(verifyEquivalent(t, done.table).equal, true);
+  assert.deepEqual(done.table.rules.map(r => r.anyOf), [[{ selections: [{ conditionId: 'c0', partitionIds: ['c0p0'] }] }], [{ selections: [{ conditionId: 'c0', partitionIds: ['c0p1', 'c0p2'] }] }]]);
+  assert.equal(proposeStructural(done.table).length, 0); assert.equal(t.rules.length, 72);
+});
+test('compressAll keeps the whole trace on random tables and leaves nothing more to merge', () => {
+  let reduced = 0;
+  for (let seed = 1; seed <= 300; seed++) {
+    const t = randomTable(seed, 2, seed % 2 ? 0.4 : 0.1, seed % 2 ? 0.5 : 0.25), done = compressAll(t);
+    assert.equal(verifyEquivalent(t, done.table).equal, true, `seed ${seed}`); assert.equal(proposeStructural(done.table).length, 0, `seed ${seed}`);
+    assert.ok(done.table.rules.length <= t.rules.length); if (done.table.rules.length < t.rules.length) reduced++;
+    for (const a of atoms(t)) assert.deepEqual(trace(done.table, a), trace(t, a));
+  }
+  assert.ok(reduced > 40, `only ${reduced} tables lost rules`);
+});
+test('compressAll works beyond 10,000 combinations and single rules get their OR blocks tidied', () => {
+  const t = table(Array(12).fill(4));
+  t.rules = [rule('a', { 0: [0], 1: [0] }), rule('b', { 0: [0], 1: [1, 2, 3] }), rule('x', { 0: [1] }, '5'), rule('c', { 0: [2, 3] })];
+  const done = compressAll(t); assert.deepEqual(done.table.rules.map(r => r.id), ['a', 'x']);
+  assert.deepEqual(done.table.rules[0].anyOf, [{ selections: [{ conditionId: 'c0', partitionIds: ['c0p0', 'c0p2', 'c0p3'] }] }]);
+  assert.equal(coverage(done.table).uncovered, coverage(t).uncovered);
+  const solo = table(Array(12).fill(4)); solo.rules = [{ ...rule('s', { 0: [0] }), anyOf: [0, 1, 2, 3].map(j => ({ selections: [{ conditionId: 'c2', partitionIds: [`c2p${j}`] }, { conditionId: 'c3', partitionIds: ['c3p1'] }] })) }];
+  const [c] = proposeMerges(solo); assert.deepEqual(c.before, ['s']); assert.deepEqual(applyCandidate(solo, c).rules[0].anyOf, [{ selections: [{ conditionId: 'c3', partitionIds: ['c3p1'] }] }]);
+});
+test('mergeBlockers names the rules that prevent a merge', () => {
+  const t = table([3, 2]);
+  t.rules = [rule('a', { 0: [0] }), rule('b', { 0: [0, 1] })]; assert.deepEqual(mergeBlockers(t).blockers, [{ kind: 'overlap', rules: [1, 2] }]);
+  t.rules = [rule('a', { 0: [0] }), rule('x', { 0: [0, 1] }, '9'), rule('b', { 0: [1] })]; assert.deepEqual(mergeBlockers(t).blockers, [{ kind: 'between', rules: [1, 3], via: 2 }]);
+  t.rules = [rule('a', { 0: [0] }), rule('x', { 0: [2] }, '9'), rule('b', { 0: [1] }), rule('u', { 0: [2] }, null)]; const free = mergeBlockers(t); assert.deepEqual(free.blockers, []); assert.equal(free.total, 0); assert.equal(free.unset, 1);
+});
+test('a forged replacement that covers different inputs or other outputs is rejected', () => {
+  const t = table(Array(12).fill(4)); t.rules = [rule('a', { 0: [0] }), rule('b', { 0: [1] })]; const [c] = proposeMerges(t); assert.equal(verifyStructural(t, c), true);
+  const narrower = clone(c); narrower.replacement.anyOf = [{ selections: [{ conditionId: 'c0', partitionIds: ['c0p0'] }] }]; assert.equal(verifyStructural(t, narrower), false);
+  const other = clone(c); other.replacement.directives = [{ outputId: 'o', state: 'set', value: '9' }]; assert.equal(verifyStructural(t, other), false);
+  const moved = clone(c); moved.anchor = 'zzz'; assert.equal(verifyStructural(t, moved), false); assert.throws(() => applyCandidate(t, moved), /証明できません/);
 });
