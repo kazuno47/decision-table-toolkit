@@ -323,7 +323,7 @@ test('INS-006: only rules that set the same output to different values contradic
 test('INS-006: the result patterns, contradictions and the result check equal brute force on 300 random two-output tables', () => {
   for (let seed = 1; seed <= 300; seed++) {
     const t = randomTwo(seed), cells = atoms(t), expected = new Map<string, number>();
-    for (const a of cells) { const k = JSON.stringify(resultOf(t, a).map(x => x.length)) + JSON.stringify(resultOf(t, a)); expected.set(k, (expected.get(k) ?? 0) + 1); }
+    for (const a of cells) { const k = JSON.stringify(resultOf(t, a)) + (t.rules.some(rule => matches(rule, a)) ? 'satisfied' : 'none'); expected.set(k, (expected.get(k) ?? 0) + 1); }
     const found = patterns(t)!; assert.equal(found.length, expected.size, `seed ${seed}`); assert.equal(found.reduce((n, x) => n + x.size, 0n), BigInt(cells.length));
     assert.deepEqual(found.map(x => Number(x.size)).sort((a, b) => a - b), [...expected.values()].sort((a, b) => a - b), `seed ${seed}`);
     let clash = 0; for (let i = 0; i < t.rules.length; i++) for (let j = i + 1; j < t.rules.length; j++) if (cells.some(a => matches(t.rules[i], a) && matches(t.rules[j], a)) && t.rules[i].directives.some((d, o) => { const e = t.rules[j].directives[o]; return t.outputs[o].kind !== 'action' && d.state === 'set' && e.state === 'set' && d.value !== e.value; })) clash++; // X and "-" never clash
@@ -357,4 +357,15 @@ test('TASK-008: X/- actions combine as "executed if any satisfied rule marks X";
   const same = two([3, 2]); same.rules = [rule2('u', { 0: [0] }, '10', null), rule2('f', { 0: [1] }, '10', false)];
   const [c] = proposeMerges(same); assert.deepEqual(c.before, ['u', 'f']); assert.equal(verifyEquivalent(same, applyCandidate(same, c)).equal, true);
   const only = two([3, 2]); only.rules = [rule2('nothing', { 0: [0] }, null, false)]; assert.ok(diagnose(only).some(d => d.message.includes('何も指定していません')));
+});
+// TASK-009 (INS-008): the single-hit decision table derived from the rules.
+test('TASK-009: the derived single-hit table has disjoint rules, marks unsatisfied inputs, and its rule counts add up', () => {
+  const t = two([3, 2, 2]); // 条件0 amount, 条件1 kind, 条件2 personal data
+  t.rules = [rule2('low', { 0: [0] }, '10', null), rule2('mid', { 0: [1] }, '20', null), rule2('highA', { 0: [2], 1: [0] }, '30', null), rule2('highB', { 0: [2], 1: [1] }, '40', null), rule2('pii', { 2: [1] }, null, true)];
+  const found = patterns(t, 1000)!; assert.equal(found.length, 8); assert.ok(found.every(x => x.satisfied)); assert.equal(found.reduce((n, x) => n + x.size, 0n), 12n);
+  const columns = found.flatMap(x => x.chunks.map(chunk => ({ x, chunk }))); assert.equal(columns.length, 8);
+  for (const a of atoms(t)) { const hit = columns.filter(c => c.chunk.selections.every(s => s.partitionIds.includes(a[s.conditionId]))); assert.equal(hit.length, 1); assert.deepEqual(hit[0].x.outputs.map(o => o.values.length), resultOf(t, a).map(v => v.length)); }
+  t.rules.splice(3, 1); const open = patterns(t, 1000)!, gap = open.filter(x => !x.satisfied); // no rule for amount=high, kind=B without personal data
+  assert.equal(gap.length, 1); assert.equal(gap[0].size, 1n); assert.equal(describeChunk(t, gap[0].chunks[0]), '条件0=v2 / 条件1=v1 / 条件2=v0'); assert.equal(coverage(t).uncovered, 1n);
+  const idle = two([2]); idle.rules = [rule2('nothing', { 0: [0] }, null, false)]; const both = patterns(idle)!; assert.equal(both.length, 2); assert.deepEqual(both.map(x => x.satisfied).sort(), [false, true]);
 });

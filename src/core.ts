@@ -1,4 +1,4 @@
-// TASK-001..008 / REQ-001..013. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..009 / REQ-001..013. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -410,17 +410,17 @@ export function contradictions(t: Table, limit = 20, budget = 2_000_000): { pair
   return { pairs, same, examples, complete: true };
 }
 // TASK-007: split the input space (or one range of it) into pieces that share the same combined result.
-type Piece = { cube: Cube; sets: string[][] };
+type Piece = { cube: Cube; sets: string[][] }; // sets = one value set per action, plus a last slot that is non-empty once some rule is satisfied
 function partition(t: Table, region: Cube | null = null, budget = 200_000, workBudget = 3_000_000): Piece[] | null {
   if (!t.conditions.length) return [];
-  let pieces: Piece[] = [{ cube: region ?? t.conditions.map(fullMask), sets: t.outputs.map(() => []) }], work = 0, compactAt = 4096;
+  let pieces: Piece[] = [{ cube: region ?? t.conditions.map(fullMask), sets: [...t.outputs.map((): string[] => []), []] }], work = 0, compactAt = 4096;
   const regroup = (list: Piece[]) => {
     const groups = new Map<string, { sets: string[][]; cubes: Cube[] }>();
     for (const x of list) { const k = stable(x.sets), g = groups.get(k); if (g) g.cubes.push(x.cube); else groups.set(k, { sets: x.sets, cubes: [x.cube] }); }
     return [...groups.values()].flatMap(g => compactCubes(g.cubes, 2).map(cube => ({ cube, sets: g.sets })));
   };
   for (const r of t.rules) {
-    const keys = t.outputs.map((_, o) => valueKey(t, r, o)); if (keys.every(k => k === null)) continue;
+    const keys = t.outputs.map((_, o) => valueKey(t, r, o)); // a rule with only "-" entries still makes its inputs satisfied
     let outside = pieces; const inside: Piece[] = [];
     for (const c of ruleCubes(t, r)) {
       const next: Piece[] = [];
@@ -430,7 +430,7 @@ function partition(t: Table, region: Cube | null = null, budget = 200_000, workB
       }
       outside = next; if (work > workBudget) return null;
     }
-    for (const x of inside) x.sets = x.sets.map((set, o) => keys[o] === null || set.includes(keys[o]!) ? set : [...set, keys[o]!].sort());
+    for (const x of inside) x.sets = x.sets.map((set, o) => o === t.outputs.length ? ['1'] : keys[o] === null || set.includes(keys[o]!) ? set : [...set, keys[o]!].sort());
     pieces = outside.concat(inside);
     if (pieces.length > compactAt) { work += pieces.length * t.conditions.length; pieces = regroup(pieces); compactAt = Math.max(4096, pieces.length * 2); }
     if (pieces.length > budget || work > workBudget) return null;
@@ -439,7 +439,8 @@ function partition(t: Table, region: Cube | null = null, budget = 200_000, workB
 }
 // TASK-007 / REQ-012: the combined result patterns of the table. Each pattern says, per output, the value it gets
 // (values.length 1), that it is undecided (0) or contradictory (2+), with the inputs that produce it.
-export type Pattern = { size: bigint; outputs: { values: Scalar[] }[]; chunks: Chunk[]; chunkCount: number };
+// satisfied = some rule is satisfied for these inputs (false: the table is not complete there).
+export type Pattern = { size: bigint; satisfied: boolean; outputs: { values: Scalar[] }[]; chunks: Chunk[]; chunkCount: number };
 export function patterns(t: Table, chunkLimit = 6): Pattern[] | null {
   const pieces = partition(t); if (!pieces) return null;
   const scalar = t.outputs.map(() => new Map<string, Scalar>());
@@ -448,7 +449,7 @@ export function patterns(t: Table, chunkLimit = 6): Pattern[] | null {
   for (const x of pieces) { const k = stable(x.sets), g = groups.get(k); if (g) g.cubes.push(x.cube); else groups.set(k, { sets: x.sets, cubes: [x.cube] }); }
   const result = [...groups.values()].map(g => {
     const cubes = compactCubes(g.cubes, g.cubes.length > 20_000 ? 1 : 8), chunks = cubes.map(c => cubeChunk(t, c)).sort((a, b) => a.size < b.size ? 1 : a.size > b.size ? -1 : 0);
-    return { size: chunks.reduce((n, c) => n + c.size, 0n), outputs: g.sets.map((set, o) => ({ values: set.map(k => scalar[o].get(k)!) })), chunks: chunks.slice(0, chunkLimit), chunkCount: chunks.length };
+    return { size: chunks.reduce((n, c) => n + c.size, 0n), satisfied: g.sets[t.outputs.length].length > 0, outputs: g.sets.slice(0, t.outputs.length).map((set, o) => ({ values: set.map(k => scalar[o].get(k)!) })), chunks: chunks.slice(0, chunkLimit), chunkCount: chunks.length };
   });
   return result.sort((a, b) => a.size < b.size ? 1 : a.size > b.size ? -1 : 0);
 }
