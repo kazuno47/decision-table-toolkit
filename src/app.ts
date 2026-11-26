@@ -1,5 +1,5 @@
-// TASK-001..011 / SCR-001..005. Wording follows JIS X 0125 where the standard has a term / REQ-001..018. All user content uses textContent.
-import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, contradictions, patterns, LIMIT, type Scalar, type Pattern, type Chunk, type Rule, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
+// TASK-001..012 / SCR-001..005. Wording follows JIS X 0125 where the standard has a term / REQ-001..018. All user content uses textContent.
+import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, contradictions, decisionTables, coverage, LIMIT, type Scalar, type Pattern, type Chunk, type Rule, type DecisionPart, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
 import { FileCoordinator, writeVerified, type Handle, type Observation } from './files.ts';
 import { documentSchema } from './schema.ts';
 type PickerWindow = Window & { showOpenFilePicker?: (o: unknown) => Promise<Handle[]>; showSaveFilePicker?: (o: unknown) => Promise<Handle> };
@@ -20,12 +20,16 @@ let candidates: Candidate[] = [], panel: 'none' | 'diagnostics' | 'merge' | 'exp
 let externalUIKey = '';
 // TASK-010 (INS-009): the single-hit decision table is its own section. It is derived from the rules and cached per
 // table state; when one calculation is slow, later ones wait for the user to ask (never saved).
-let decisionCache: { key: string; found: Pattern[] | null } | null = null, decisionAuto = true, pickedColumn = '';
-function singleHit(force = false): { found: Pattern[] | null } | null {
+type Completeness = { complete: boolean; uncovered: bigint };
+let decisionCache: { key: string; combined: boolean; parts: DecisionPart[]; cov: Completeness } | null = null, decisionAuto = true, pickedColumn = '';
+function singleHit(force = false): { combined: boolean; parts: DecisionPart[]; cov: Completeness } | null {
   const key = stable(table); if (decisionCache?.key === key) return decisionCache;
   if (!decisionAuto && !force) return null;
-  const started = Date.now(); let found: Pattern[] | null = null; try { found = patterns(table, 1000); } catch { found = null; }
-  decisionAuto = Date.now() - started < 700; decisionCache = { key, found }; return decisionCache;
+  const started = Date.now(); let found: { combined: boolean; parts: DecisionPart[] } = { combined: true, parts: [] }; try { found = decisionTables(table); } catch { /* shown as not computable */ }
+  decisionAuto = Date.now() - started < 700;
+  // Completeness is shown here only when it is cheap to determine; the full check stays in 検証.
+  let cov: Completeness = { complete: false, uncovered: 0n }; try { cov = coverage(table, 200_000, 250_000); } catch { /* shown as not determined */ }
+  decisionCache = { key, ...found, cov }; return decisionCache;
 }
 // TASK-010: a rule is written as the condition entries it specifies only; conditions it does not mention are irrelevant ("−").
 function ruleText(r: Pick<Rule, 'anyOf'>): string {
@@ -297,47 +301,58 @@ function renderCheck() {
 function refreshMerge() {
   candidates = proposeMerges(table); const all = compressAll(table); compressed = { ...all, base: stable(table) };
 }
-// TASK-009, TASK-010 (INS-008, INS-009): the decision table itself, as one table in the general form of JIS X 0125
-// figure 1 (conditions and actions in rows, one rule per column, single-hit). Pressing a rule number puts its
-// condition entries into the interpretation section below.
+// TASK-009, TASK-010, TASK-012 (INS-008, INS-009, INS-012): the decision table itself, in the general form of JIS X 0125
+// figure 1 (conditions and actions in rows, one rule per column, single-hit). One table when it stays readable;
+// otherwise separated by related actions as the standard recommends for large tables (Annex 1, 2).
+// Pressing a rule number puts its condition entries into the interpretation section below.
 function renderDecision(force = false) {
   const host = $('decision'); host.replaceChildren(); host.hidden = !table.rules.length || !table.conditions.length; if (host.hidden) return;
   const heading = element('div', '', 'panel-heading'); heading.append(element('h2', '決定表（単適合）')); host.append(heading);
   const hit = singleHit(force);
   if (!hit) { host.append(element('p', '表が大きいため、決定表は自動では更新していません。規則の記述を変えたら更新してください。', 'muted'), button('決定表を更新', () => { renderDecision(true); render(); }, 'primary')); return; }
-  const found = hit.found;
-  if (!found) { host.append(element('p', '決定表（単適合）は、計算予算を超えたため表示できません。「簡単化」で規則を結合してから試してください。', 'check-empty')); return; }
-  const show = (v: Scalar, at: number) => table.outputs[at].kind === 'action' ? (v ? 'X' : '−') : v === '' ? '（空文字）' : String(v);
-  const columns = found.flatMap(x => x.chunks.map(chunk => ({ pattern: x, chunk }))), all = found.reduce((n, x) => n + x.chunkCount, 0), shown = columns.slice(0, 200);
-  const total = count(table), covered = found.filter(x => x.satisfied).reduce((n, x) => n + x.size, 0n), kinds = found.filter(x => x.satisfied).length;
-  host.append(element('p', `上の規則の記述から求めた決定表です。条件と動作を行、規則を列に書いています。条件の組合せのどの1つも、ただ1つの規則（列）でだけ満足されます。規則は${all}個、動作指定の組合せは${kinds}通りです。規則番号を押すと、その条件指定を下の「決定表の解釈」に反映します。`, 'muted'));
-  const keyOf = (chunk: Chunk) => stable(chunk.selections), wrap = element('div', '', 'jis-wrap'), grid = element('table', '', 'jis-table'), head = element('tr'), thead = element('thead'), body = element('tbody');
-  const mark = (col: { pattern: Pattern; chunk: Chunk }, extra = '') => `${col.pattern.satisfied ? '' : 'gap '}${keyOf(col.chunk) === pickedColumn ? 'picked ' : ''}${extra}`.trim();
+  if (!hit.parts.length) { host.append(element('p', '動作を指定している規則がないため、決定表はありません。', 'muted')); return; }
+  const cov = hit.cov, total = count(table);
+  if (hit.combined) host.append(element('p', '上の規則の記述から求めた決定表です。条件と動作を行、規則を列に書いています。条件の組合せのどの1つも、ただ1つの規則（列）でだけ満足されます。規則番号を押すと、その条件指定を下の「決定表の解釈」に反映します。', 'muted'));
+  else host.append(element('p', `条件指定の全組合せが${total.toLocaleString('ja-JP')}件あり、1つの決定表には書き切れないため、互いに関係しない動作ごとに${hit.parts.length}個の決定表に分離しています（JIS X 0125 附属書1「表の分離」）。各表には、その動作に関係する条件だけが並びます。どの表も、条件の組合せのどの1つも、ただ1つの規則（列）でだけ満足されます。規則番号を押すと、その条件指定を下の「決定表の解釈」に反映します。`, 'muted'));
+  hit.parts.forEach((part, order) => drawDecision(host, part, hit.combined, order));
+  host.append(element('p', !cov.complete ? '完備性は、この表では計算に時間がかかるため、ここには表示していません。「検証」で確認できます。' : cov.uncovered === 0n ? `完備性：条件指定の全組合せ${total.toLocaleString('ja-JP')}件のすべてに、満足される規則があります（完備しています）。` : `完備性：条件指定の全組合せ${total.toLocaleString('ja-JP')}件のうち${cov.uncovered.toLocaleString('ja-JP')}件には、満足される規則がありません（完備していません）。「検証」で範囲を確認できます。`, cov.complete && cov.uncovered === 0n ? 'check-summary' : cov.complete ? 'check-empty' : 'muted'));
+}
+function drawDecision(host: HTMLElement, part: DecisionPart, combined: boolean, order: number) {
+  const sub = part.table, found = part.found, names = sub.outputs.map(o => o.name).join('・');
+  if (!combined) host.append(element('h3', `決定表 ${order + 1}：${names}`));
+  if (!found) { host.append(element('p', `「${names}」の決定表は、計算予算を超えたため表示できません。「簡単化」で規則を結合してから試してください。`, 'check-empty')); return; }
+  if (!sub.conditions.length) { host.append(element('p', `「${names}」は、条件によらず指定されています（条件指定のない規則があります）。`, 'muted')); return; }
+  const show = (v: Scalar, at: number) => sub.outputs[at].kind === 'action' ? (v ? 'X' : '−') : v === '' ? '（空文字）' : String(v);
+  const columns = found.flatMap(x => x.chunks.map(chunk => ({ pattern: x, chunk }))), shown = columns.slice(0, 200);
+  // In a separated table, a column where none of its rules is satisfied simply has "−" actions; only the combined table can show gaps.
+  const gap = (col: { pattern: Pattern }) => combined && !col.pattern.satisfied;
+  const keyOf = (chunk: Chunk) => `${order}:${stable(chunk.selections)}`, wrap = element('div', '', 'jis-wrap'), grid = element('table', '', 'jis-table'), head = element('tr'), thead = element('thead'), body = element('tbody');
+  const mark = (col: { pattern: Pattern; chunk: Chunk }, extra = '') => `${gap(col) ? 'gap ' : ''}${keyOf(col.chunk) === pickedColumn ? 'picked ' : ''}${extra}`.trim();
   head.append(element('th', '規則'));
   shown.forEach((col, i) => {
-    const th = element('th', '', mark(col)), pick = button(`${i + 1}${col.pattern.satisfied ? '' : ' *'}`, () => {
+    const th = element('th', '', mark(col)), pick = button(`${i + 1}${gap(col) ? ' *' : ''}`, () => {
       // one representative value per condition entry; "−" stays unspecified
       checkPicks = {}; for (const sel of col.chunk.selections) checkPicks[sel.conditionId] = sel.partitionIds[0];
-      pickedColumn = keyOf(col.chunk); renderDecision(); renderCheck(); message(`決定表の規則${i + 1}の条件指定を「決定表の解釈」に反映しました。`);
+      pickedColumn = keyOf(col.chunk); renderDecision(); renderCheck(); message(`決定表${combined ? '' : ` ${order + 1}`}の規則${i + 1}の条件指定を「決定表の解釈」に反映しました。`);
       const target = $('check') as HTMLElement & { scrollIntoView?: (o: unknown) => void }; target.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
     }, 'column-button');
     pick.title = 'この規則の条件指定を「決定表の解釈」に反映'; th.append(pick); head.append(th);
   });
   thead.append(head); grid.append(thead);
-  for (const c of table.conditions) {
+  for (const c of sub.conditions) {
     const tr = element('tr'); tr.append(element('th', c.name));
     for (const col of shown) { const sel = col.chunk.selections.find(x => x.conditionId === c.id); tr.append(element('td', sel ? sel.partitionIds.map(id => c.partitions.find(x => x.id === id)!.label).join('・') : '−', mark(col))); }
     body.append(tr);
   }
-  table.outputs.forEach((o, at) => {
+  sub.outputs.forEach((o, at) => {
     const tr = element('tr', '', at === 0 ? 'divider' : ''); tr.append(element('th', o.name));
-    for (const col of shown) { const values = col.pattern.outputs[at].values; tr.append(element('td', !col.pattern.satisfied ? '' : values.length === 0 ? '−' : values.length > 1 ? `不一致（${values.map(v => show(v, at)).join('／')}）` : show(values[0], at), mark(col, values.length > 1 ? 'clash' : ''))); }
+    for (const col of shown) { const values = col.pattern.outputs[at].values; tr.append(element('td', gap(col) ? '' : values.length === 0 ? '−' : values.length > 1 ? `不一致（${values.map(v => show(v, at)).join('／')}）` : show(values[0], at), mark(col, values.length > 1 ? 'clash' : ''))); }
     body.append(tr);
   });
-  const sizes = element('tr', '', table.outputs.length ? 'count' : 'count divider'); sizes.append(element('th', '規則数（組合せ数）')); shown.forEach(col => sizes.append(element('td', col.chunk.size.toLocaleString('ja-JP'), mark(col)))); body.append(sizes);
+  const sizes = element('tr', '', sub.outputs.length ? 'count' : 'count divider'); sizes.append(element('th', '規則数（組合せ数）')); shown.forEach(col => sizes.append(element('td', col.chunk.size.toLocaleString('ja-JP'), mark(col)))); body.append(sizes);
   grid.append(body); wrap.append(grid); host.append(wrap);
-  if (all > shown.length) host.append(element('p', `先頭${shown.length}規則を表示しています（全${all}規則）。`, 'muted'));
-  host.append(element('p', covered === total ? `規則数の検査：各規則の組合せ数の合計は${total.toLocaleString('ja-JP')}で、条件指定の全組合せと一致します（完備しています）。` : `規則数の検査：満足される規則がある組合せは${covered.toLocaleString('ja-JP')}で、条件指定の全組合せ${total.toLocaleString('ja-JP')}に足りません（完備していません）。「*」の列は、満足される規則がない条件の組合せです。`, covered === total ? 'check-summary' : 'check-empty'));
+  const all = part.columns, sum = columns.reduce((n, c) => n + c.chunk.size, 0n);
+  host.append(element('p', `規則${all}個。規則数の検査：各規則の組合せ数の合計は${sum.toLocaleString('ja-JP')}で、${combined ? '条件指定の全組合せ' : 'この表の条件の全組合せ'}${count(sub).toLocaleString('ja-JP')}件と${sum === count(sub) ? '一致します' : '一致しません'}。${all > shown.length ? `先頭${shown.length}規則を表示しています。` : ''}${combined && columns.some(c => !c.pattern.satisfied) ? '「*」の列は、満足される規則がない条件の組合せです。' : ''}`, 'muted'));
   if (found.some(x => x.outputs.some(o => o.values.length > 1))) host.append(element('p', '「不一致」の欄は、同じ動作に異なる値を指定する規則が同時に満足される組合せです。「検証」で規則を確認してください。', 'check-empty'));
 }
 function renderPanel() {
@@ -394,7 +409,7 @@ function render() {
   }), button('検証', () => { panel = 'diagnostics'; renderPanel(); }), button('簡単化', async () => { message('結合できる規則と等価性を確認しています…'); await new Promise(r => setTimeout(r, 0)); refreshMerge(); panel = 'merge'; renderPanel(); message(`${candidates.length}件の承認可能な結合候補があります`); }), button('全組合せ', () => { panel = 'expand'; renderPanel(); }));
   const counts = $('counts'); counts.replaceChildren();
   for (const [value, label] of [[count(table).toLocaleString('ja-JP'), '条件指定の全組合せ'], [String(table.rules.length), '規則']] as [string, string][]) { const item = element('div'); item.append(element('strong', value), element('span', label)); counts.append(item); }
-  const pattern = element('div'), hit = table.rules.length ? singleHit() : null; pattern.append(element('strong', !table.rules.length ? '—' : !hit ? '未更新' : !hit.found ? '未算出' : String(hit.found.filter(x => x.satisfied).length)), element('span', '動作指定の組合せ')); counts.append(pattern);
+  const pattern = element('div'), hit = table.rules.length ? singleHit() : null; pattern.append(element('strong', !table.rules.length ? '—' : !hit ? '未更新' : hit.combined && hit.parts[0]?.found ? String(hit.parts[0].found.filter(x => x.satisfied).length) : `${hit.parts.length}表`), element('span', !hit || hit.combined ? '動作指定の組合せ' : '決定表（分離）')); counts.append(pattern);
   const defs = $('definition-list'); defs.replaceChildren();
   for (const c of table.conditions) { const chip = element('div', '', 'definition-chip'); chip.append(button(`${c.name} · 値${c.partitions.length}個`, () => conditionDialog(c)), button('×', () => { const next = clone(table); next.conditions = next.conditions.filter(x => x.id !== c.id); if (!next.conditions.length && table.rules.length) { if (!confirm('最後の条件を削除すると規則を保持できません。先にJSONを保存してください。規則も削除しますか？')) return; commit({ ...next, rules: [] }); } else { if (table.rules.length && !confirm(`条件「${c.name}」とその値の定義を削除しますか？規則は保持し、この条件の条件指定だけを外します。`)) return; applyDefinitions(next, () => {}); } }, 'tiny')); defs.append(chip); }
   for (const o of table.outputs) { const chip = element('div', '', 'definition-chip output-chip'); chip.append(button(`${o.name} · ${o.kind === 'action' ? '制限指定' : `拡張指定 ${o.type}`}`, () => outputDialog(o)), button('×', () => { if (!confirm(`動作「${o.name}」と入力済みの動作指定を削除しますか？`)) return; const next = clone(table); next.outputs = next.outputs.filter(x => x.id !== o.id); next.rules.forEach(r => { r.directives = r.directives.filter(d => d.outputId !== o.id); }); commit(next); }, 'tiny')); defs.append(chip); }

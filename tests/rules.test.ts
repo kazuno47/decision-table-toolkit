@@ -1,7 +1,7 @@
 // TASK-002 / INS-001, CHG-001..003 / REQ-001,004,008,010,011,012,013 / NFR-006 / DR-010,011.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyTable, clone, decode, encode, validate, count, atoms, atomsHead, generate, matches, diagnose, coverage, describeChunk, overlappingRules, proposeMerges, proposeStructural, verifyStructural, applyCandidate, replaceCandidate, verifyEquivalent, simplifyClauses, compressAll, contradictions, resultOf, patterns, patternCount, addRule, migrateRules, lookup, expandRows, inspect, LIMIT, type Table, type Rule, type Clause } from '../src/core.ts';
+import { emptyTable, clone, decode, encode, validate, count, atoms, atomsHead, generate, matches, diagnose, coverage, describeChunk, overlappingRules, proposeMerges, proposeStructural, verifyStructural, applyCandidate, replaceCandidate, verifyEquivalent, simplifyClauses, compressAll, contradictions, resultOf, patterns, patternCount, separate, actionGroups, decisionTables, addRule, migrateRules, lookup, expandRows, inspect, LIMIT, type Table, type Rule, type Clause } from '../src/core.ts';
 import { documentSchema } from '../src/schema.ts';
 
 const results = (t: Table, a: Record<string, string>) => resultOf(t, a).flat(); // single-output tables
@@ -368,4 +368,31 @@ test('TASK-009: the derived single-hit table has disjoint rules, marks unsatisfi
   t.rules.splice(3, 1); const open = patterns(t, 1000)!, gap = open.filter(x => !x.satisfied); // no rule for amount=high, kind=B without personal data
   assert.equal(gap.length, 1); assert.equal(gap[0].size, 1n); assert.equal(describeChunk(t, gap[0].chunks[0]), '条件0=v2 / 条件1=v1 / 条件2=v0'); assert.equal(coverage(t).uncovered, 1n);
   const idle = two([2]); idle.rules = [rule2('nothing', { 0: [0] }, null, false)]; const both = patterns(idle)!; assert.equal(both.length, 2); assert.deepEqual(both.map(x => x.satisfied).sort(), [false, true]);
+});
+// TASK-012 (INS-012): a decision table too large for one table is separated by related actions (JIS X 0125 Annex 1, 2).
+test('TASK-012: separated decision tables give every input the same actions as the whole table', () => {
+  for (let seed = 1; seed <= 200; seed++) {
+    const t = randomTwo(seed), cells = atoms(t);
+    for (const parts of [actionGroups(t).map(g => ({ outputs: g, table: separate(t, g) })), decisionTables(t, 0).parts]) for (const part of parts) {
+      if (!part.table.conditions.length) continue; // specified without any condition entry
+      const found = patterns(part.table, 1000)!, columns = found.flatMap(x => x.chunks.map(chunk => ({ x, chunk })));
+      assert.ok(part.table.conditions.every(c => t.conditions.some(o => o.id === c.id))); assert.deepEqual(validate(part.table), []);
+      for (const a of cells) {
+        const hit = columns.filter(c => c.chunk.selections.every(s => s.partitionIds.includes(a[s.conditionId]))); assert.equal(hit.length, 1, `seed ${seed}`);
+        part.outputs.forEach((o, at) => assert.equal(hit[0].x.outputs[at].values.length, resultOf(t, a)[o].length, `seed ${seed} action ${o}`));
+      }
+    }
+  }
+});
+test('TASK-012: actions specified by the same rule share a table; a huge table is separated instead of failing', () => {
+  const linked = two([2, 2]); linked.rules = [rule2('both', { 0: [0] }, '1', true), rule2('only', { 1: [0] }, '2', null)]; assert.deepEqual(actionGroups(linked), [[0, 1]]);
+  const apart = two([2, 2]); apart.rules = [rule2('a', { 0: [0] }, '1', null), rule2('b', { 1: [0] }, null, true)]; assert.deepEqual(actionGroups(apart), [[0], [1]]);
+  assert.equal(decisionTables(apart).combined, true); // small enough for one table
+  const t = table(Array(20).fill(5)); assert.equal(count(t), 95367431640625n);
+  t.outputs = Array.from({ length: 12 }, (_, i) => ({ id: `o${i}`, name: `動作${i}`, kind: 'action' as const }));
+  t.rules = Array.from({ length: 37 }, (_, k) => ({ id: `r${k}`, anyOf: [{ selections: [{ conditionId: `c${(k % 12) * 1}`, partitionIds: [`c${k % 12}p${k % 5}`] }, { conditionId: `c${12 + (k % 8)}`, partitionIds: [`c${12 + (k % 8)}p${(k * 3) % 5}`] }] }], directives: t.outputs.map((o, i) => i === k % 12 ? { outputId: o.id, state: 'set' as const, value: true } : { outputId: o.id, state: 'unset' as const }) }));
+  assert.deepEqual(validate(t), []); assert.equal(patterns(t, 1000, 400_000), null); // one table is beyond the budget
+  const started = performance.now(), d = decisionTables(t); assert.ok(performance.now() - started < 8000);
+  assert.equal(d.combined, false); assert.equal(d.parts.length, 12); assert.ok(d.parts.every(x => x.found !== null && x.columns <= 200 && x.table.conditions.length <= 4 && x.outputs.length === 1));
+  const first = d.parts[0]; assert.equal(first.found!.reduce((n, x) => n + x.size, 0n), count(first.table)); // the rule counts add up within the separated table
 });
