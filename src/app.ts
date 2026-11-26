@@ -235,28 +235,41 @@ function renderCheck() {
   const host = $('check'); host.replaceChildren(); host.hidden = !table.rules.length || !table.conditions.length; if (host.hidden) return;
   for (const id of Object.keys(checkPicks)) if (!table.conditions.some(c => c.id === id && c.partitions.some(p => p.id === checkPicks[id]))) delete checkPicks[id];
   const head = element('div', '', 'panel-heading'); head.append(element('h2', '結果を確認'), button('指定を解除', () => { checkPicks = {}; renderCheck(); })); host.append(head);
-  host.append(element('p', '条件の区分を選ぶと、その条件に適用される結果だけを表示します。選ばない条件は「指定なし」として、選んだ条件だけで絞り込みます。表は変更しません。', 'muted'));
+  host.append(element('p', '条件の区分を選ぶと、その入力に対する結果を1つ表示します。結果が1つに決まるまで条件を選んでください。結果に関係しない条件は、選ばなくても決まります。表は変更しません。', 'muted'));
+  // TASK-006: mark the conditions that still have to be chosen before the result is determined.
+  let needed: string[] = []; try { needed = inspect(table, checkPicks).relevant; } catch { /* reported below */ }
   const filters = element('div', '', 'lookup');
   for (const c of table.conditions) {
     const s = select([['', '指定なし'], ...c.partitions.map((p): [string, string] => [p.id, p.label])], checkPicks[c.id] ?? ''); s.setAttribute('aria-label', `${c.name}（結果を確認）`);
-    s.onchange = () => { if (s.value) checkPicks[c.id] = s.value; else delete checkPicks[c.id]; renderCheck(); }; field(c.name, s, filters);
+    s.onchange = () => { if (s.value) checkPicks[c.id] = s.value; else delete checkPicks[c.id]; renderCheck(); }; field(needed.includes(c.id) ? `${c.name}（選ぶと絞り込めます）` : c.name, s, filters);
   }
   host.append(filters);
   try {
     const found = inspect(table, checkPicks), chosen = Object.keys(checkPicks).length;
     const value = (d: Directive) => { const o = table.outputs.find(o => o.id === d.outputId); if (d.state === 'unset') return '未設定'; if (o?.kind === 'action') return d.value ? '実行する' : '実行しない'; return d.value === '' ? '（空文字）' : String(d.value); };
     const outcome = (ds: Directive[]) => ds.length ? ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}：${value(d)}`).join(' ／ ') : '（動作・結果が未定義）';
-    host.append(element('p', `${chosen ? `${chosen}条件を指定` : '指定なし（表全体）'}：対象は${found.total.toLocaleString('ja-JP')}組み合わせ、適合する規則は${found.rules.length}件です。${found.exact ? '' : '結果の種類ごとにまとめて表示します。'}`, 'check-summary'));
-    // TASK-004: every rule that applies must give the same result; group by result and flag a contradiction.
-    const groups = new Map<string, { directives: Directive[]; rules: number[]; always: boolean }>();
-    for (const r of found.rules) { const key = stable(r.directives), g = groups.get(key) ?? { directives: r.directives, rules: [], always: false }; g.rules.push(r.index + 1); g.always ||= r.always; groups.set(key, g); }
-    if (found.conflict) host.append(element('p', found.exact ? 'この入力には違う結果の規則が適合しており、結果が1つに決まりません（矛盾）。規則を直してください。' : 'この範囲には、違う結果の規則が同じ入力に適合する箇所があります（矛盾）。「検証」で場所を確認してください。', 'check-empty'));
+    // TASK-004: every rule that applies must give the same result; group by result.
+    const groups = new Map<string, { directives: Directive[]; rules: number[] }>();
+    for (const r of found.rules) { const key = stable(r.directives), g = groups.get(key) ?? { directives: r.directives, rules: [] }; g.rules.push(r.index + 1); groups.set(key, g); }
     // TASK-005: show the conditions of the rules behind a result; a rule that names every partition applies to any choice.
     const why = (n: number) => { const r = table.rules[n - 1]; return `規則 #${n}：` + r.anyOf.map(clause => clause.selections.length ? clause.selections.map(sel => { const c = table.conditions.find(x => x.id === sel.conditionId)!; return `${c.name}=${sel.partitionIds.length === c.partitions.length && sel.partitionIds.length > 1 ? `すべて（${sel.partitionIds.length}区分を個別に指定）` : sel.partitionIds.map(id => c.partitions.find(p => p.id === id)!.label).join('・')}`; }).join(' かつ ') : 'すべての入力').join(' ／ または ') + (r.anyOf.every(clause => clause.selections.length === table.conditions.length) ? '' : '（書いていない条件はすべて）'); };
-    for (const g of groups.values()) { const row = element('div', '', 'check-result'); row.append(element('strong', outcome(g.directives)), element('small', `${found.exact ? '' : g.always ? 'この範囲で必ず適用 ／ ' : '残りの条件による ／ '}規則 ${g.rules.slice(0, 12).map(n => `#${n}`).join(' ')}${g.rules.length > 12 ? ` ほか${g.rules.length - 12}件` : ''}`)); host.append(row); g.rules.slice(0, 3).forEach(n => host.append(element('p', why(n), 'check-why'))); if (g.rules.length > 3) host.append(element('p', `ほか${g.rules.length - 3}件の規則は表で確認してください。`, 'check-why')); }
-    if (!found.rules.length) host.append(element('p', 'この条件に適用される規則はありません。', 'check-empty'));
-    else if (found.uncovered === null) host.append(element('p', '規則のない入力があるかどうかは、計算予算を超えたため判定できていません。', 'muted'));
-    else if (found.uncovered > 0n) host.append(element('p', `この範囲のうち${found.uncovered.toLocaleString('ja-JP')}組み合わせには、適用される規則がありません。`, 'check-empty'));
+    const rows = (target: HTMLElement) => { for (const g of groups.values()) { const row = element('div', '', 'check-result'); row.append(element('strong', outcome(g.directives)), element('small', `規則 ${g.rules.slice(0, 12).map(n => `#${n}`).join(' ')}${g.rules.length > 12 ? ` ほか${g.rules.length - 12}件` : ''}`)); target.append(row); g.rules.slice(0, 3).forEach(n => target.append(element('p', why(n), 'check-why'))); if (g.rules.length > 3) target.append(element('p', `ほか${g.rules.length - 3}件の規則は表で確認してください。`, 'check-why')); } };
+    const scope = `${chosen ? `${chosen}条件を指定` : '条件は未指定'}（対象は${found.total.toLocaleString('ja-JP')}組み合わせ）`;
+    // TASK-006 (INS-005): show exactly one result. Until it is determined, say which conditions decide it
+    // instead of listing several results side by side.
+    if (!found.rules.length) host.append(element('p', `${scope}：この条件に適合する規則はありません。`, 'check-empty'));
+    else if (found.determined) {
+      host.append(element('p', `${scope}：結果は1つに決まります。${found.exact ? '' : '選んでいない条件が何であっても、この結果です。'}`, 'check-summary')); rows(host);
+    } else if (found.exact) {
+      host.append(element('p', `${scope}：この入力には違う結果の規則が適合しており、結果が1つに決まりません（矛盾）。規則を直してください。`, 'check-empty')); rows(host);
+    } else {
+      const names = table.conditions.filter(c => found.relevant.includes(c.id)).map(c => c.name);
+      host.append(element('p', `${scope}：結果はまだ1つに決まりません。${names.length ? `次の条件を選ぶと絞り込めます：${names.join('、')}` : ''}`, 'check-summary'));
+      if (found.conflict) host.append(element('p', 'この範囲には、違う結果の規則が同じ入力に適合する箇所があります（矛盾）。「検証」で場所を確認してください。', 'check-empty'));
+      if (found.uncovered === null) host.append(element('p', '規則のない入力があるかどうかは、計算予算を超えたため判定できていません。', 'muted'));
+      else if (found.uncovered > 0n) host.append(element('p', `この範囲のうち${found.uncovered.toLocaleString('ja-JP')}組み合わせには、適合する規則がありません。`, 'check-empty'));
+      const more = element('details', '', 'check-candidates'); more.append(element('summary', `この範囲であり得る結果を見る（${groups.size}種類）`)); rows(more); host.append(more);
+    }
   } catch (e) { host.append(element('p', `結果を表示できません：${(e as Error).message}`, 'muted')); }
 }
 // TASK-003 / REQ-011 / SCR-004: candidates, the repeated result and the reasons are always computed from the current table.

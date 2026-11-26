@@ -187,6 +187,9 @@ test('inspect: partial and full partition choices agree with brute force on 300 
     for (const x of found.rules) assert.equal(x.always, region.every(a => matches(t.rules[x.index], a)), `seed ${seed}`);
     assert.equal(found.uncovered, BigInt(region.filter(a => !t.rules.some(rule => matches(rule, a))).length), `seed ${seed}`);
     assert.equal(found.conflict, region.some(a => results(t, a).length > 1), `seed ${seed}`);
+    // TASK-006: determined = every input in the range has the same single result
+    assert.equal(found.determined, region.length > 0 && region.every(a => results(t, a).length === 1) && new Set(region.map(a => results(t, a)[0])).size === 1, `seed ${seed}`);
+    if (found.determined) assert.deepEqual(found.relevant, []); else if (found.rules.length && !found.exact) assert.ok(found.relevant.every(id => !(id in picks)));
     if (found.exact) assert.deepEqual(found.rules.map(x => x.ruleId), lookup(t, region[0]).map(x => x.ruleId));
   }
 });
@@ -274,4 +277,15 @@ test('TASK-005: a rule naming every partition of a condition is offered as "all"
   const done = compressAll(t); assert.deepEqual(done.table.rules.map(r => r.anyOf[0].selections.length), [1, 2]);
   // the filter-like check keeps such a rule for any chosen partition, and drops rules of other partitions
   assert.deepEqual(inspect(t, { c0: 'c0p3' }).rules.map(x => x.ruleId), ['each']); assert.deepEqual(inspect(t, { c0: 'c0p0' }).rules.map(x => x.ruleId), ['each', 'other']);
+});
+// TASK-006 (INS-005): the result check gives one result, or says which conditions still decide it.
+test('TASK-006: a result is determined as soon as the unchosen conditions cannot change it', () => {
+  const t = table([3, 2, 2]); // 条件0 = amount, 条件1 = kind, 条件2 = unrelated
+  t.rules = [rule('low', { 0: [0] }, '10'), rule('mid', { 0: [1] }, '20'), rule('highA', { 0: [2], 1: [0] }, '30'), rule('highB', { 0: [2], 1: [1] }, '40')];
+  const nothing = inspect(t, {}); assert.equal(nothing.determined, false); assert.deepEqual(nothing.relevant, ['c0', 'c1']); // 条件2 never matters
+  const low = inspect(t, { c0: 'c0p0' }); assert.equal(low.determined, true); assert.equal(low.exact, false); assert.deepEqual(low.rules.map(x => x.ruleId), ['low']);
+  const high = inspect(t, { c0: 'c0p2' }); assert.equal(high.determined, false); assert.deepEqual(high.relevant, ['c1']); assert.deepEqual(high.rules.map(x => x.ruleId), ['highA', 'highB']);
+  const highB = inspect(t, { c0: 'c0p2', c1: 'c1p1' }); assert.equal(highB.determined, true); assert.deepEqual(highB.rules.map(x => x.ruleId), ['highB']);
+  t.rules.pop(); const gap = inspect(t, { c0: 'c0p2' }); assert.equal(gap.determined, false); assert.equal(gap.uncovered, 2n); assert.deepEqual(gap.relevant, ['c1']); // one result, but part of the range has no rule
+  t.rules.push(rule('clash', { 0: [0] }, '99')); const clash = inspect(t, { c0: 'c0p0', c1: 'c1p0', c2: 'c2p0' }); assert.equal(clash.exact, true); assert.equal(clash.determined, false); assert.equal(clash.conflict, true);
 });

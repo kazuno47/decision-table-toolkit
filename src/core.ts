@@ -439,9 +439,9 @@ export function migrateRules(old: Table, next: Table): { table: Table; dropped: 
 }
 // TASK-002 / INS-002, CHG-004 / REQ-012 / API-003 inspect: filter by chosen partitions; unchosen conditions stay open.
 // always = the rule applies to every input in the chosen range. uncovered = inputs in the range with no rule (null: not determined).
-export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null; conflict: boolean } {
+export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null; conflict: boolean; determined: boolean; relevant: string[] } {
   assertValid(t);
-  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n, conflict: false };
+  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n, conflict: false, determined: false, relevant: [] };
   const region: Cube = t.conditions.map(c => { const i = c.partitions.findIndex(p => p.id === picks[c.id]); return i < 0 ? fullMask(c) : 1n << BigInt(i); });
   const rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[] = [];
   let rest: Cube[] | null = [region], work = 0;
@@ -455,5 +455,10 @@ export function inspect(t: Table, picks: Record<string, string>): { total: bigin
   const inRange = rules.map(r => ({ key: stable(normalizedDirectives(t, r.directives)), cubes: ruleCubes(t, t.rules[r.index]).filter(c => !cubesDisjoint(c, region)).map(c => c.map((m, k) => m & region[k])) }));
   let conflict = false;
   for (let i = 0; i < inRange.length && !conflict; i++) for (let j = i + 1; j < inRange.length && !conflict; j++) if (inRange[i].key !== inRange[j].key && !rulesDisjoint(inRange[i].cubes, inRange[j].cubes)) conflict = true;
-  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered: rest ? rest.reduce((n, c) => n + cubeSize(c), 0n) : null, conflict };
+  const uncovered = rest ? rest.reduce((n, c) => n + cubeSize(c), 0n) : null;
+  // TASK-006 (INS-005): the result is determined when every input in the range gets the same single result,
+  // even if some conditions are not chosen. relevant = unchosen conditions that the matching rules still depend on.
+  const determined = rules.length > 0 && new Set(inRange.map(x => x.key)).size === 1 && uncovered === 0n;
+  const relevant = determined ? [] : t.conditions.filter((c, k) => !c.partitions.some(p => p.id === picks[c.id]) && inRange.some(x => x.cubes.some(cube => cube[k] !== fullMask(c)))).map(c => c.id);
+  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered, conflict, determined, relevant };
 }
