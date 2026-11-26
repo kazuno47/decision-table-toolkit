@@ -1,4 +1,4 @@
-// TASK-001, TASK-002 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..004 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -129,7 +129,12 @@ function normalizedDirectives(t: Table, ds: Directive[]): unknown[] {
     return d;
   });
 }
-export function traceKey(t: Table, atom: Atom): string { return stable(trace(t, atom).map(ds => normalizedDirectives(t, ds))); }
+// TASK-004 / INS-004, DEC-027: one result per input. The result of an input is the set of distinct outputs of
+// the rules that match it; rule order and the number of matching rules carry no meaning. A set with more than
+// one element is a contradiction that validation reports.
+export function results(t: Table, atom: Atom): string[] { return [...new Set(trace(t, atom).map(ds => stable(normalizedDirectives(t, ds))))].sort(); }
+export function traceKey(t: Table, atom: Atom): string { return stable(results(t, atom)); }
+function distinctOutcomes(t: Table, list: Directive[][]): Directive[][] { const seen = new Set<string>(); return list.filter(ds => { const k = stable(normalizedDirectives(t, ds)); if (seen.has(k)) return false; seen.add(k); return true; }); }
 export function generate(t: Table): Table {
   assertValid(t); const cells = atoms(t); if (!cells.length) throw new Error('条件を追加してください');
   return { ...clone(t), rules: cells.map(a => ({ id: uid('r'), anyOf: [{ selections: t.conditions.map(c => ({ conditionId: c.id, partitionIds: [a[c.id]] })) }], directives: t.outputs.map(o => ({ outputId: o.id, state: 'unset' as const })) })) };
@@ -140,7 +145,7 @@ export function verifyEquivalent(a: Table, b: Table, budget = 2_000_000): { equa
   const cells = atoms(a);
   const weight = (t: Table) => t.rules.reduce((n, r) => n + r.anyOf.reduce((n, c) => n + c.selections.reduce((n, s) => n + s.partitionIds.length, 0), 0), 0);
   if (cells.length * (weight(a) + weight(b) + 1) > budget) return { equal: false, checked: 0, reason: '証明の計算予算を超えます' };
-  for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: '動作・結果の値、順序、回数が異なります' };
+  for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: '入力に対する結果が異なります' };
   return { equal: true, checked: cells.length };
 }
 export function replaceCandidate(t: Table, c: Candidate): Table {
@@ -189,17 +194,17 @@ export function diagnose(t: Table): Diagnostic[] {
         cov.chunks.slice(0, 20).forEach(chunk => result.push({ level: 'warning', target: '未網羅', message: `${describeChunk(t, chunk)}（${chunk.size}組み合わせ）` }));
         if (cov.chunks.length > 20) result.push({ level: 'warning', target: '未網羅', message: `ほか${cov.chunks.length - 20}個のかたまりがあります。規則を追加して再検証してください` });
       }
-      const weight = t.rules.reduce((n, r) => n + r.anyOf.length * t.conditions.length, 0);
-      if (total <= BigInt(LIMIT) && Number(total) * weight <= 2_000_000) {
-        const multiple = atoms(t).filter(a => t.rules.filter(r => matches(r, a)).length > 1).length;
-        if (multiple) result.push({ level: 'info', target: 'rules', message: `${multiple}組み合わせが多重適合。全件を上から順に適用します。異なる結果は上書きしません` });
-      } else {
-        const over = overlappingRules(t);
-        if (over.pairs) result.push({ level: 'info', target: 'rules', message: `${over.pairs}組${over.complete ? '' : '以上'}の規則が同じ入力に重なって多重適合します（例: ${over.examples.map(([a, b]) => `#${a + 1}と#${b + 1}`).join('、')}）。全件を上から順に適用します。異なる結果は上書きしません` });
-        if (!over.complete) result.push({ level: 'warning', target: 'rules', message: '多重適合の確認は計算予算で打ち切りました' });
+      // TASK-004 / REQ-008: rules that can match the same input must give the same result.
+      const clash = contradictions(t);
+      if (clash.pairs) {
+        result.push({ level: 'error', target: 'rules', message: `${clash.pairs}組${clash.complete ? '' : '以上'}の規則で結果が食い違っています。同じ入力に違う結果の規則が適合するため、結果が1つに決まりません` });
+        clash.examples.forEach(e => result.push({ level: 'error', target: '矛盾', message: `規則 #${e.rules[0] + 1} と #${e.rules[1] + 1}：${describeChunk(t, e.chunk)}（${e.chunk.size}組み合わせ${e.more ? 'ほか' : ''}）で結果が異なります` }));
+        if (clash.pairs > clash.examples.length) result.push({ level: 'error', target: '矛盾', message: `ほか${clash.pairs - clash.examples.length}組あります。規則を直して再検証してください` });
       }
+      if (clash.same) result.push({ level: 'info', target: 'rules', message: `${clash.same}組${clash.complete ? '' : '以上'}の規則が同じ結果で重なっています。結果は1つとして扱います。「まとめる」で整理できます` });
+      if (!clash.complete) result.push({ level: 'warning', target: 'rules', message: '結果の食い違いの確認は計算予算で打ち切りました（残りは判定できていません）' });
     }
-    const keys = new Set<string>(); for (const r of t.rules) { const k = stable({ anyOf: r.anyOf, directives: r.directives }); if (keys.has(k)) result.push({ level: 'warning', target: r.id, message: '同じ条件と出力の規則が重複しています。回数が意味を持つため自動削除しません' }); keys.add(k); }
+    const keys = new Set<string>(); for (const r of t.rules) { const k = stable({ anyOf: r.anyOf, directives: r.directives }); if (keys.has(k)) result.push({ level: 'warning', target: r.id, message: '同じ条件と出力の規則が重複しています。「まとめる」で1つにできます' }); keys.add(k); }
   } catch (e) { result.push({ level: 'warning', target: 'rules', message: (e as Error).message }); }
   return result;
 }
@@ -215,7 +220,7 @@ export function regeneratePreserving(old: Table, next: Table): { table: Table; a
   if (changed) return { table: fresh, affected: fresh.rules.length };
   const shared = common.map(c => c.id); const key = (a: Atom) => stable(shared.map(id => a[id]));
   const buckets = new Map<string, Directive[][] | null>();
-  for (const a of atoms(old)) { const k = key(a), value = trace(old, a); if (!buckets.has(k)) buckets.set(k, clone(value)); else if (stable(buckets.get(k)) !== stable(value)) buckets.set(k, null); }
+  for (const a of atoms(old)) { const k = key(a), value = distinctOutcomes(old, trace(old, a)); if (!buckets.has(k)) buckets.set(k, clone(value)); else if (stable(buckets.get(k)) !== stable(value)) buckets.set(k, null); }
   let affected = 0; const rules: Rule[] = [];
   for (const base of fresh.rules) {
     const a = Object.fromEntries(base.anyOf[0].selections.map(s => [s.conditionId, s.partitionIds[0]]));
@@ -274,6 +279,9 @@ function compactCubes(cubes: Cube[], passes = 8): Cube[] {
   }
   return list;
 }
+function cubeChunk(t: Pick<Table, 'conditions'>, c: Cube): Chunk {
+  return { size: cubeSize(c), selections: t.conditions.flatMap((cond, i) => c[i] === fullMask(cond) ? [] : [{ conditionId: cond.id, partitionIds: cond.partitions.filter((_, j) => (c[i] >> BigInt(j)) & 1n).map(p => p.id) }]) };
+}
 // REQ-008: inputs matched by no rule, as disjoint chunks. complete=false means "not determined", never "covered".
 // budget bounds the number of chunks held at once, workBudget the total number of chunk operations (DEF-005).
 export function coverage(t: Table, budget = 200_000, workBudget = 2_000_000): { complete: boolean; uncovered: bigint; chunks: Chunk[] } {
@@ -290,7 +298,7 @@ export function coverage(t: Table, budget = 200_000, workBudget = 2_000_000): { 
     if (rest.length > budget || work > workBudget) return unknown;
   }
   const uncovered = rest.reduce((n, c) => n + cubeSize(c), 0n);
-  const chunks = compactCubes(rest, rest.length > 20_000 ? 1 : 8).map(c => ({ size: cubeSize(c), selections: t.conditions.flatMap((cond, i) => c[i] === fullMask(cond) ? [] : [{ conditionId: cond.id, partitionIds: cond.partitions.filter((_, j) => (c[i] >> BigInt(j)) & 1n).map(p => p.id) }]) }));
+  const chunks = compactCubes(rest, rest.length > 20_000 ? 1 : 8).map(c => cubeChunk(t, c));
   chunks.sort((x, y) => x.size < y.size ? 1 : x.size > y.size ? -1 : 0);
   return { complete: true, uncovered, chunks };
 }
@@ -306,19 +314,6 @@ export function overlappingRules(t: Table, budget = 2_000_000): { pairs: number;
     if (!rulesDisjoint(cubes[i], cubes[j])) { pairs++; if (examples.length < 5) examples.push([i, j]); }
   }
   return { pairs, examples, complete: true };
-}
-// DR-011. group = rule indexes with identical directives; the merged rule takes the anchor's position.
-// Another rule g may join only if (a) no already chosen rule can match the same input (match count stays 1) and
-// (b) no unchosen rule between the anchor and g can match the same input as g (order of effects is kept).
-function mergeable(cubes: Cube[][], group: number[], anchor = group[0]): number[] {
-  const chosen = [anchor];
-  for (const g of group) {
-    if (g === anchor || chosen.some(x => !rulesDisjoint(cubes[x], cubes[g]))) continue;
-    const low = Math.min(anchor, g), high = Math.max(anchor, g); let blocked = false;
-    for (let x = low + 1; x < high && !blocked; x++) if (!chosen.includes(x) && !rulesDisjoint(cubes[x], cubes[g])) blocked = true;
-    if (!blocked) chosen.push(g);
-  }
-  return chosen.sort((a, b) => a - b);
 }
 const cubeInside = (a: Cube, b: Cube) => a.every((m, i) => (m & ~b[i]) === 0n);
 function cubeClause(t: Pick<Table, 'conditions'>, cube: Cube): Clause {
@@ -352,21 +347,13 @@ function directiveGroups(t: Table): number[][] {
   t.rules.forEach((r, i) => { const k = mergeKey(t, r); if (k !== null) groups.set(k, [...(groups.get(k) ?? []), i]); });
   return [...groups.values()];
 }
-// REQ-011: candidates proven from rule overlap and order alone. For each group of rules with the same outputs,
-// every member is tried as the position of the merged rule and the largest mergeable set wins; what is left is
-// tried again. Rules whose OR blocks can be tidied on their own are offered as single-rule candidates.
+// REQ-011 / DR-011 (TASK-004): with one result per input, rules with the same outputs can always be merged:
+// an input matched by any of them gets that same result before and after, whatever else matches it.
+// The proof is that the merged clauses match exactly the inputs of the source rules (sameCover).
+// Rules whose OR blocks can be tidied on their own are offered as single-rule candidates.
 export function proposeStructural(t: Table): Candidate[] {
-  assertValid(t); const cubes = t.rules.map(r => ruleCubes(t, r)), result: Candidate[] = [], used = new Set<number>();
-  for (const group of directiveGroups(t)) {
-    let remaining = group;
-    while (remaining.length > 1) {
-      let best: number[] = [], anchor = -1;
-      for (const a of remaining.length <= 60 ? remaining : [remaining[0]]) { const chosen = mergeable(cubes, remaining, a); if (chosen.length > best.length) { best = chosen; anchor = a; } }
-      if (best.length < 2) break;
-      result.push(buildCandidate(t, best.map(i => t.rules[i]), 'structural', t.rules[anchor])); best.forEach(i => used.add(i));
-      const taken = best; remaining = remaining.filter(i => !taken.includes(i));
-    }
-  }
+  assertValid(t); const result: Candidate[] = [], used = new Set<number>();
+  for (const group of directiveGroups(t)) { if (group.length < 2) continue; result.push(buildCandidate(t, group.map(i => t.rules[i]), 'structural')); group.forEach(i => used.add(i)); }
   t.rules.forEach((r, i) => { if (used.has(i) || r.anyOf.length < 2) return; if (simplifyClauses(t, r.anyOf).length < r.anyOf.length) result.push(buildCandidate(t, [r], 'structural')); });
   return result.sort((a, b) => b.before.length - a.before.length);
 }
@@ -379,7 +366,7 @@ export function verifyStructural(t: Table, c: Candidate): boolean {
   if (rules.length > 1) { const key = mergeKey(t, rules[0]); if (key === null || rules.some(r => mergeKey(t, r) !== key)) return false; }
   try { assertValid(replaceCandidate(t, c)); } catch { return false; }
   if (!c.replacement.anyOf.length || !sameCover(rules.flatMap(r => ruleCubes(t, r)), ruleCubes(t, c.replacement))) return false;
-  return rules.length === 1 || mergeable(t.rules.map(r => ruleCubes(t, r)), idx, anchor).length === idx.length;
+  return true;
 }
 // TASK-003: apply candidates repeatedly until none is left. Each step is re-verified by applyCandidate.
 export function compressAll(t: Table, maxSteps = 500): { table: Table; steps: number } {
@@ -387,20 +374,20 @@ export function compressAll(t: Table, maxSteps = 500): { table: Table; steps: nu
   for (; steps < maxSteps; steps++) { const [next] = proposeStructural(table); if (!next) break; table = applyCandidate(table, next); }
   return { table, steps };
 }
-// TASK-003: why rules with the same outputs cannot be merged (1-based rule numbers for display).
-export type MergeBlocker = { kind: 'overlap'; rules: [number, number] } | { kind: 'between'; rules: [number, number]; via: number };
-export function mergeBlockers(t: Table, limit = 12): { blockers: MergeBlocker[]; total: number; unset: number } {
-  assertValid(t); const cubes = t.rules.map(r => ruleCubes(t, r)), blockers: MergeBlocker[] = []; let total = 0;
-  for (const group of directiveGroups(t)) for (let a = 0; a < group.length; a++) for (let b = a + 1; b < group.length; b++) {
-    const i = group[a], j = group[b]; let found: MergeBlocker | null = null;
-    if (!rulesDisjoint(cubes[i], cubes[j])) found = { kind: 'overlap', rules: [i + 1, j + 1] };
-    else {
-      const hits = (target: number) => { for (let x = i + 1; x < j; x++) if (!rulesDisjoint(cubes[x], cubes[target])) return x; return -1; };
-      const down = hits(i), up = hits(j); if (down >= 0 && up >= 0) found = { kind: 'between', rules: [i + 1, j + 1], via: up + 1 };
-    }
-    if (found) { total++; if (blockers.length < limit) blockers.push(found); }
+// TASK-004 / REQ-008: rule pairs (0-based) that can match the same input. Different outputs = contradiction,
+// same outputs = harmless overlap. chunk is one region where the pair meets; more = there are further regions.
+export function contradictions(t: Table, limit = 20, budget = 2_000_000): { pairs: number; same: number; examples: { rules: [number, number]; chunk: Chunk; more: boolean }[]; complete: boolean } {
+  const cubes = t.rules.map(r => ruleCubes(t, r)), keys = t.rules.map(r => stable(normalizedDirectives(t, r.directives)));
+  const examples: { rules: [number, number]; chunk: Chunk; more: boolean }[] = []; let pairs = 0, same = 0, work = 0;
+  for (let i = 0; i < cubes.length; i++) for (let j = i + 1; j < cubes.length; j++) {
+    work += cubes[i].length * cubes[j].length; if (work > budget) return { pairs, same, examples, complete: false };
+    let first: Cube | null = null, regions = 0;
+    for (const x of cubes[i]) for (const y of cubes[j]) if (!cubesDisjoint(x, y)) { regions++; first ??= x.map((m, k) => m & y[k]); }
+    if (!first) continue;
+    if (keys[i] === keys[j]) same++;
+    else { pairs++; if (examples.length < limit) examples.push({ rules: [i, j], chunk: cubeChunk(t, first), more: regions > 1 }); }
   }
-  return { blockers, total, unset: t.rules.filter(r => r.directives.some(d => d.state === 'unset')).length };
+  return { pairs, same, examples, complete: true };
 }
 // First n input combinations in the same order as atoms(), without materialising the whole product.
 export function atomsHead(t: Pick<Table, 'conditions'>, n: number): Atom[] {
@@ -450,9 +437,9 @@ export function migrateRules(old: Table, next: Table): { table: Table; dropped: 
 }
 // TASK-002 / INS-002, CHG-004 / REQ-012 / API-003 inspect: filter by chosen partitions; unchosen conditions stay open.
 // always = the rule applies to every input in the chosen range. uncovered = inputs in the range with no rule (null: not determined).
-export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null } {
+export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null; conflict: boolean } {
   assertValid(t);
-  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n };
+  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n, conflict: false };
   const region: Cube = t.conditions.map(c => { const i = c.partitions.findIndex(p => p.id === picks[c.id]); return i < 0 ? fullMask(c) : 1n << BigInt(i); });
   const rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[] = [];
   let rest: Cube[] | null = [region], work = 0;
@@ -462,5 +449,9 @@ export function inspect(t: Table, picks: Record<string, string>): { total: bigin
     rules.push({ index, ruleId: r.id, directives: clone(r.directives), always: left.length === 0 });
     for (const c of cubes) { if (!rest) break; work += rest.length; rest = rest.flatMap(a => subtractCube(a, c)); if (rest.length > 200_000 || work > 2_000_000) rest = null; }
   }
-  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered: rest ? rest.reduce((n, c) => n + cubeSize(c), 0n) : null };
+  // TASK-004: do two rules with different outputs meet inside the chosen range?
+  const inRange = rules.map(r => ({ key: stable(normalizedDirectives(t, r.directives)), cubes: ruleCubes(t, t.rules[r.index]).filter(c => !cubesDisjoint(c, region)).map(c => c.map((m, k) => m & region[k])) }));
+  let conflict = false;
+  for (let i = 0; i < inRange.length && !conflict; i++) for (let j = i + 1; j < inRange.length && !conflict; j++) if (inRange[i].key !== inRange[j].key && !rulesDisjoint(inRange[i].cubes, inRange[j].cubes)) conflict = true;
+  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered: rest ? rest.reduce((n, c) => n + cubeSize(c), 0n) : null, conflict };
 }

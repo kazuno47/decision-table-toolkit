@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyTable, generate, clone, decode, encode, compareDecimal, day, validate, count, atoms, proposeMerges, applyCandidate, verifyEquivalent, trace, patternCount, diagnose, regeneratePreserving, expandRows, type Table, type Condition } from '../src/core.ts';
+import { emptyTable, generate, clone, decode, encode, compareDecimal, day, validate, count, atoms, proposeMerges, applyCandidate, verifyEquivalent, trace, results, patternCount, diagnose, regeneratePreserving, expandRows, type Table, type Condition } from '../src/core.ts';
 import { checkShape, documentSchema } from '../src/schema.ts';
 function fixture(n = 2): Table {
   const t = emptyTable(); t.conditions = Array.from({ length: n }, (_, i) => ({ id: `c${i}`, name: `C${i}`, type: 'boolean', partitions: [{ id: `c${i}t`, label: 'true', kind: 'values', values: [true] }, { id: `c${i}f`, label: 'false', kind: 'values', values: [false] }] }));
@@ -69,13 +69,16 @@ test('diagonal inputs retain OR structure without broadening into a rectangle', 
   assert.equal(verifyEquivalent(t, after).equal, true);
   const broadened = clone(after); broadened.rules[0].anyOf = [{ selections: t.conditions.map(c => ({ conditionId: c.id, partitionIds: c.partitions.map(p => p.id) })) }]; assert.equal(verifyEquivalent(t, broadened).equal, false);
 });
-test('two identical matches cannot be collapsed into a single action occurrence', () => {
-  const t = setAll(fixture(1)); t.rules = [t.rules[0], { ...clone(t.rules[0]), id: 'duplicate' }]; assert.equal(trace(t, atoms(t)[0]).length, 2); assert.equal(proposeMerges(t).length, 0);
+test('two identical rules give one result and collapse into one rule (INS-004)', () => {
+  const t = setAll(fixture(1)); t.rules = [t.rules[0], { ...clone(t.rules[0]), id: 'duplicate' }]; assert.equal(trace(t, atoms(t)[0]).length, 2); assert.equal(results(t, atoms(t)[0]).length, 1);
+  const cs = proposeMerges(t); assert.equal(cs.length, 1); const merged = applyCandidate(t, cs[0]); assert.equal(merged.rules.length, 1); assert.equal(verifyEquivalent(t, merged).equal, true);
 });
-test('non-adjacent matching rules cannot reorder effects via grouping', () => {
+test('rules with the same result merge across a contradicting rule, and the contradiction stays reported', () => {
   const t = setAll(fixture(1)); const first = clone(t.rules[0]);
   t.rules = [first, { ...clone(first), id: 'middle', directives: [{ outputId: 'o', state: 'set', value: '2' }] }, { ...clone(first), id: 'last' }];
-  assert.equal(proposeMerges(t).length, 0);
+  assert.ok(diagnose(t).some(d => d.level === 'error' && d.message.includes('食い違')));
+  const cs = proposeMerges(t); assert.equal(cs.length, 1); const merged = applyCandidate(t, cs[0]); assert.deepEqual(merged.rules.map(r => r.id), [first.id, 'middle']);
+  assert.equal(verifyEquivalent(t, merged).equal, true); assert.ok(diagnose(merged).some(d => d.level === 'error' && d.message.includes('食い違')));
 });
 test('equivalence budgets and stale candidate protection fail closed', () => {
   const t = setAll(fixture(2)); const c = proposeMerges(t)[0]; const changed = clone(t); changed.title = '別の版'; assert.throws(() => applyCandidate(changed, c), /失効/);
@@ -83,8 +86,8 @@ test('equivalence budgets and stale candidate protection fail closed', () => {
 });
 test('unfinished outputs cannot become approved merge candidates', () => { assert.equal(proposeMerges(fixture()).length, 0); });
 test('equivalent decimal result encodings do not block safe merge', () => { const t = setAll(fixture(1), '1.0'); t.rules[1].directives[0] = { outputId: 'o', state: 'set', value: '1.00' }; assert.equal(proposeMerges(t).length, 1); });
-test('coverage diagnosis distinguishes missing rules from intentional multiple hits', () => {
-  const t = setAll(fixture(1)); t.rules = [t.rules[0], { ...clone(t.rules[0]), id: 'd' }]; const ds = diagnose(t); assert.ok(ds.some(d => d.message.includes('規則がありません'))); assert.ok(ds.some(d => d.level === 'info' && d.message.includes('多重適合')));
+test('coverage diagnosis distinguishes missing rules from harmless same-result overlap', () => {
+  const t = setAll(fixture(1)); t.rules = [t.rules[0], { ...clone(t.rules[0]), id: 'd' }]; const ds = diagnose(t); assert.ok(ds.some(d => d.message.includes('規則がありません'))); assert.ok(ds.some(d => d.level === 'info' && d.message.includes('同じ結果で重なっています'))); assert.equal(ds.some(d => d.level === 'error'), false);
 });
 test('adding a condition preserves result values across its new partitions', () => {
   const t = setAll(fixture(1)); const next = clone(t); next.rules = []; next.conditions.push(clone(fixture(2).conditions[1])); const migration = regeneratePreserving(t, next);
