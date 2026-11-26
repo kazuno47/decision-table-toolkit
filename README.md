@@ -4,9 +4,9 @@
 
 ## 起動
 
-[ビルド済みHTML](releases/decision-table-toolkit-v0.1.0.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・統合・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
+[ビルド済みHTML（v0.2.0）](releases/decision-table-toolkit-v0.2.0.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・統合・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
 
-ビルド済みHTML（v0.1.0）には、下記の「＋ 規則」による規則の記述、条件の「すべて」、「結果を確認」、10,000組み合わせを超える表の検証は含まれていません。これらはソースからビルドすると利用できます。
+v0.2.0では、規則を1行ずつ書く方式、条件の「すべて」（スキーマ1.1）、10,000組み合わせを超える表の検証・統合、「結果を確認」を追加しました。初版の[v0.1.0](releases/decision-table-toolkit-v0.1.0.html)も残しています。v0.1.0はスキーマ1.1のJSONを読み込めません。
 
 1. 「＋ 条件」でBoolean / Enum / Number / String / Dateと有限の候補・区間を定義します。
 2. 「＋ 動作・結果」で動作の実行有無または型付き結果を定義します。
@@ -59,4 +59,4 @@ npm run build:offline
 
 型検査と60テストは成功しています。対象を絞る場合は `node --test tests/core.test.ts`、`node --test tests/files.test.ts`、`node --test tests/app.test.ts`、`node --test tests/rules.test.ts` を利用します。`npm test` には単一HTMLの構文・資産同梱検査も含まれます。
 
-公開版にはアプリ・テスト・サンプル・交換形式・ビルド済みHTMLを含みます。開発用の内部資料は含みません。初版のHTMLは上記の検証用ビルドで生成しています。
+公開版にはアプリ・テスト・サンプル・交換形式・ビルド済みHTMLを含みます。開発用の内部資料は含みません。v0.2.0のHTMLは通常ビルド（esbuild）で生成しています。v0.1.0は検証用ビルドで生成したものです。v0.2.0は起動と画面操作をlocalhost経由で確認しており、`file://` で開いてのファイル保存・再読込・外部変更の確認はまだ行っていません。
