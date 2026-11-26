@@ -398,3 +398,19 @@ export function migrateRules(old: Table, next: Table): { table: Table; dropped: 
   const table: Table = { ...clone(next), schemaVersion: omitted || old.schemaVersion === '1.1' || next.schemaVersion === '1.1' ? '1.1' : '1.0', rules };
   assertValid(table); return { table, dropped, widened, narrowed };
 }
+// TASK-002 / INS-002, CHG-004 / REQ-012 / API-003 inspect: filter by chosen partitions; unchosen conditions stay open.
+// always = the rule applies to every input in the chosen range. uncovered = inputs in the range with no rule (null: not determined).
+export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null } {
+  assertValid(t);
+  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n };
+  const region: Cube = t.conditions.map(c => { const i = c.partitions.findIndex(p => p.id === picks[c.id]); return i < 0 ? fullMask(c) : 1n << BigInt(i); });
+  const rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[] = [];
+  let rest: Cube[] | null = [region], work = 0;
+  for (let index = 0; index < t.rules.length; index++) {
+    const r = t.rules[index], cubes = ruleCubes(t, r).filter(c => !cubesDisjoint(c, region)); if (!cubes.length) continue;
+    let left: Cube[] = [region]; for (const c of cubes) { left = left.flatMap(a => subtractCube(a, c)); if (left.length > 10_000) break; }
+    rules.push({ index, ruleId: r.id, directives: clone(r.directives), always: left.length === 0 });
+    for (const c of cubes) { if (!rest) break; work += rest.length; rest = rest.flatMap(a => subtractCube(a, c)); if (rest.length > 200_000 || work > 2_000_000) rest = null; }
+  }
+  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered: rest ? rest.reduce((n, c) => n + cubeSize(c), 0n) : null };
+}
