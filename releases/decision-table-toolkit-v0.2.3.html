@@ -618,8 +618,8 @@
     }
     return pieces;
   }
-  function patterns(t, chunkLimit = 6, workBudget = 3e6) {
-    const pieces = partition2(t, null, 2e5, workBudget);
+  function patterns(t, chunkLimit = 6) {
+    const pieces = partition2(t);
     if (!pieces) return null;
     const scalar2 = t.outputs.map(() => /* @__PURE__ */ new Map());
     for (const r of t.rules) t.outputs.forEach((_, o) => {
@@ -747,50 +747,6 @@
       outputs
     };
   }
-  function separate(t, outputs) {
-    const keep = new Set(outputs), rules = t.rules.filter((r) => outputs.some((o) => valueKey(t, r, o) !== null));
-    const used = new Set(rules.flatMap((r) => r.anyOf.flatMap((c) => c.selections.map((x) => x.conditionId))));
-    return {
-      ...clone(t),
-      schemaVersion: "1.1",
-      conditions: clone(t.conditions.filter((c) => used.has(c.id))),
-      outputs: clone(t.outputs.filter((_, i) => keep.has(i))),
-      rules: rules.map((r) => ({ id: r.id, anyOf: clone(r.anyOf), directives: clone(r.directives.filter((_, i) => keep.has(i))) }))
-    };
-  }
-  function actionGroups(t) {
-    const parent = t.outputs.map((_, i) => i), find = (i) => parent[i] === i ? i : parent[i] = find(parent[i]), specified = /* @__PURE__ */ new Set();
-    for (const r of t.rules) {
-      const set = t.outputs.flatMap((_, o) => valueKey(t, r, o) !== null ? [o] : []);
-      set.forEach((o) => {
-        specified.add(o);
-        parent[find(o)] = find(set[0]);
-      });
-    }
-    const groups = /* @__PURE__ */ new Map();
-    [...specified].sort((a, b) => a - b).forEach((o) => {
-      const k = find(o);
-      groups.set(k, [...groups.get(k) ?? [], o]);
-    });
-    return [...groups.values()];
-  }
-  function decisionTables(t, maxColumns = 200) {
-    const size = (found) => found ? found.reduce((n, x) => n + x.chunkCount, 0) : Infinity;
-    const whole = patterns(t, 1e3, count(t) <= 100000n ? 4e5 : 3e4), all = t.outputs.map((_, i) => i);
-    if (whole && size(whole) <= maxColumns) return { combined: true, parts: [{ outputs: all, table: t, found: whole, columns: size(whole) }] };
-    const parts = [];
-    const add = (outputs) => {
-      const table2 = separate(t, outputs), found = table2.conditions.length ? patterns(table2, 1e3) : [];
-      parts.push({ outputs, table: table2, found, columns: size(found) });
-      return found !== null && size(found) <= maxColumns;
-    };
-    for (const group of actionGroups(t)) {
-      if (add(group) || group.length === 1) continue;
-      parts.pop();
-      group.forEach((o) => add([o]));
-    }
-    return { combined: false, parts };
-  }
 
   // src/files.ts
   var FileCoordinator = class _FileCoordinator {
@@ -892,18 +848,14 @@
     if (decisionCache?.key === key) return decisionCache;
     if (!decisionAuto && !force) return null;
     const started = Date.now();
-    let found = { combined: true, parts: [] };
+    let found = null;
     try {
-      found = decisionTables(table);
+      found = patterns(table, 1e3);
     } catch {
+      found = null;
     }
     decisionAuto = Date.now() - started < 700;
-    let cov = { complete: false, uncovered: 0n };
-    try {
-      cov = coverage(table, 2e5, 25e4);
-    } catch {
-    }
-    decisionCache = { key, ...found, cov };
+    decisionCache = { key, found };
     return decisionCache;
   }
   function ruleText(r) {
@@ -1494,41 +1446,26 @@
       }, "primary"));
       return;
     }
-    if (!hit.parts.length) {
-      host.append(element("p", "\u52D5\u4F5C\u3092\u6307\u5B9A\u3057\u3066\u3044\u308B\u898F\u5247\u304C\u306A\u3044\u305F\u3081\u3001\u6C7A\u5B9A\u8868\u306F\u3042\u308A\u307E\u305B\u3093\u3002", "muted"));
-      return;
-    }
-    const cov = hit.cov, total = count(table);
-    if (hit.combined) host.append(element("p", "\u4E0A\u306E\u898F\u5247\u306E\u8A18\u8FF0\u304B\u3089\u6C42\u3081\u305F\u6C7A\u5B9A\u8868\u3067\u3059\u3002\u6761\u4EF6\u3068\u52D5\u4F5C\u3092\u884C\u3001\u898F\u5247\u3092\u5217\u306B\u66F8\u3044\u3066\u3044\u307E\u3059\u3002\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306E\u3069\u306E1\u3064\u3082\u3001\u305F\u30601\u3064\u306E\u898F\u5247\uFF08\u5217\uFF09\u3067\u3060\u3051\u6E80\u8DB3\u3055\u308C\u307E\u3059\u3002\u898F\u5247\u756A\u53F7\u3092\u62BC\u3059\u3068\u3001\u305D\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3059\u3002", "muted"));
-    else host.append(element("p", `\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u304C${total.toLocaleString("ja-JP")}\u4EF6\u3042\u308A\u30011\u3064\u306E\u6C7A\u5B9A\u8868\u306B\u306F\u66F8\u304D\u5207\u308C\u306A\u3044\u305F\u3081\u3001\u4E92\u3044\u306B\u95A2\u4FC2\u3057\u306A\u3044\u52D5\u4F5C\u3054\u3068\u306B${hit.parts.length}\u500B\u306E\u6C7A\u5B9A\u8868\u306B\u5206\u96E2\u3057\u3066\u3044\u307E\u3059\uFF08JIS X 0125 \u9644\u5C5E\u66F81\u300C\u8868\u306E\u5206\u96E2\u300D\uFF09\u3002\u5404\u8868\u306B\u306F\u3001\u305D\u306E\u52D5\u4F5C\u306B\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3060\u3051\u304C\u4E26\u3073\u307E\u3059\u3002\u3069\u306E\u8868\u3082\u3001\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306E\u3069\u306E1\u3064\u3082\u3001\u305F\u30601\u3064\u306E\u898F\u5247\uFF08\u5217\uFF09\u3067\u3060\u3051\u6E80\u8DB3\u3055\u308C\u307E\u3059\u3002\u898F\u5247\u756A\u53F7\u3092\u62BC\u3059\u3068\u3001\u305D\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3059\u3002`, "muted"));
-    hit.parts.forEach((part, order) => drawDecision(host, part, hit.combined, order));
-    host.append(element("p", !cov.complete ? "\u5B8C\u5099\u6027\u306F\u3001\u3053\u306E\u8868\u3067\u306F\u8A08\u7B97\u306B\u6642\u9593\u304C\u304B\u304B\u308B\u305F\u3081\u3001\u3053\u3053\u306B\u306F\u8868\u793A\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u300C\u691C\u8A3C\u300D\u3067\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002" : cov.uncovered === 0n ? `\u5B8C\u5099\u6027\uFF1A\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${total.toLocaleString("ja-JP")}\u4EF6\u306E\u3059\u3079\u3066\u306B\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u3059\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u3059\uFF09\u3002` : `\u5B8C\u5099\u6027\uFF1A\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${total.toLocaleString("ja-JP")}\u4EF6\u306E\u3046\u3061${cov.uncovered.toLocaleString("ja-JP")}\u4EF6\u306B\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002\u300C\u691C\u8A3C\u300D\u3067\u7BC4\u56F2\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002`, cov.complete && cov.uncovered === 0n ? "check-summary" : cov.complete ? "check-empty" : "muted"));
-  }
-  function drawDecision(host, part, combined, order) {
-    const sub = part.table, found = part.found, names = sub.outputs.map((o) => o.name).join("\u30FB");
-    if (!combined) host.append(element("h3", `\u6C7A\u5B9A\u8868 ${order + 1}\uFF1A${names}`));
+    const found = hit.found;
     if (!found) {
-      host.append(element("p", `\u300C${names}\u300D\u306E\u6C7A\u5B9A\u8868\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u8868\u793A\u3067\u304D\u307E\u305B\u3093\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u898F\u5247\u3092\u7D50\u5408\u3057\u3066\u304B\u3089\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002`, "check-empty"));
+      host.append(element("p", "\u6C7A\u5B9A\u8868\uFF08\u5358\u9069\u5408\uFF09\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u8868\u793A\u3067\u304D\u307E\u305B\u3093\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u898F\u5247\u3092\u7D50\u5408\u3057\u3066\u304B\u3089\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "check-empty"));
       return;
     }
-    if (!sub.conditions.length) {
-      host.append(element("p", `\u300C${names}\u300D\u306F\u3001\u6761\u4EF6\u306B\u3088\u3089\u305A\u6307\u5B9A\u3055\u308C\u3066\u3044\u307E\u3059\uFF08\u6761\u4EF6\u6307\u5B9A\u306E\u306A\u3044\u898F\u5247\u304C\u3042\u308A\u307E\u3059\uFF09\u3002`, "muted"));
-      return;
-    }
-    const show = (v, at) => sub.outputs[at].kind === "action" ? v ? "X" : "\u2212" : v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(v);
-    const columns = found.flatMap((x) => x.chunks.map((chunk) => ({ pattern: x, chunk }))), shown = columns.slice(0, 200);
-    const gap = (col) => combined && !col.pattern.satisfied;
-    const keyOf = (chunk) => `${order}:${stable(chunk.selections)}`, wrap = element("div", "", "jis-wrap"), grid = element("table", "", "jis-table"), head = element("tr"), thead = element("thead"), body = element("tbody");
-    const mark = (col, extra = "") => `${gap(col) ? "gap " : ""}${keyOf(col.chunk) === pickedColumn ? "picked " : ""}${extra}`.trim();
+    const show = (v, at) => table.outputs[at].kind === "action" ? v ? "X" : "\u2212" : v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(v);
+    const columns = found.flatMap((x) => x.chunks.map((chunk) => ({ pattern: x, chunk }))), all = found.reduce((n, x) => n + x.chunkCount, 0), shown = columns.slice(0, 200);
+    const total = count(table), covered = found.filter((x) => x.satisfied).reduce((n, x) => n + x.size, 0n), kinds = found.filter((x) => x.satisfied).length;
+    host.append(element("p", `\u4E0A\u306E\u898F\u5247\u306E\u8A18\u8FF0\u304B\u3089\u6C42\u3081\u305F\u6C7A\u5B9A\u8868\u3067\u3059\u3002\u6761\u4EF6\u3068\u52D5\u4F5C\u3092\u884C\u3001\u898F\u5247\u3092\u5217\u306B\u66F8\u3044\u3066\u3044\u307E\u3059\u3002\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306E\u3069\u306E1\u3064\u3082\u3001\u305F\u30601\u3064\u306E\u898F\u5247\uFF08\u5217\uFF09\u3067\u3060\u3051\u6E80\u8DB3\u3055\u308C\u307E\u3059\u3002\u898F\u5247\u306F${all}\u500B\u3001\u52D5\u4F5C\u6307\u5B9A\u306E\u7D44\u5408\u305B\u306F${kinds}\u901A\u308A\u3067\u3059\u3002\u898F\u5247\u756A\u53F7\u3092\u62BC\u3059\u3068\u3001\u305D\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3059\u3002`, "muted"));
+    const keyOf = (chunk) => stable(chunk.selections), wrap = element("div", "", "jis-wrap"), grid = element("table", "", "jis-table"), head = element("tr"), thead = element("thead"), body = element("tbody");
+    const mark = (col, extra = "") => `${col.pattern.satisfied ? "" : "gap "}${keyOf(col.chunk) === pickedColumn ? "picked " : ""}${extra}`.trim();
     head.append(element("th", "\u898F\u5247"));
     shown.forEach((col, i) => {
-      const th = element("th", "", mark(col)), pick = button(`${i + 1}${gap(col) ? " *" : ""}`, () => {
+      const th = element("th", "", mark(col)), pick = button(`${i + 1}${col.pattern.satisfied ? "" : " *"}`, () => {
         checkPicks = {};
         for (const sel of col.chunk.selections) checkPicks[sel.conditionId] = sel.partitionIds[0];
         pickedColumn = keyOf(col.chunk);
         renderDecision();
         renderCheck();
-        message(`\u6C7A\u5B9A\u8868${combined ? "" : ` ${order + 1}`}\u306E\u898F\u5247${i + 1}\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
+        message(`\u6C7A\u5B9A\u8868\u306E\u898F\u5247${i + 1}\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
         const target = $("check");
         target.scrollIntoView?.({ behavior: "smooth", block: "center" });
       }, "column-button");
@@ -1538,7 +1475,7 @@
     });
     thead.append(head);
     grid.append(thead);
-    for (const c of sub.conditions) {
+    for (const c of table.conditions) {
       const tr = element("tr");
       tr.append(element("th", c.name));
       for (const col of shown) {
@@ -1547,24 +1484,24 @@
       }
       body.append(tr);
     }
-    sub.outputs.forEach((o, at) => {
+    table.outputs.forEach((o, at) => {
       const tr = element("tr", "", at === 0 ? "divider" : "");
       tr.append(element("th", o.name));
       for (const col of shown) {
         const values = col.pattern.outputs[at].values;
-        tr.append(element("td", gap(col) ? "" : values.length === 0 ? "\u2212" : values.length > 1 ? `\u4E0D\u4E00\u81F4\uFF08${values.map((v) => show(v, at)).join("\uFF0F")}\uFF09` : show(values[0], at), mark(col, values.length > 1 ? "clash" : "")));
+        tr.append(element("td", !col.pattern.satisfied ? "" : values.length === 0 ? "\u2212" : values.length > 1 ? `\u4E0D\u4E00\u81F4\uFF08${values.map((v) => show(v, at)).join("\uFF0F")}\uFF09` : show(values[0], at), mark(col, values.length > 1 ? "clash" : "")));
       }
       body.append(tr);
     });
-    const sizes = element("tr", "", sub.outputs.length ? "count" : "count divider");
+    const sizes = element("tr", "", table.outputs.length ? "count" : "count divider");
     sizes.append(element("th", "\u898F\u5247\u6570\uFF08\u7D44\u5408\u305B\u6570\uFF09"));
     shown.forEach((col) => sizes.append(element("td", col.chunk.size.toLocaleString("ja-JP"), mark(col))));
     body.append(sizes);
     grid.append(body);
     wrap.append(grid);
     host.append(wrap);
-    const all = part.columns, sum = columns.reduce((n, c) => n + c.chunk.size, 0n);
-    host.append(element("p", `\u898F\u5247${all}\u500B\u3002\u898F\u5247\u6570\u306E\u691C\u67FB\uFF1A\u5404\u898F\u5247\u306E\u7D44\u5408\u305B\u6570\u306E\u5408\u8A08\u306F${sum.toLocaleString("ja-JP")}\u3067\u3001${combined ? "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B" : "\u3053\u306E\u8868\u306E\u6761\u4EF6\u306E\u5168\u7D44\u5408\u305B"}${count(sub).toLocaleString("ja-JP")}\u4EF6\u3068${sum === count(sub) ? "\u4E00\u81F4\u3057\u307E\u3059" : "\u4E00\u81F4\u3057\u307E\u305B\u3093"}\u3002${all > shown.length ? `\u5148\u982D${shown.length}\u898F\u5247\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\u3002` : ""}${combined && columns.some((c) => !c.pattern.satisfied) ? "\u300C*\u300D\u306E\u5217\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u306A\u3044\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u3059\u3002" : ""}`, "muted"));
+    if (all > shown.length) host.append(element("p", `\u5148\u982D${shown.length}\u898F\u5247\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\uFF08\u5168${all}\u898F\u5247\uFF09\u3002`, "muted"));
+    host.append(element("p", covered === total ? `\u898F\u5247\u6570\u306E\u691C\u67FB\uFF1A\u5404\u898F\u5247\u306E\u7D44\u5408\u305B\u6570\u306E\u5408\u8A08\u306F${total.toLocaleString("ja-JP")}\u3067\u3001\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u3068\u4E00\u81F4\u3057\u307E\u3059\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u3059\uFF09\u3002` : `\u898F\u5247\u6570\u306E\u691C\u67FB\uFF1A\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308B\u7D44\u5408\u305B\u306F${covered.toLocaleString("ja-JP")}\u3067\u3001\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${total.toLocaleString("ja-JP")}\u306B\u8DB3\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002\u300C*\u300D\u306E\u5217\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u306A\u3044\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u3059\u3002`, covered === total ? "check-summary" : "check-empty"));
     if (found.some((x) => x.outputs.some((o) => o.values.length > 1))) host.append(element("p", "\u300C\u4E0D\u4E00\u81F4\u300D\u306E\u6B04\u306F\u3001\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u6642\u306B\u6E80\u8DB3\u3055\u308C\u308B\u7D44\u5408\u305B\u3067\u3059\u3002\u300C\u691C\u8A3C\u300D\u3067\u898F\u5247\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "check-empty"));
   }
   function renderPanel() {
@@ -1681,7 +1618,7 @@
       counts.append(item);
     }
     const pattern = element("div"), hit = table.rules.length ? singleHit() : null;
-    pattern.append(element("strong", !table.rules.length ? "\u2014" : !hit ? "\u672A\u66F4\u65B0" : hit.combined && hit.parts[0]?.found ? String(hit.parts[0].found.filter((x) => x.satisfied).length) : `${hit.parts.length}\u8868`), element("span", !hit || hit.combined ? "\u52D5\u4F5C\u6307\u5B9A\u306E\u7D44\u5408\u305B" : "\u6C7A\u5B9A\u8868\uFF08\u5206\u96E2\uFF09"));
+    pattern.append(element("strong", !table.rules.length ? "\u2014" : !hit ? "\u672A\u66F4\u65B0" : !hit.found ? "\u672A\u7B97\u51FA" : String(hit.found.filter((x) => x.satisfied).length)), element("span", "\u52D5\u4F5C\u6307\u5B9A\u306E\u7D44\u5408\u305B"));
     counts.append(pattern);
     const defs = $("definition-list");
     defs.replaceChildren();
