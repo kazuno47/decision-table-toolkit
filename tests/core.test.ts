@@ -35,7 +35,7 @@ test('strict JSON rejects unknown root/nested fields, future versions, bad refs 
 });
 test('unknown properties on union branches and malicious keys are never ignored', () => {
   const t = fixture(1); const bad = JSON.parse(JSON.stringify(t)); bad.rules[0].directives[0].value = 'hidden'; assert.throws(() => decode(JSON.stringify(bad)));
-  const raw = JSON.stringify(t).replace('"schemaVersion":"1.0"', '"schemaVersion":"1.0","__proto__":{"polluted":true}'); assert.throws(() => decode(raw)); assert.equal(({} as any).polluted, undefined);
+  const raw = JSON.stringify(t).replace('"schemaVersion":"1.1"', '"schemaVersion":"1.1","__proto__":{"polluted":true}'); assert.ok(raw.includes('__proto__')); assert.throws(() => decode(raw)); assert.equal(({} as any).polluted, undefined);
 });
 test('JSON roundtrip preserves unset, false, zero and empty string distinctions', () => {
   const t = fixture(1); t.outputs = [{ id: 'b', name: 'bool', kind: 'result', type: 'boolean' }, { id: 'n', name: 'num', kind: 'result', type: 'number' }, { id: 's', name: 'str', kind: 'result', type: 'string' }, { id: 'u', name: 'unset', kind: 'action' }];
@@ -104,7 +104,7 @@ test('permuting arbitrary source rule order never changes verified merge semanti
     t.rules = t.rules.slice(n % 8).concat(t.rules.slice(0, n % 8)); for (const c of proposeMerges(t)) assert.equal(verifyEquivalent(t, applyCandidate(t, c)).equal, true);
   }
 });
-test('published schema is a closed draft-07 document', () => { assert.equal(documentSchema.additionalProperties, false); assert.equal(documentSchema.properties?.schemaVersion.const, '1.0'); });
+test('published schema is a closed draft-07 document', () => { assert.equal(documentSchema.additionalProperties, false); assert.deepEqual(documentSchema.properties?.schemaVersion.enum, ['1.0', '1.1']); });
 
 test('expanded compressed table maps each atom to its matching rule and ordered outcomes', () => {
   const t = setAll(fixture(2)); const merged = applyCandidate(t, proposeMerges(t)[0]); const rows = expandRows(merged);
