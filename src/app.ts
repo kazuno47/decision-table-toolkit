@@ -41,7 +41,7 @@ let compressed: { table: Table; steps: number; base: string } | null = null;
 let checkPicks: Record<string, string> = {};
 let pending: Observation | null = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
 const root = document.getElementById('app')!;
-root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2.2</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と動作をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">規則の記述 ／ 表見出し</label><input id="title" aria-label="表見出し" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">この表は、複数の規則が同じ条件の組合せで満足される書き方（多重適合）ができます。動作は規則ごとに「X（実行する）」か「−（実行しない）」、または値で指定し、満足された規則の動作指定を動作ごとに合わせて解釈します。JIS X 0125 が定める決定表は単適合（条件の組合せごとに満足される規則が1つ）で、この下の表は規則を記述するための作業用で、規則には関係する条件だけを書きます。規格の形の決定表は、その下の「決定表（単適合）」に別表として表示します。同じ動作に異なる値を指定する規則が同時に満足される場合は「検証」で指摘します。規則の順番は意味をもちません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="side-panel" class="side-panel" hidden></section><section id="decision" class="check-panel" hidden></section><section id="check" class="check-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と、条件のとり得る値を定義します。動作を定義します（X／−で指定する制限指定、または語句・値で指定する拡張指定）。</li><li>「＋ 規則」で規則を1列ずつ書きます。条件指定は値を選ぶか、無関係なら「−」のままにします。動作指定は、その規則で実行する動作に「X」または値を入れ、関係しない動作は「−」のままにします。条件の値が少ない表は、条件指定の全組合せの規則を作成することもできます。</li><li>「検証」で、完備性（条件指定のすべての組合せに満足される規則があるか）と、動作指定の不一致を確認します。</li><li>表の下の「決定表の解釈」で条件の値を選ぶと、実行される動作を確認できます。その上の「決定表（単適合）」は、規則の記述から求めた単適合決定表です（条件・動作が行、規則が列）。規則番号を押すと、その条件指定が「決定表の解釈」に入ります。</li><li>「簡単化」で、動作指定が同じ規則を結合し、条件指定を「−」に置き換えて整理します。等価性を確認できた候補だけを表示し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
+root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2.2</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と動作をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">規則の記述 ／ 表見出し</label><input id="title" aria-label="表見出し" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">この表は、複数の規則が同じ条件の組合せで満足される書き方（多重適合）ができます。規則には、関係する条件と、実行する動作（「X」または値）だけを書きます。満足された規則の動作指定を動作ごとに合わせて解釈します。JIS X 0125 が定める決定表は単適合（条件の組合せごとに満足される規則が1つ）で、この下の表は規則を記述するための作業用で、規則には関係する条件だけを書きます。規格の形の決定表は、その下の「決定表（単適合）」に別表として表示します。同じ動作に異なる値を指定する規則が同時に満足される場合は「検証」で指摘します。規則の順番は意味をもちません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="side-panel" class="side-panel" hidden></section><section id="decision" class="check-panel" hidden></section><section id="check" class="check-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と、条件のとり得る値を定義します。動作を定義します（X／−で指定する制限指定、または語句・値で指定する拡張指定）。</li><li>「＋ 規則」で規則を1つずつ書きます。条件指定は、関係する条件だけ値を選びます。動作指定は、その規則で実行する動作にだけ「X」または値を入れます。書かなかった条件と動作は、決定表では「−」になります。条件の値が少ない表は、条件指定の全組合せの規則を作成することもできます。</li><li>「検証」で、完備性（条件指定のすべての組合せに満足される規則があるか）と、動作指定の不一致を確認します。</li><li>表の下の「決定表の解釈」で条件の値を選ぶと、実行される動作を確認できます。その上の「決定表（単適合）」は、規則の記述から求めた単適合決定表です（条件・動作が行、規則が列）。規則番号を押すと、その条件指定が「決定表の解釈」に入ります。</li><li>「簡単化」で、動作指定が同じ規則を結合し、すべての値がそろった条件を条件指定から外して整理します。等価性を確認できた候補だけを表示し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
 const $ = (id: string) => document.getElementById(id)!;
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; }
 function button(text: string, action: () => unknown, cls = ''): HTMLButtonElement { const b = element('button', text, cls); b.type = 'button'; b.addEventListener('click', () => void run(action)); return b; }
@@ -84,7 +84,7 @@ function applyDefinitions(next: Table, close: () => void) {
 // REQ-004: full generation stays available for small tables; existing results are carried per combination.
 function regenerateDialog() {
   const migrated = regeneratePreserving(table, { ...clone(table), rules: [] }), m = modal('全組合せの規則を作り直す');
-  m.form.append(element('p', `現在の規則${table.rules.length}件を、条件指定の全組合せ${count(table)}件それぞれの規則に作り直します。動作指定を引き継げない組合せ：${migrated.affected}件。「−」やORで結合した規則の形は失われます。`));
+  m.form.append(element('p', `現在の規則${table.rules.length}件を、条件指定の全組合せ${count(table)}件それぞれの規則に作り直します。動作指定を引き継げない組合せ：${migrated.affected}件。条件を省いた規則やORで結合した規則の形は失われます。`));
   const actions = element('div', '', 'modal-actions');
   actions.append(button('キャンセル', m.close), button('作り直す', () => { commit(migrated.table, '条件指定の全組合せの規則を作り直しました。'); m.close(); }, 'primary')); m.form.append(actions);
 }
@@ -142,13 +142,13 @@ function outputDialog(original?: Output) {
     // Output-only changes preserve rule order, OR clauses and matching multiplicity.
     next.rules.forEach(r => { r.directives = next.outputs.map(output => { const before = table.outputs.find(x => x.id === output.id); const d = r.directives.find(d => d.outputId === output.id); return before && stable({ ...before, name: '' }) === stable({ ...output, name: '' }) && d ? d : { outputId: output.id, state: 'unset' }; }); });
     assertValid(next);
-    if (original && table.rules.length && !confirm('型や候補の変更で保持できない動作指定は「−」に戻ります。変更を反映しますか？')) return;
+    if (original && table.rules.length && !confirm('型や候補の変更で保持できない動作指定は空欄に戻ります。変更を反映しますか？')) return;
     commit(next); m.close();
   }, 'primary')); m.form.append(actions);
 }
 function ruleConditions(id: string) {
   const r = table.rules.find(r => r.id === id)!; const m = modal('規則の条件指定を編集（OR / AND）'), list = element('div');
-  m.form.append(element('p', 'ブロック内の条件指定はAND、ブロック同士はORです。「−」は、その条件がこの規則には無関係であることを示し、あとから値を追加しても対象に含みます。値を選んだ条件は、選んだ値のときだけ満足されます。'), list);
+  m.form.append(element('p', 'この規則に関係する条件だけ、値を選んでください。「指定しない」の条件は、この規則には無関係です（あとから値を追加しても変わりません）。ブロック内の条件指定はAND、ブロック同士はORです。'), list);
   const clauses: { rows: { all: HTMLInputElement; pick: HTMLSelectElement }[]; element: HTMLElement }[] = [];
   function add(c?: Clause) {
     const block = element('div', '', 'clause'), rows: { all: HTMLInputElement; pick: HTMLSelectElement }[] = []; list.append(block);
@@ -159,7 +159,7 @@ function ruleConditions(id: string) {
       Array.from(pick.options).forEach(o => { o.selected = chosen ? chosen.includes(o.value) : false; });
       all.checked = !chosen; pick.disabled = all.checked; all.onchange = () => { pick.disabled = all.checked; };
       pick.setAttribute('aria-label', `${condition.name}の値`);
-      line.append(element('strong', condition.name)); field('−（無関係）', all, line); line.append(pick); block.append(line); rows.push({ all, pick });
+      line.append(element('strong', condition.name)); field('指定しない', all, line); line.append(pick); block.append(line); rows.push({ all, pick });
     }
     const entry = { rows, element: block }; clauses.push(entry); block.append(button('このORブロックを削除', () => { clauses.splice(clauses.indexOf(entry), 1); block.remove(); }));
   }
@@ -169,7 +169,7 @@ function ruleConditions(id: string) {
     const next = clone(table); let omitted = false;
     next.rules.find(x => x.id === id)!.anyOf = clauses.map(c => ({ selections: table.conditions.flatMap((x, i) => {
       if (c.rows[i].all.checked) { omitted = true; return []; }
-      const ids = Array.from(c.rows[i].pick.selectedOptions).map(o => o.value); if (!ids.length) throw new Error(`「${x.name}」の値を1つ以上選ぶか、「−」にしてください`);
+      const ids = Array.from(c.rows[i].pick.selectedOptions).map(o => o.value); if (!ids.length) throw new Error(`「${x.name}」の値を1つ以上選ぶか、「指定しない」にしてください`);
       return [{ conditionId: x.id, partitionIds: ids }];
     }) }));
     if (omitted) next.schemaVersion = '1.1';
@@ -180,13 +180,13 @@ function outputControl(ruleId: string, output: Output, d: Directive) {
   const wrap = element('div', '', 'value-editor');
   const set = (value: Directive) => { const next = clone(table), r = next.rules.find(r => r.id === ruleId)!; r.directives[next.outputs.findIndex(o => o.id === output.id)] = value; commit(next, '値を反映しました'); };
   if (output.kind === 'action' || output.type === 'boolean') {
-    const s = select(output.kind === 'action' ? [['unset', '−'], ['true', 'X']] : [['unset', '−'], ['true', 'true'], ['false', 'false']], output.kind === 'action' ? (d.state === 'set' && d.value === true ? 'true' : 'unset') : d.state === 'unset' ? 'unset' : String(d.value)); // JIS X 0125 3.3: X = executed, − = not executed
+    const s = select(output.kind === 'action' ? [['unset', ''], ['true', 'X']] : [['unset', ''], ['true', 'true'], ['false', 'false']], output.kind === 'action' ? (d.state === 'set' && d.value === true ? 'true' : 'unset') : d.state === 'unset' ? 'unset' : String(d.value)); // a rule writes X only where it executes the action; blank = not specified (shown as − in the decision table)
     s.setAttribute('aria-label', output.name); s.onchange = () => void run(() => set(s.value === 'unset' ? { outputId: output.id, state: 'unset' } : { outputId: output.id, state: 'set', value: s.value === 'true' })); wrap.append(s);
   } else if (output.type === 'enum') {
-    const s = select([['unset', '−'], ...(output.values ?? []).map((v, i): [string, string] => [String(i), v === '' ? '（空文字）' : v])], d.state === 'unset' ? 'unset' : String((output.values ?? []).indexOf(d.value as string)));
+    const s = select([['unset', ''], ...(output.values ?? []).map((v, i): [string, string] => [String(i), v === '' ? '（空文字）' : v])], d.state === 'unset' ? 'unset' : String((output.values ?? []).indexOf(d.value as string)));
     s.setAttribute('aria-label', output.name); s.onchange = () => void run(() => set(s.value === 'unset' ? { outputId: output.id, state: 'unset' } : { outputId: output.id, state: 'set', value: output.values![Number(s.value)] })); wrap.append(s);
   } else {
-    const i = input(d.state === 'set' ? String(d.value) : ''); i.placeholder = d.state === 'unset' ? '−' : output.type === 'string' ? '（空文字）' : ''; i.setAttribute('aria-label', output.name);
+    const i = input(d.state === 'set' ? String(d.value) : ''); i.placeholder = d.state === 'unset' ? '' : output.type === 'string' ? '（空文字）' : ''; i.setAttribute('aria-label', output.name);
     i.onchange = () => void run(() => set({ outputId: output.id, state: 'set', value: i.value })); wrap.append(i);
     if (output.type === 'string' && d.state === 'unset') wrap.append(button('空文字', () => set({ outputId: output.id, state: 'set', value: '' }), 'tiny'));
     if (d.state === 'set') wrap.append(button('×', () => set({ outputId: output.id, state: 'unset' }), 'tiny'));
@@ -359,7 +359,7 @@ function renderPanel() {
     candidates.forEach(c => {
       const row = element('div', '', 'candidate'), sources = c.before.map(id => table.rules.find(r => r.id === id)!), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
       const toAll = c.replacement.anyOf.some(clause => table.conditions.some(x => !clause.selections.some(s => s.conditionId === x.id) && sources.some(r => r.anyOf.some(o => o.selections.some(s => s.conditionId === x.id)))));
-      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則を結合 → 1規則` : from > to ? `規則 ${numbers(c.before)} の条件指定を整理` : `規則 ${numbers(c.before)} の条件指定を「−」に`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '条件の集合の一致から等価性を証明' : `${c.checked}組合せで等価性確認`}${toAll ? ' ／ すべての値がそろった条件指定は「−」になります（あとで追加した値も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('結合する規則'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認して結合', () => reapply(applyCandidate(table, c), '承認した結合を反映し、残りの候補を再計算しました。'), 'primary'));
+      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則を結合 → 1規則` : from > to ? `規則 ${numbers(c.before)} の条件指定を整理` : `規則 ${numbers(c.before)} から、すべての値を選んだ条件を外す`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '条件の集合の一致から等価性を証明' : `${c.checked}組合せで等価性確認`}${toAll ? ' ／ すべての値がそろった条件は、条件指定から外します（無関係になり、あとで追加した値も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('結合する規則'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認して結合', () => reapply(applyCandidate(table, c), '承認した結合を反映し、残りの候補を再計算しました。'), 'primary'));
       host.append(row);
     });
     // Rules with an unset output are not merged (DAT-003/005); say so instead of leaving the list unexplained.
@@ -397,9 +397,9 @@ function render() {
   for (const o of table.outputs) { const chip = element('div', '', 'definition-chip output-chip'); chip.append(button(`${o.name} · ${o.kind === 'action' ? '制限指定' : `拡張指定 ${o.type}`}`, () => outputDialog(o)), button('×', () => { if (!confirm(`動作「${o.name}」と入力済みの動作指定を削除しますか？`)) return; const next = clone(table); next.outputs = next.outputs.filter(x => x.id !== o.id); next.rules.forEach(r => { r.directives = r.directives.filter(d => d.outputId !== o.id); }); commit(next); }, 'tiny')); defs.append(chip); }
   const wrap = $('table-wrap'); wrap.replaceChildren();
   if (!table.rules.length) {
-    const blank = element('div', '', 'empty-state'); blank.append(element('div', '⊞', 'empty-icon'), element('h2', '最初のルールをつくりましょう'), element('p', table.conditions.length ? '「＋ 規則」で規則を1つずつ書きます。条件指定は「−」（無関係）のままにも、値を選ぶこともできます。\n条件の値が少ない表は「全組合せの規則を作成」も使えます。' : 'まず「＋ 条件」と「＋ 動作」を定義し、「＋ 規則」で規則を1つずつ書きます。\nサンプルなら、編集から簡単化までひと通り試せます。'), button('サンプルで試す →', loadDemo, 'primary')); wrap.append(blank);
+    const blank = element('div', '', 'empty-state'); blank.append(element('div', '⊞', 'empty-icon'), element('h2', '最初のルールをつくりましょう'), element('p', table.conditions.length ? '「＋ 規則」で規則を1つずつ書きます。規則には、関係する条件と、実行する動作だけを書きます。\n条件の値が少ない表は「全組合せの規則を作成」も使えます。' : 'まず「＋ 条件」と「＋ 動作」を定義し、「＋ 規則」で規則を1つずつ書きます。\nサンプルなら、編集から簡単化までひと通り試せます。'), button('サンプルで試す →', loadDemo, 'primary')); wrap.append(blank);
   } else {
-    const grid = element('table', '', 'decision-table'), thead = element('thead'), hr = element('tr'); hr.append(element('th', '#'), element('th', '条件指定（書いた条件だけ。書かない条件は無関係）')); table.outputs.forEach(o => hr.append(element('th', o.name, 'output-heading'))); hr.append(element('th', '並べ替え・削除')); thead.append(hr); grid.append(thead);
+    const grid = element('table', '', 'decision-table'), thead = element('thead'), hr = element('tr'); hr.append(element('th', '#'), element('th', '条件指定')); table.outputs.forEach(o => hr.append(element('th', o.name, 'output-heading'))); hr.append(element('th', '並べ替え・削除')); thead.append(hr); grid.append(thead);
     const body = element('tbody');
     table.rules.slice(page * 40, page * 40 + 40).forEach((r, offset) => {
       const index = page * 40 + offset, tr = element('tr'); tr.id = `row-${r.id}`; const indexCell = element('td'); indexCell.append(element('strong', String(index + 1)), element('small', '規則')); tr.append(indexCell);
