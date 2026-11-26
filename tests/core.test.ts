@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyTable, generate, clone, decode, encode, compareDecimal, day, validate, count, atoms, proposeMerges, applyCandidate, verifyEquivalent, trace, results, patternCount, diagnose, regeneratePreserving, expandRows, type Table, type Condition } from '../src/core.ts';
+import { emptyTable, generate, clone, decode, encode, compareDecimal, day, validate, count, atoms, proposeMerges, applyCandidate, verifyEquivalent, trace, resultOf, patternCount, diagnose, regeneratePreserving, expandRows, type Table, type Condition } from '../src/core.ts';
 import { checkShape, documentSchema } from '../src/schema.ts';
+const results = (t: Table, a: Record<string, string>) => resultOf(t, a).flat(); // single-output tables
 function fixture(n = 2): Table {
   const t = emptyTable(); t.conditions = Array.from({ length: n }, (_, i) => ({ id: `c${i}`, name: `C${i}`, type: 'boolean', partitions: [{ id: `c${i}t`, label: 'true', kind: 'values', values: [true] }, { id: `c${i}f`, label: 'false', kind: 'values', values: [false] }] }));
   t.outputs = [{ id: 'o', name: '結果', kind: 'result', type: 'number' }]; return generate(t);
@@ -40,7 +41,7 @@ test('unknown properties on union branches and malicious keys are never ignored'
 test('JSON roundtrip preserves unset, false, zero and empty string distinctions', () => {
   const t = fixture(1); t.outputs = [{ id: 'b', name: 'bool', kind: 'result', type: 'boolean' }, { id: 'n', name: 'num', kind: 'result', type: 'number' }, { id: 's', name: 'str', kind: 'result', type: 'string' }, { id: 'u', name: 'unset', kind: 'action' }];
   t.rules.forEach(r => { r.directives = [{ outputId: 'b', state: 'set', value: false }, { outputId: 'n', state: 'set', value: '0' }, { outputId: 's', state: 'set', value: '' }, { outputId: 'u', state: 'unset' }]; });
-  assert.deepEqual(decode(encode(t)), t); assert.ok(diagnose(t).some(d => d.message.includes('未設定')));
+  assert.deepEqual(decode(encode(t)), t); const ds = diagnose(t); assert.ok(ds.some(d => d.message.includes('「unset」を決める規則がない入力'))); assert.equal(ds.some(d => d.message.includes('何も決めていません')), false); // an unset output means "not decided by this rule"
 });
 function rangeCondition(type: 'number' | 'date', ranges: { lower: string | null; upper: string | null; lowerInclusive: boolean; upperInclusive: boolean }[]): Condition {
   return { id: 'c', name: 'range', type, partitions: ranges.map((range, i) => ({ id: `p${i}`, label: String(i), kind: 'range', range })) };
@@ -87,7 +88,7 @@ test('equivalence budgets and stale candidate protection fail closed', () => {
 test('unfinished outputs cannot become approved merge candidates', () => { assert.equal(proposeMerges(fixture()).length, 0); });
 test('equivalent decimal result encodings do not block safe merge', () => { const t = setAll(fixture(1), '1.0'); t.rules[1].directives[0] = { outputId: 'o', state: 'set', value: '1.00' }; assert.equal(proposeMerges(t).length, 1); });
 test('coverage diagnosis distinguishes missing rules from harmless same-result overlap', () => {
-  const t = setAll(fixture(1)); t.rules = [t.rules[0], { ...clone(t.rules[0]), id: 'd' }]; const ds = diagnose(t); assert.ok(ds.some(d => d.message.includes('規則がありません'))); assert.ok(ds.some(d => d.level === 'info' && d.message.includes('同じ結果で重なっています'))); assert.equal(ds.some(d => d.level === 'error'), false);
+  const t = setAll(fixture(1)); t.rules = [t.rules[0], { ...clone(t.rules[0]), id: 'd' }]; const ds = diagnose(t); assert.ok(ds.some(d => d.message.includes('規則がありません'))); assert.ok(ds.some(d => d.level === 'info' && d.message.includes('同じ指定で重なっています'))); assert.equal(ds.some(d => d.level === 'error'), false);
 });
 test('adding a condition preserves result values across its new partitions', () => {
   const t = setAll(fixture(1)); const next = clone(t); next.rules = []; next.conditions.push(clone(fixture(2).conditions[1])); const migration = regeneratePreserving(t, next);

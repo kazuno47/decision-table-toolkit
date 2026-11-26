@@ -1,4 +1,4 @@
-// TASK-001..005 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..007 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -129,11 +129,20 @@ function normalizedDirectives(t: Table, ds: Directive[]): unknown[] {
     return d;
   });
 }
-// TASK-004 / INS-004, DEC-027: one result per input. The result of an input is the set of distinct outputs of
-// the rules that match it; rule order and the number of matching rules carry no meaning. A set with more than
-// one element is a contradiction that validation reports.
-export function results(t: Table, atom: Atom): string[] { return [...new Set(trace(t, atom).map(ds => stable(normalizedDirectives(t, ds))))].sort(); }
-export function traceKey(t: Table, atom: Atom): string { return stable(results(t, atom)); }
+// TASK-007 / INS-006, DEC-028: rules are combined per output. A rule decides only the outputs it sets; an unset
+// output means "this rule does not decide it". The result of an input is, for every output, the set of distinct
+// values set by the rules that match. One value = decided, several = contradiction, none = undecided.
+// Rule order and the number of matching rules carry no meaning.
+function valueKey(t: Table, r: Rule, o: number): string | null {
+  const d = normalizedDirectives(t, r.directives)[o] as { state?: string; value?: unknown } | undefined;
+  return !d || d.state !== 'set' ? null : stable(d.value);
+}
+export function resultOf(t: Table, atom: Atom): string[][] {
+  const sets = t.outputs.map(() => new Set<string>());
+  for (const r of t.rules) if (matches(r, atom)) t.outputs.forEach((_, o) => { const k = valueKey(t, r, o); if (k !== null) sets[o].add(k); });
+  return sets.map(x => [...x].sort());
+}
+export function traceKey(t: Table, atom: Atom): string { return stable(resultOf(t, atom)); }
 function distinctOutcomes(t: Table, list: Directive[][]): Directive[][] { const seen = new Set<string>(); return list.filter(ds => { const k = stable(normalizedDirectives(t, ds)); if (seen.has(k)) return false; seen.add(k); return true; }); }
 export function generate(t: Table): Table {
   assertValid(t); const cells = atoms(t); if (!cells.length) throw new Error('条件を追加してください');
@@ -182,7 +191,7 @@ export function applyCandidate(t: Table, c: Candidate): Table {
 }
 export function diagnose(t: Table): Diagnostic[] {
   const result = validate(t); if (result.length) return result;
-  for (const r of t.rules) if (r.directives.some(d => d.state === 'unset')) result.push({ level: 'warning', target: r.id, message: '未設定の出力があります' });
+  for (const r of t.rules) if (t.outputs.length && r.directives.every(d => d.state === 'unset')) result.push({ level: 'warning', target: r.id, message: 'この規則は動作・結果を何も決めていません' });
   try {
     // TASK-002 / REQ-008: coverage is computed on partition-set products, never by enumerating the input space.
     const total = count(t);
@@ -194,23 +203,33 @@ export function diagnose(t: Table): Diagnostic[] {
         cov.chunks.slice(0, 20).forEach(chunk => result.push({ level: 'warning', target: '未網羅', message: `${describeChunk(t, chunk)}（${chunk.size}組み合わせ）` }));
         if (cov.chunks.length > 20) result.push({ level: 'warning', target: '未網羅', message: `ほか${cov.chunks.length - 20}個のかたまりがあります。規則を追加して再検証してください` });
       }
-      // TASK-004 / REQ-008: rules that can match the same input must give the same result.
+      // TASK-007 / REQ-008: an output that no matching rule decides is reported per output.
+      t.outputs.forEach((o, index) => {
+        const open = coverage(t, 200_000, 2_000_000, r => r.directives[index]?.state === 'set');
+        if (!open.complete) { result.push({ level: 'warning', target: o.id, message: `「${o.name}」が決まらない入力があるかどうかは、計算予算を超えたため判定できていません` }); return; }
+        if (!open.uncovered || (cov.complete && open.uncovered === cov.uncovered)) return; // nothing undecided beyond the inputs that have no rule at all
+        result.push({ level: 'warning', target: o.id, message: `「${o.name}」を決める規則がない入力が${open.uncovered}組み合わせあります` });
+        open.chunks.slice(0, 5).forEach(chunk => result.push({ level: 'warning', target: '未決定', message: `「${o.name}」：${describeChunk(t, chunk)}（${chunk.size}組み合わせ）` }));
+        if (open.chunks.length > 5) result.push({ level: 'warning', target: '未決定', message: `「${o.name}」：ほか${open.chunks.length - 5}個のかたまりがあります` });
+      });
+      // TASK-004, TASK-007 / REQ-008: rules that can match the same input must not set different values for an output.
       const clash = contradictions(t);
       if (clash.pairs) {
-        result.push({ level: 'error', target: 'rules', message: `${clash.pairs}組${clash.complete ? '' : '以上'}の規則で結果が食い違っています。同じ入力に違う結果の規則が適合するため、結果が1つに決まりません` });
-        clash.examples.forEach(e => result.push({ level: 'error', target: '矛盾', message: `規則 #${e.rules[0] + 1} と #${e.rules[1] + 1}：${describeChunk(t, e.chunk)}（${e.chunk.size}組み合わせ${e.more ? 'ほか' : ''}）で結果が異なります` }));
+        result.push({ level: 'error', target: 'rules', message: `${clash.pairs}組${clash.complete ? '' : '以上'}の規則で結果が食い違っています。同じ入力に、同じ動作・結果へ違う値を指定する規則が適合するため、結果が1つに決まりません` });
+        clash.examples.forEach(e => result.push({ level: 'error', target: '矛盾', message: `規則 #${e.rules[0] + 1} と #${e.rules[1] + 1}：${describeChunk(t, e.chunk)}（${e.chunk.size}組み合わせ${e.more ? 'ほか' : ''}）で「${e.outputs.map(o => t.outputs[o].name).join('」「')}」が食い違います` }));
         if (clash.pairs > clash.examples.length) result.push({ level: 'error', target: '矛盾', message: `ほか${clash.pairs - clash.examples.length}組あります。規則を直して再検証してください` });
       }
-      if (clash.same) result.push({ level: 'info', target: 'rules', message: `${clash.same}組${clash.complete ? '' : '以上'}の規則が同じ結果で重なっています。結果は1つとして扱います。「まとめる」で整理できます` });
+      if (clash.same) result.push({ level: 'info', target: 'rules', message: `${clash.same}組${clash.complete ? '' : '以上'}の規則が同じ指定で重なっています。「まとめる」で整理できます` });
       if (!clash.complete) result.push({ level: 'warning', target: 'rules', message: '結果の食い違いの確認は計算予算で打ち切りました（残りは判定できていません）' });
     }
     const keys = new Set<string>(); for (const r of t.rules) { const k = stable({ anyOf: r.anyOf, directives: r.directives }); if (keys.has(k)) result.push({ level: 'warning', target: r.id, message: '同じ条件と出力の規則が重複しています。「まとめる」で1つにできます' }); keys.add(k); }
   } catch (e) { result.push({ level: 'warning', target: 'rules', message: (e as Error).message }); }
   return result;
 }
+// Number of distinct combined results, computed without enumerating inputs (inputs with no rule count as one pattern).
 export function patternCount(t: Table): number {
-  const cells = atoms(t); if (cells.length * t.rules.length > 2_000_000) throw new Error('結果パターン数は計算予算のため未算出');
-  return new Set(cells.map(a => traceKey(t, a))).size;
+  const found = patterns(t); if (!found) throw new Error('結果パターン数は計算予算のため未算出');
+  return found.length;
 }
 // Conservative result migration; never infer business validity or changed interval membership.
 export function regeneratePreserving(old: Table, next: Table): { table: Table; affected: number } {
@@ -284,11 +303,11 @@ function cubeChunk(t: Pick<Table, 'conditions'>, c: Cube): Chunk {
 }
 // REQ-008: inputs matched by no rule, as disjoint chunks. complete=false means "not determined", never "covered".
 // budget bounds the number of chunks held at once, workBudget the total number of chunk operations (DEF-005).
-export function coverage(t: Table, budget = 200_000, workBudget = 2_000_000): { complete: boolean; uncovered: bigint; chunks: Chunk[] } {
+export function coverage(t: Table, budget = 200_000, workBudget = 2_000_000, only?: (r: Rule) => boolean): { complete: boolean; uncovered: bigint; chunks: Chunk[] } {
   if (!t.conditions.length) return { complete: true, uncovered: 0n, chunks: [] };
   const unknown = { complete: false, uncovered: 0n, chunks: [] as Chunk[] };
   let rest: Cube[] = [t.conditions.map(fullMask)], work = 0, compactAt = 4096;
-  for (const r of t.rules) for (const clause of r.anyOf) {
+  for (const r of t.rules) if (!only || only(r)) for (const clause of r.anyOf) {
     if (!rest.length) break;
     const b = clauseCube(t, clause), next: Cube[] = [];
     for (const a of rest) for (const piece of subtractCube(a, b)) next.push(piece);
@@ -341,7 +360,9 @@ function sameCover(a: Cube[], b: Cube[], budget = 500_000): boolean {
 function buildCandidate(t: Table, rules: Rule[], proof: Candidate['proof'], anchor: Rule = rules[0]): Candidate {
   return { id: uid('candidate'), base: stable(t), before: rules.map(r => r.id), replacement: { id: anchor.id, anyOf: simplifyClauses(t, rules.flatMap(r => r.anyOf)), directives: clone(anchor.directives) }, checked: 0, proof, anchor: anchor.id };
 }
-const mergeKey = (t: Table, r: Rule): string | null => !r.directives.length || r.directives.some(d => d.state === 'unset') ? null : stable(normalizedDirectives(t, r.directives));
+// TASK-007: rules merge when their whole specification is identical, including which outputs they leave undecided.
+// A rule that decides nothing is not a merge target.
+const mergeKey = (t: Table, r: Rule): string | null => !r.directives.length || r.directives.every(d => d.state === 'unset') ? null : stable(normalizedDirectives(t, r.directives));
 function directiveGroups(t: Table): number[][] {
   const groups = new Map<string, number[]>();
   t.rules.forEach((r, i) => { const k = mergeKey(t, r); if (k !== null) groups.set(k, [...(groups.get(k) ?? []), i]); });
@@ -376,20 +397,65 @@ export function compressAll(t: Table, maxSteps = 500): { table: Table; steps: nu
   for (; steps < maxSteps; steps++) { const [next] = proposeStructural(table); if (!next) break; table = applyCandidate(table, next); }
   return { table, steps };
 }
-// TASK-004 / REQ-008: rule pairs (0-based) that can match the same input. Different outputs = contradiction,
-// same outputs = harmless overlap. chunk is one region where the pair meets; more = there are further regions.
-export function contradictions(t: Table, limit = 20, budget = 2_000_000): { pairs: number; same: number; examples: { rules: [number, number]; chunk: Chunk; more: boolean }[]; complete: boolean } {
-  const cubes = t.rules.map(r => ruleCubes(t, r)), keys = t.rules.map(r => stable(normalizedDirectives(t, r.directives)));
-  const examples: { rules: [number, number]; chunk: Chunk; more: boolean }[] = []; let pairs = 0, same = 0, work = 0;
+// TASK-004, TASK-007 / REQ-008: rule pairs (0-based) that can match the same input. They contradict when both set
+// some output to different values (outputs = those output indexes). same = pairs with an identical specification.
+// chunk is one region where the pair meets; more = there are further regions.
+export function contradictions(t: Table, limit = 20, budget = 2_000_000): { pairs: number; same: number; examples: { rules: [number, number]; outputs: number[]; chunk: Chunk; more: boolean }[]; complete: boolean } {
+  const cubes = t.rules.map(r => ruleCubes(t, r)), keys = t.rules.map(r => t.outputs.map((_, o) => valueKey(t, r, o))), whole = t.rules.map(r => mergeKey(t, r));
+  const examples: { rules: [number, number]; outputs: number[]; chunk: Chunk; more: boolean }[] = []; let pairs = 0, same = 0, work = 0;
   for (let i = 0; i < cubes.length; i++) for (let j = i + 1; j < cubes.length; j++) {
     work += cubes[i].length * cubes[j].length; if (work > budget) return { pairs, same, examples, complete: false };
     let first: Cube | null = null, regions = 0;
     for (const x of cubes[i]) for (const y of cubes[j]) if (!cubesDisjoint(x, y)) { regions++; first ??= x.map((m, k) => m & y[k]); }
     if (!first) continue;
-    if (keys[i] === keys[j]) same++;
-    else { pairs++; if (examples.length < limit) examples.push({ rules: [i, j], chunk: cubeChunk(t, first), more: regions > 1 }); }
+    const outputs = t.outputs.flatMap((_, o) => keys[i][o] !== null && keys[j][o] !== null && keys[i][o] !== keys[j][o] ? [o] : []);
+    if (outputs.length) { pairs++; if (examples.length < limit) examples.push({ rules: [i, j], outputs, chunk: cubeChunk(t, first), more: regions > 1 }); }
+    else if (whole[i] !== null && whole[i] === whole[j]) same++;
   }
   return { pairs, same, examples, complete: true };
+}
+// TASK-007: split the input space (or one range of it) into pieces that share the same combined result.
+type Piece = { cube: Cube; sets: string[][] };
+function partition(t: Table, region: Cube | null = null, budget = 200_000, workBudget = 3_000_000): Piece[] | null {
+  if (!t.conditions.length) return [];
+  let pieces: Piece[] = [{ cube: region ?? t.conditions.map(fullMask), sets: t.outputs.map(() => []) }], work = 0, compactAt = 4096;
+  const regroup = (list: Piece[]) => {
+    const groups = new Map<string, { sets: string[][]; cubes: Cube[] }>();
+    for (const x of list) { const k = stable(x.sets), g = groups.get(k); if (g) g.cubes.push(x.cube); else groups.set(k, { sets: x.sets, cubes: [x.cube] }); }
+    return [...groups.values()].flatMap(g => compactCubes(g.cubes, 2).map(cube => ({ cube, sets: g.sets })));
+  };
+  for (const r of t.rules) {
+    const keys = t.outputs.map((_, o) => valueKey(t, r, o)); if (keys.every(k => k === null)) continue;
+    let outside = pieces; const inside: Piece[] = [];
+    for (const c of ruleCubes(t, r)) {
+      const next: Piece[] = [];
+      for (const x of outside) {
+        work++; if (cubesDisjoint(x.cube, c)) { next.push(x); continue; }
+        inside.push({ cube: x.cube.map((m, k) => m & c[k]), sets: x.sets }); for (const q of subtractCube(x.cube, c)) next.push({ cube: q, sets: x.sets });
+      }
+      outside = next; if (work > workBudget) return null;
+    }
+    for (const x of inside) x.sets = x.sets.map((set, o) => keys[o] === null || set.includes(keys[o]!) ? set : [...set, keys[o]!].sort());
+    pieces = outside.concat(inside);
+    if (pieces.length > compactAt) { work += pieces.length * t.conditions.length; pieces = regroup(pieces); compactAt = Math.max(4096, pieces.length * 2); }
+    if (pieces.length > budget || work > workBudget) return null;
+  }
+  return pieces;
+}
+// TASK-007 / REQ-012: the combined result patterns of the table. Each pattern says, per output, the value it gets
+// (values.length 1), that it is undecided (0) or contradictory (2+), with the inputs that produce it.
+export type Pattern = { size: bigint; outputs: { values: Scalar[] }[]; chunks: Chunk[]; chunkCount: number };
+export function patterns(t: Table, chunkLimit = 6): Pattern[] | null {
+  const pieces = partition(t); if (!pieces) return null;
+  const scalar = t.outputs.map(() => new Map<string, Scalar>());
+  for (const r of t.rules) t.outputs.forEach((_, o) => { const k = valueKey(t, r, o), d = r.directives[o]; if (k !== null && d.state === 'set' && !scalar[o].has(k)) scalar[o].set(k, d.value); });
+  const groups = new Map<string, { sets: string[][]; cubes: Cube[] }>();
+  for (const x of pieces) { const k = stable(x.sets), g = groups.get(k); if (g) g.cubes.push(x.cube); else groups.set(k, { sets: x.sets, cubes: [x.cube] }); }
+  const result = [...groups.values()].map(g => {
+    const cubes = compactCubes(g.cubes, g.cubes.length > 20_000 ? 1 : 8), chunks = cubes.map(c => cubeChunk(t, c)).sort((a, b) => a.size < b.size ? 1 : a.size > b.size ? -1 : 0);
+    return { size: chunks.reduce((n, c) => n + c.size, 0n), outputs: g.sets.map((set, o) => ({ values: set.map(k => scalar[o].get(k)!) })), chunks: chunks.slice(0, chunkLimit), chunkCount: chunks.length };
+  });
+  return result.sort((a, b) => a.size < b.size ? 1 : a.size > b.size ? -1 : 0);
 }
 // First n input combinations in the same order as atoms(), without materialising the whole product.
 export function atomsHead(t: Pick<Table, 'conditions'>, n: number): Atom[] {
@@ -437,28 +503,37 @@ export function migrateRules(old: Table, next: Table): { table: Table; dropped: 
   const table: Table = { ...clone(next), schemaVersion: omitted || old.schemaVersion === '1.1' || next.schemaVersion === '1.1' ? '1.1' : '1.0', rules };
   assertValid(table); return { table, dropped, widened, narrowed };
 }
-// TASK-002 / INS-002, CHG-004 / REQ-012 / API-003 inspect: filter by chosen partitions; unchosen conditions stay open.
-// always = the rule applies to every input in the chosen range. uncovered = inputs in the range with no rule (null: not determined).
-export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null; conflict: boolean; determined: boolean; relevant: string[] } {
+// TASK-002, TASK-006, TASK-007 / REQ-012 / API-003 inspect: the result for chosen partitions; unchosen conditions stay open.
+// Each output is judged on its own: determined (one value for every input of the range), open (depends on unchosen
+// conditions, or part of the range has no rule deciding it), conflict, or none (no rule in the range decides it).
+export type OutputCheck = { outputId: string; status: 'determined' | 'open' | 'conflict' | 'none'; directive?: Directive; rules: number[]; candidates: { directive: Directive; rules: number[] }[] };
+export function inspect(t: Table, picks: Record<string, string>): { total: bigint; exact: boolean; rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[]; uncovered: bigint | null; conflict: boolean; determined: boolean; relevant: string[]; outputs: OutputCheck[] } {
   assertValid(t);
-  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n, conflict: false, determined: false, relevant: [] };
+  if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n, conflict: false, determined: false, relevant: [], outputs: [] };
   const region: Cube = t.conditions.map(c => { const i = c.partitions.findIndex(p => p.id === picks[c.id]); return i < 0 ? fullMask(c) : 1n << BigInt(i); });
-  const rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[] = [];
-  let rest: Cube[] | null = [region], work = 0;
+  const rules: { index: number; ruleId: string; directives: Directive[]; always: boolean }[] = [], inRange: { index: number; cubes: Cube[]; keys: (string | null)[] }[] = [];
+  const minus = (cubes: Cube[]): Cube[] | null => { let left: Cube[] = [region], work = 0; for (const c of cubes) { work += left.length; left = left.flatMap(a => subtractCube(a, c)); if (left.length > 50_000 || work > 1_000_000) return null; if (!left.length) break; } return left; };
   for (let index = 0; index < t.rules.length; index++) {
-    const r = t.rules[index], cubes = ruleCubes(t, r).filter(c => !cubesDisjoint(c, region)); if (!cubes.length) continue;
-    let left: Cube[] = [region]; for (const c of cubes) { left = left.flatMap(a => subtractCube(a, c)); if (left.length > 10_000) break; }
-    rules.push({ index, ruleId: r.id, directives: clone(r.directives), always: left.length === 0 });
-    for (const c of cubes) { if (!rest) break; work += rest.length; rest = rest.flatMap(a => subtractCube(a, c)); if (rest.length > 200_000 || work > 2_000_000) rest = null; }
+    const r = t.rules[index], cubes = ruleCubes(t, r).filter(c => !cubesDisjoint(c, region)).map(c => c.map((m, k) => m & region[k])); if (!cubes.length) continue;
+    const left = minus(cubes);
+    rules.push({ index, ruleId: r.id, directives: clone(r.directives), always: left !== null && left.length === 0 });
+    inRange.push({ index, cubes, keys: t.outputs.map((_, o) => valueKey(t, r, o)) });
   }
-  // TASK-004: do two rules with different outputs meet inside the chosen range?
-  const inRange = rules.map(r => ({ key: stable(normalizedDirectives(t, r.directives)), cubes: ruleCubes(t, t.rules[r.index]).filter(c => !cubesDisjoint(c, region)).map(c => c.map((m, k) => m & region[k])) }));
-  let conflict = false;
-  for (let i = 0; i < inRange.length && !conflict; i++) for (let j = i + 1; j < inRange.length && !conflict; j++) if (inRange[i].key !== inRange[j].key && !rulesDisjoint(inRange[i].cubes, inRange[j].cubes)) conflict = true;
-  const uncovered = rest ? rest.reduce((n, c) => n + cubeSize(c), 0n) : null;
-  // TASK-006 (INS-005): the result is determined when every input in the range gets the same single result,
-  // even if some conditions are not chosen. relevant = unchosen conditions that the matching rules still depend on.
-  const determined = rules.length > 0 && new Set(inRange.map(x => x.key)).size === 1 && uncovered === 0n;
-  const relevant = determined ? [] : t.conditions.filter((c, k) => !c.partitions.some(p => p.id === picks[c.id]) && inRange.some(x => x.cubes.some(cube => cube[k] !== fullMask(c)))).map(c => c.id);
-  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered, conflict, determined, relevant };
+  const none = minus(inRange.flatMap(x => x.cubes)), uncovered = none ? none.reduce((n, c) => n + cubeSize(c), 0n) : null;
+  const openConditions = new Set<number>();
+  const outputs: OutputCheck[] = t.outputs.map((o, at) => {
+    const setters = inRange.filter(x => x.keys[at] !== null), groups = new Map<string, { directive: Directive; rules: number[] }>();
+    for (const x of setters) { const g = groups.get(x.keys[at]!) ?? { directive: clone(t.rules[x.index].directives[at]), rules: [] }; g.rules.push(x.index); groups.set(x.keys[at]!, g); }
+    const candidates = [...groups.values()], all = setters.map(x => x.index);
+    if (!setters.length) return { outputId: o.id, status: 'none' as const, rules: all, candidates };
+    let clash = false;
+    for (let i = 0; i < setters.length && !clash; i++) for (let j = i + 1; j < setters.length && !clash; j++) if (setters[i].keys[at] !== setters[j].keys[at] && !rulesDisjoint(setters[i].cubes, setters[j].cubes)) clash = true;
+    if (clash) return { outputId: o.id, status: 'conflict' as const, rules: all, candidates };
+    const left = candidates.length === 1 ? minus(setters.flatMap(x => x.cubes)) : null;
+    if (candidates.length === 1 && left !== null && left.length === 0) return { outputId: o.id, status: 'determined' as const, directive: candidates[0].directive, rules: all, candidates };
+    t.conditions.forEach((c, k) => { if (!c.partitions.some(p => p.id === picks[c.id]) && setters.some(x => x.cubes.some(cube => cube[k] !== fullMask(c)))) openConditions.add(k); });
+    return { outputId: o.id, status: 'open' as const, rules: all, candidates };
+  });
+  return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered, conflict: outputs.some(x => x.status === 'conflict'),
+    determined: outputs.length > 0 && outputs.every(x => x.status === 'determined'), relevant: t.conditions.filter((_, k) => openConditions.has(k)).map(c => c.id), outputs };
 }
