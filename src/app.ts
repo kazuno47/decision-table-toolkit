@@ -1,5 +1,5 @@
-// TASK-001..004 / SCR-001..005 / REQ-001..018. All user content uses textContent.
-import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, patternCount, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, contradictions, LIMIT, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
+// TASK-001..009 / SCR-001..005. Wording follows JIS X 0125 where the standard has a term / REQ-001..018. All user content uses textContent.
+import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, patternCount, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, contradictions, patterns, describeChunk, LIMIT, type Scalar, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
 import { FileCoordinator, writeVerified, type Handle, type Observation } from './files.ts';
 import { documentSchema } from './schema.ts';
 type PickerWindow = Window & { showOpenFilePicker?: (o: unknown) => Promise<Handle[]>; showSaveFilePicker?: (o: unknown) => Promise<Handle> };
@@ -16,15 +16,15 @@ async function fileTask(operation: () => Promise<unknown>) {
   try { return await operation(); } finally { surfaces.forEach(({ node, inert }) => { node.inert = inert; }); fileBusy = false; }
 }
 let table = emptyTable(), saved = stable(table), session: FileCoordinator | null = null;
-let candidates: Candidate[] = [], panel: 'none' | 'diagnostics' | 'merge' | 'expand' = 'none', page = 0, polling = false, pollErrors = 0;
+let candidates: Candidate[] = [], panel: 'none' | 'diagnostics' | 'merge' | 'expand' | 'patterns' = 'none', page = 0, polling = false, pollErrors = 0;
 let externalUIKey = '';
 // TASK-003: result of applying every candidate repeatedly. Recomputed, never saved.
 let compressed: { table: Table; steps: number; base: string } | null = null;
-// INS-002 / CHG-004: partitions chosen in the "結果を確認" section; view state only, never saved.
+// INS-002 / CHG-004: partitions chosen in the "決定表の解釈" section; view state only, never saved.
 let checkPicks: Record<string, string> = {};
 let pending: Observation | null = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
 const root = document.getElementById('app')!;
-root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と結果をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">DECISION TABLE</label><input id="title" aria-label="決定表の名前" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">結果は1つ：どの入力にも、適合する規則の結果が1つに決まる表として扱います。同じ入力に違う結果の規則が適合する場合は「検証」で矛盾として指摘します。規則の並び順は結果に影響しません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="check" class="check-panel" hidden></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と動作・結果を定義し、「＋ 規則」で規則を1行ずつ書きます。条件は「すべて」のままにも、区分を絞ることもできます。組み合わせが少ない表は全件を生成することもできます。</li><li>結果を入力し、検証で未設定・未網羅（規則のない条件のかたまり）・矛盾（同じ入力に違う結果の規則が適合する箇所）を確認します。</li><li>表の下の「結果を確認」で条件の区分を選ぶと、その条件に適用される結果だけを確認できます。選ばない条件は指定なしとして扱います。</li><li>「まとめる」で等価性を確認できた候補を作成し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
+root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2.1</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と動作をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">規則の記述 ／ 表見出し</label><input id="title" aria-label="表見出し" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">この表は、複数の規則が同じ条件の組合せで満足される書き方（多重適合）ができます。動作は規則ごとに「X（実行する）」か「−（実行しない）」、または値で指定し、満足された規則の動作指定を動作ごとに合わせて解釈します。JIS X 0125 が定める決定表は単適合（条件の組合せごとに満足される規則が1つ）で、下の表は規則を記述するための作業用の表で、「決定表（単適合）」で規格の形の決定表を別表として表示します。同じ動作に異なる値を指定する規則が同時に満足される場合は「検証」で指摘します。規則の順番は意味をもちません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="check" class="check-panel" hidden></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と、条件のとり得る値を定義します。動作を定義します（X／−で指定する制限指定、または語句・値で指定する拡張指定）。</li><li>「＋ 規則」で規則を1列ずつ書きます。条件指定は値を選ぶか、無関係なら「−」のままにします。動作指定は、その規則で実行する動作に「X」または値を入れ、関係しない動作は「−」のままにします。条件の値が少ない表は、条件指定の全組合せの規則を作成することもできます。</li><li>「検証」で、完備性（条件指定のすべての組合せに満足される規則があるか）と、動作指定の不一致を確認します。</li><li>表の下の「決定表の解釈」で条件の値を選ぶと、実行される動作を確認できます。「決定表（単適合）」で、規則の記述から求めた単適合決定表を、条件・動作を行、規則を列にした別表として確認できます。</li><li>「簡単化」で、動作指定が同じ規則を結合し、条件指定を「−」に置き換えて整理します。等価性を確認できた候補だけを表示し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
 const $ = (id: string) => document.getElementById(id)!;
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; }
 function button(text: string, action: () => unknown, cls = ''): HTMLButtonElement { const b = element('button', text, cls); b.type = 'button'; b.addEventListener('click', () => void run(action)); return b; }
@@ -45,7 +45,7 @@ function demo(): Table {
   result.rules.forEach(r => { const member = r.anyOf[0].selections[0].partitionIds[0]; r.directives = [{ outputId: 'fee', state: 'set', value: member === 'member-1' ? '0' : '500' }, { outputId: 'notify', state: 'set', value: true }]; });
   return result;
 }
-function loadDemo() { if (dirty() && !confirm('現在の変更を破棄してサンプルを開きますか？')) return; session = null; fileMessage = 'ファイル未連携'; page = 0; commit(demo(), '6組み合わせ・2結果パターンのサンプルです。「まとめる」を試せます。'); }
+function loadDemo() { if (dirty() && !confirm('現在の変更を破棄してサンプルを開きますか？')) return; session = null; fileMessage = 'ファイル未連携'; page = 0; commit(demo(), '条件指定の全組合せ6件を規則にしたサンプルです。「簡単化」を試せます。'); }
 function modal(title: string) { const d = element('dialog'); const form = element('div', '', 'modal-content'); form.append(element('h2', title)); d.append(form); document.body.append(d); d.addEventListener('close', () => d.remove()); d.showModal(); return { dialog: d, form, close: () => d.close() }; }
 function field(label: string, control: HTMLElement, target: HTMLElement) { const wrap = element('label', '', 'field'); wrap.append(element('span', label), control); target.append(wrap); return wrap; }
 function input(value = '', type = 'text') { const i = element('input'); i.type = type; i.value = value; return i; }
@@ -56,20 +56,20 @@ function applyDefinitions(next: Table, close: () => void) {
   if (!table.rules.length) { commit({ ...next, rules: [] }); close(); return; }
   // TASK-002 / REQ-013 / SCR-005: written rules are carried over; nothing changes before the user chooses.
   const migrated = migrateRules(table, { ...next, rules: [] }), affected = migrated.dropped + migrated.widened + migrated.narrowed;
-  if (!affected) { commit(migrated.table, '条件の変更を反映しました。規則はすべて保持しています。「検証」で未網羅を確認してください。'); close(); return; }
+  if (!affected) { commit(migrated.table, '条件の変更を反映しました。規則はすべて保持しています。「検証」で完備性を確認してください。'); close(); return; }
   const m = modal('条件変更の影響を確認');
-  m.form.append(element('p', `規則${table.rules.length}件のうち、そのまま保持できないものがあります。削除される規則：${migrated.dropped}件／指定していた条件がなくなり対象が広がる規則：${migrated.widened}件／指定していた区分の一部がなくなる規則：${migrated.narrowed}件。変更前の表は選択が完了するまで保持します。`));
+  m.form.append(element('p', `規則${table.rules.length}件のうち、そのまま保持できないものがあります。削除される規則：${migrated.dropped}件／条件指定のあった条件がなくなり対象が広がる規則：${migrated.widened}件／条件指定の値の一部がなくなる規則：${migrated.narrowed}件。変更前の表は選択が完了するまで保持します。`));
   const actions = element('div', '', 'modal-actions');
-  actions.append(button('キャンセル', m.close), button('規則を保持して反映', () => { commit(migrated.table, '条件の変更を反映しました。「検証」で未網羅と矛盾を確認してください。'); m.close(); close(); }, 'primary'));
-  if (count(next) <= BigInt(LIMIT)) actions.append(button('変更前JSONを書出後、全組み合わせを再生成', () => { download(encode(table), 'decision-table-before-change.json'); commit(generate({ ...next, rules: [] }), '変更前JSONの書出を開始し、新しい組み合わせを生成しました。ダウンロード完了はブラウザで確認してください。'); m.close(); close(); }));
+  actions.append(button('キャンセル', m.close), button('規則を保持して反映', () => { commit(migrated.table, '条件の変更を反映しました。「検証」で完備性と動作指定の不一致を確認してください。'); m.close(); close(); }, 'primary'));
+  if (count(next) <= BigInt(LIMIT)) actions.append(button('変更前JSONを書出後、全組合せの規則を作り直す', () => { download(encode(table), 'decision-table-before-change.json'); commit(generate({ ...next, rules: [] }), '変更前JSONの書出を開始し、全組合せの規則を作り直しました。ダウンロード完了はブラウザで確認してください。'); m.close(); close(); }));
   m.form.append(actions);
 }
 // REQ-004: full generation stays available for small tables; existing results are carried per combination.
 function regenerateDialog() {
-  const migrated = regeneratePreserving(table, { ...clone(table), rules: [] }), m = modal('全組み合わせへ展開し直す');
-  m.form.append(element('p', `現在の規則${table.rules.length}件を、${count(table)}組み合わせそれぞれの規則へ展開し直します。結果を引き継げない組み合わせ：${migrated.affected}件。「すべて」やORでまとめた規則の形は失われます。`));
+  const migrated = regeneratePreserving(table, { ...clone(table), rules: [] }), m = modal('全組合せの規則を作り直す');
+  m.form.append(element('p', `現在の規則${table.rules.length}件を、条件指定の全組合せ${count(table)}件それぞれの規則に作り直します。動作指定を引き継げない組合せ：${migrated.affected}件。「−」やORで結合した規則の形は失われます。`));
   const actions = element('div', '', 'modal-actions');
-  actions.append(button('キャンセル', m.close), button('展開し直す', () => { commit(migrated.table, '全組み合わせへ展開しました。'); m.close(); }, 'primary')); m.form.append(actions);
+  actions.append(button('キャンセル', m.close), button('作り直す', () => { commit(migrated.table, '条件指定の全組合せの規則を作り直しました。'); m.close(); }, 'primary')); m.form.append(actions);
 }
 function conditionDialog(original?: Condition) {
   const m = modal(original ? '条件を編集' : '条件を追加'), name = input(original?.name ?? ''), type = select(types, original?.type ?? 'boolean'), defs = element('div');
@@ -81,12 +81,12 @@ function conditionDialog(original?: Condition) {
     li.checked = p?.range.lowerInclusive ?? true; hi.checked = p?.range.upperInclusive ?? false;
     low.placeholder = type.value === 'date' ? '2026-01-01' : '0'; high.placeholder = type.value === 'date' ? '2027-01-01' : '18'; label.placeholder = '表示名';
     const row = { low, high, li, hi, label }; rangeRows.push(row);
-    field('区分名', label, wrap); field('下限（空欄＝なし）', low, wrap); field('下限を含む', li, wrap); field('上限（空欄＝なし）', high, wrap); field('上限を含む', hi, wrap);
-    wrap.append(button('区分を削除', () => { rangeRows.splice(rangeRows.indexOf(row), 1); wrap.remove(); })); rows.append(wrap);
+    field('値の名前', label, wrap); field('下限（空欄＝なし）', low, wrap); field('下限を含む', li, wrap); field('上限（空欄＝なし）', high, wrap); field('上限を含む', hi, wrap);
+    wrap.append(button('値を削除', () => { rangeRows.splice(rangeRows.indexOf(row), 1); wrap.remove(); })); rows.append(wrap);
   }
   function redraw() {
     defs.replaceChildren(); rangeRows.length = 0;
-    if (type.value === 'boolean') defs.append(element('p', 'true / false の2区分を定義します。'));
+    if (type.value === 'boolean') defs.append(element('p', 'true / false の2つの値を定義します。'));
     else if (type.value === 'enum' || type.value === 'string') {
       choices = element('textarea'); choices.rows = 5; choices.placeholder = '優良\n一般\n新規';
       choices.value = original?.partitions.filter(p => p.kind === 'values').flatMap(p => p.values.map(v => typeof v === 'string' ? JSON.stringify(v) : String(v))).join('\n') ?? '';
@@ -96,7 +96,7 @@ function conditionDialog(original?: Condition) {
       const existing = original?.type === type.value ? original.partitions.filter((p): p is Extract<Partition, { kind: 'range' }> => p.kind === 'range') : [];
       if (existing.length) existing.forEach(p => addRange(p)); else addRange();
     }
-    field('未定義値を明示区分として追加', missing, defs);
+    field('未定義を条件の値として追加', missing, defs);
   }
   type.onchange = redraw; redraw();
   const actions = element('div', '', 'modal-actions'); actions.append(button('キャンセル', m.close), button('定義を反映', () => {
@@ -114,9 +114,9 @@ function conditionDialog(original?: Condition) {
   }, 'primary')); m.form.append(actions);
 }
 function outputDialog(original?: Output) {
-  const m = modal(original ? '動作・結果を編集' : '動作・結果を追加'), name = input(original?.name ?? ''), kind = select([['result', '結果の値'], ['action', '動作の実行有無']], original?.kind ?? 'result'), type = select(types, original?.kind === 'result' ? original.type : 'boolean'), choices = element('textarea');
+  const m = modal(original ? '動作を編集' : '動作を追加'), name = input(original?.name ?? ''), kind = select([['result', '拡張指定（語句・値で指定する）'], ['action', '制限指定（X／−：実行する・しない）']], original?.kind ?? 'result'), type = select(types, original?.kind === 'result' ? original.type : 'boolean'), choices = element('textarea');
   choices.value = original?.kind === 'result' ? (original.values ?? []).join('\n') : ''; choices.placeholder = '1行に1候補';
-  field('名前', name, m.form); field('種類', kind, m.form); const typeField = field('結果の型', type, m.form), enumField = field('Enumの候補値', choices, m.form);
+  field('名前', name, m.form); field('動作指定の形式', kind, m.form); const typeField = field('値の型', type, m.form), enumField = field('Enumの候補値', choices, m.form);
   function redraw() { typeField.hidden = kind.value === 'action'; enumField.hidden = kind.value === 'action' || type.value !== 'enum'; } kind.onchange = type.onchange = redraw; redraw();
   const actions = element('div', '', 'modal-actions'); actions.append(button('キャンセル', m.close), button('定義を反映', () => {
     if (!name.value.trim()) throw new Error('名前を入力してください');
@@ -125,13 +125,13 @@ function outputDialog(original?: Output) {
     // Output-only changes preserve rule order, OR clauses and matching multiplicity.
     next.rules.forEach(r => { r.directives = next.outputs.map(output => { const before = table.outputs.find(x => x.id === output.id); const d = r.directives.find(d => d.outputId === output.id); return before && stable({ ...before, name: '' }) === stable({ ...output, name: '' }) && d ? d : { outputId: output.id, state: 'unset' }; }); });
     assertValid(next);
-    if (original && table.rules.length && !confirm('型や候補の変更で保持できない結果は未設定になります。変更を反映しますか？')) return;
+    if (original && table.rules.length && !confirm('型や候補の変更で保持できない動作指定は「−」に戻ります。変更を反映しますか？')) return;
     commit(next); m.close();
   }, 'primary')); m.form.append(actions);
 }
 function ruleConditions(id: string) {
-  const r = table.rules.find(r => r.id === id)!; const m = modal('規則の条件を編集（OR / AND）'), list = element('div');
-  m.form.append(element('p', 'ブロック内の条件はAND、ブロック同士はORです。同じ規則へ複数ブロックが一致しても適用は1回です。「すべて」にした条件は、あとから区分を追加しても対象に含みます。区分を選んだ条件は、選んだ区分だけが対象です。'), list);
+  const r = table.rules.find(r => r.id === id)!; const m = modal('規則の条件指定を編集（OR / AND）'), list = element('div');
+  m.form.append(element('p', 'ブロック内の条件指定はAND、ブロック同士はORです。「−」は、その条件がこの規則には無関係であることを示し、あとから値を追加しても対象に含みます。値を選んだ条件は、選んだ値のときだけ満足されます。'), list);
   const clauses: { rows: { all: HTMLInputElement; pick: HTMLSelectElement }[]; element: HTMLElement }[] = [];
   function add(c?: Clause) {
     const block = element('div', '', 'clause'), rows: { all: HTMLInputElement; pick: HTMLSelectElement }[] = []; list.append(block);
@@ -141,18 +141,18 @@ function ruleConditions(id: string) {
       const pick = select(condition.partitions.map(p => [p.id, p.label])); pick.multiple = true; pick.size = Math.min(4, condition.partitions.length);
       Array.from(pick.options).forEach(o => { o.selected = chosen ? chosen.includes(o.value) : false; });
       all.checked = !chosen; pick.disabled = all.checked; all.onchange = () => { pick.disabled = all.checked; };
-      pick.setAttribute('aria-label', `${condition.name}の区分`);
-      line.append(element('strong', condition.name)); field('すべて', all, line); line.append(pick); block.append(line); rows.push({ all, pick });
+      pick.setAttribute('aria-label', `${condition.name}の値`);
+      line.append(element('strong', condition.name)); field('−（無関係）', all, line); line.append(pick); block.append(line); rows.push({ all, pick });
     }
     const entry = { rows, element: block }; clauses.push(entry); block.append(button('このORブロックを削除', () => { clauses.splice(clauses.indexOf(entry), 1); block.remove(); }));
   }
   r.anyOf.forEach(add); m.form.append(button('＋ ORブロック', () => add()));
-  const actions = element('div', '', 'modal-actions'); actions.append(button('キャンセル', m.close), button('条件を反映', () => {
+  const actions = element('div', '', 'modal-actions'); actions.append(button('キャンセル', m.close), button('条件指定を反映', () => {
     if (!clauses.length) throw new Error('条件ブロックを1つ以上残してください');
     const next = clone(table); let omitted = false;
     next.rules.find(x => x.id === id)!.anyOf = clauses.map(c => ({ selections: table.conditions.flatMap((x, i) => {
       if (c.rows[i].all.checked) { omitted = true; return []; }
-      const ids = Array.from(c.rows[i].pick.selectedOptions).map(o => o.value); if (!ids.length) throw new Error(`「${x.name}」の区分を1つ以上選ぶか、「すべて」にしてください`);
+      const ids = Array.from(c.rows[i].pick.selectedOptions).map(o => o.value); if (!ids.length) throw new Error(`「${x.name}」の値を1つ以上選ぶか、「−」にしてください`);
       return [{ conditionId: x.id, partitionIds: ids }];
     }) }));
     if (omitted) next.schemaVersion = '1.1';
@@ -163,13 +163,13 @@ function outputControl(ruleId: string, output: Output, d: Directive) {
   const wrap = element('div', '', 'value-editor');
   const set = (value: Directive) => { const next = clone(table), r = next.rules.find(r => r.id === ruleId)!; r.directives[next.outputs.findIndex(o => o.id === output.id)] = value; commit(next, '値を反映しました'); };
   if (output.kind === 'action' || output.type === 'boolean') {
-    const s = select([['unset', '— 未設定'], ['true', output.kind === 'action' ? '実行する' : 'true'], ['false', output.kind === 'action' ? '実行しない' : 'false']], d.state === 'unset' ? 'unset' : String(d.value));
+    const s = select(output.kind === 'action' ? [['unset', '−'], ['true', 'X']] : [['unset', '−'], ['true', 'true'], ['false', 'false']], output.kind === 'action' ? (d.state === 'set' && d.value === true ? 'true' : 'unset') : d.state === 'unset' ? 'unset' : String(d.value)); // JIS X 0125 3.3: X = executed, − = not executed
     s.setAttribute('aria-label', output.name); s.onchange = () => void run(() => set(s.value === 'unset' ? { outputId: output.id, state: 'unset' } : { outputId: output.id, state: 'set', value: s.value === 'true' })); wrap.append(s);
   } else if (output.type === 'enum') {
-    const s = select([['unset', '— 未設定'], ...(output.values ?? []).map((v, i): [string, string] => [String(i), v === '' ? '（空文字）' : v])], d.state === 'unset' ? 'unset' : String((output.values ?? []).indexOf(d.value as string)));
+    const s = select([['unset', '−'], ...(output.values ?? []).map((v, i): [string, string] => [String(i), v === '' ? '（空文字）' : v])], d.state === 'unset' ? 'unset' : String((output.values ?? []).indexOf(d.value as string)));
     s.setAttribute('aria-label', output.name); s.onchange = () => void run(() => set(s.value === 'unset' ? { outputId: output.id, state: 'unset' } : { outputId: output.id, state: 'set', value: output.values![Number(s.value)] })); wrap.append(s);
   } else {
-    const i = input(d.state === 'set' ? String(d.value) : ''); i.placeholder = d.state === 'unset' ? '未設定' : output.type === 'string' ? '（空文字）' : ''; i.setAttribute('aria-label', output.name);
+    const i = input(d.state === 'set' ? String(d.value) : ''); i.placeholder = d.state === 'unset' ? '−' : output.type === 'string' ? '（空文字）' : ''; i.setAttribute('aria-label', output.name);
     i.onchange = () => void run(() => set({ outputId: output.id, state: 'set', value: i.value })); wrap.append(i);
     if (output.type === 'string' && d.state === 'unset') wrap.append(button('空文字', () => set({ outputId: output.id, state: 'set', value: '' }), 'tiny'));
     if (d.state === 'set') wrap.append(button('×', () => set({ outputId: output.id, state: 'unset' }), 'tiny'));
@@ -234,28 +234,43 @@ function updateStatus() {
 function renderCheck() {
   const host = $('check'); host.replaceChildren(); host.hidden = !table.rules.length || !table.conditions.length; if (host.hidden) return;
   for (const id of Object.keys(checkPicks)) if (!table.conditions.some(c => c.id === id && c.partitions.some(p => p.id === checkPicks[id]))) delete checkPicks[id];
-  const head = element('div', '', 'panel-heading'); head.append(element('h2', '結果を確認'), button('指定を解除', () => { checkPicks = {}; renderCheck(); })); host.append(head);
-  host.append(element('p', '条件の区分を選ぶと、その条件に適用される結果だけを表示します。選ばない条件は「指定なし」として、選んだ条件だけで絞り込みます。表は変更しません。', 'muted'));
+  const head = element('div', '', 'panel-heading'); head.append(element('h2', '決定表の解釈'), button('指定を解除', () => { checkPicks = {}; renderCheck(); })); host.append(head);
+  host.append(element('p', '条件の値を選ぶと、その条件の組合せで満足される規則と、実行される動作を表示します。動作が決まるまで条件を選んでください。無関係な条件（−）は選ばなくても決まります。表は変更しません。', 'muted'));
+  // TASK-006: mark the conditions that still have to be chosen before the result is determined.
+  let needed: string[] = []; try { needed = inspect(table, checkPicks).relevant; } catch { /* reported below */ }
   const filters = element('div', '', 'lookup');
   for (const c of table.conditions) {
-    const s = select([['', '指定なし'], ...c.partitions.map((p): [string, string] => [p.id, p.label])], checkPicks[c.id] ?? ''); s.setAttribute('aria-label', `${c.name}（結果を確認）`);
-    s.onchange = () => { if (s.value) checkPicks[c.id] = s.value; else delete checkPicks[c.id]; renderCheck(); }; field(c.name, s, filters);
+    const s = select([['', '指定なし'], ...c.partitions.map((p): [string, string] => [p.id, p.label])], checkPicks[c.id] ?? ''); s.setAttribute('aria-label', `${c.name}（解釈する値）`);
+    s.onchange = () => { if (s.value) checkPicks[c.id] = s.value; else delete checkPicks[c.id]; renderCheck(); }; field(needed.includes(c.id) ? `${c.name}（選ぶと絞り込めます）` : c.name, s, filters);
   }
   host.append(filters);
   try {
     const found = inspect(table, checkPicks), chosen = Object.keys(checkPicks).length;
-    const value = (d: Directive) => { const o = table.outputs.find(o => o.id === d.outputId); if (d.state === 'unset') return '未設定'; if (o?.kind === 'action') return d.value ? '実行する' : '実行しない'; return d.value === '' ? '（空文字）' : String(d.value); };
-    const outcome = (ds: Directive[]) => ds.length ? ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}：${value(d)}`).join(' ／ ') : '（動作・結果が未定義）';
-    host.append(element('p', `${chosen ? `${chosen}条件を指定` : '指定なし（表全体）'}：対象は${found.total.toLocaleString('ja-JP')}組み合わせ、適合する規則は${found.rules.length}件です。${found.exact ? '' : '結果の種類ごとにまとめて表示します。'}`, 'check-summary'));
-    // TASK-004: every rule that applies must give the same result; group by result and flag a contradiction.
-    const groups = new Map<string, { directives: Directive[]; rules: number[]; always: boolean }>();
-    for (const r of found.rules) { const key = stable(r.directives), g = groups.get(key) ?? { directives: r.directives, rules: [], always: false }; g.rules.push(r.index + 1); g.always ||= r.always; groups.set(key, g); }
-    if (found.conflict) host.append(element('p', found.exact ? 'この入力には違う結果の規則が適合しており、結果が1つに決まりません（矛盾）。規則を直してください。' : 'この範囲には、違う結果の規則が同じ入力に適合する箇所があります（矛盾）。「検証」で場所を確認してください。', 'check-empty'));
-    for (const g of groups.values()) { const row = element('div', '', 'check-result'); row.append(element('strong', outcome(g.directives)), element('small', `${found.exact ? '' : g.always ? 'この範囲で必ず適用 ／ ' : '残りの条件による ／ '}規則 ${g.rules.slice(0, 12).map(n => `#${n}`).join(' ')}${g.rules.length > 12 ? ` ほか${g.rules.length - 12}件` : ''}`)); host.append(row); }
-    if (!found.rules.length) host.append(element('p', 'この条件に適用される規則はありません。', 'check-empty'));
-    else if (found.uncovered === null) host.append(element('p', '規則のない入力があるかどうかは、計算予算を超えたため判定できていません。', 'muted'));
-    else if (found.uncovered > 0n) host.append(element('p', `この範囲のうち${found.uncovered.toLocaleString('ja-JP')}組み合わせには、適用される規則がありません。`, 'check-empty'));
-  } catch (e) { host.append(element('p', `結果を表示できません：${(e as Error).message}`, 'muted')); }
+    const value = (d: Directive) => { const o = table.outputs.find(o => o.id === d.outputId); if (o?.kind === 'action') return d.state === 'set' && d.value === true ? 'X（実行する）' : '−（実行しない）'; if (d.state === 'unset') return '−'; return d.value === '' ? '（空文字）' : String(d.value); };
+    const outcome = (ds: Directive[]) => ds.length ? ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}：${value(d)}`).join(' ／ ') : '（動作が未定義）';
+    // TASK-007 (INS-006): every output is decided on its own by the rules that set it; show one value per output.
+    const numbers = (list: number[]) => `規則 ${list.slice(0, 12).map(i => `#${i + 1}`).join(' ')}${list.length > 12 ? ` ほか${list.length - 12}件` : ''}`;
+    // TASK-005: show the conditions of the rules behind a value; a rule that names every partition applies to any choice.
+    const why = (index: number) => { const r = table.rules[index]; return `規則 #${index + 1}：` + r.anyOf.map(clause => clause.selections.length ? clause.selections.map(sel => { const c = table.conditions.find(x => x.id === sel.conditionId)!; return `${c.name}=${sel.partitionIds.length === c.partitions.length && sel.partitionIds.length > 1 ? `全${sel.partitionIds.length}値を個別に指定` : sel.partitionIds.map(id => c.partitions.find(p => p.id === id)!.label).join('・')}`; }).join(' かつ ') : 'すべての組合せ').join(' ／ または ') + (r.anyOf.every(clause => clause.selections.length === table.conditions.length) ? '' : '（書いていない条件は−）'); };
+    const scope = `${chosen ? `${chosen}条件を指定` : '条件は未指定'}（対象は${found.total.toLocaleString('ja-JP')}組合せ）`;
+    const names = table.conditions.filter(c => found.relevant.includes(c.id)).map(c => c.name), open = found.outputs.some(o => o.status === 'open');
+    const headline = !found.rules.length ? 'この条件の組合せで満足される規則はありません（完備していません）。'
+      : found.determined ? `実行される動作が決まりました。${found.exact ? '' : '選んでいない条件が何であっても、この動作です。'}`
+      : found.conflict ? '同じ動作に異なる値を指定する規則が満足されており、決まらない動作があります（動作指定の不一致）。規則を直してください。'
+      : open ? `まだ決まっていない動作があります。${names.length ? `次の条件を選ぶと絞り込めます：${names.join('、')}` : ''}`
+      : '実行される動作が決まりました。';
+    host.append(element('p', `${scope}：${headline}`, found.rules.length && !found.conflict ? 'check-summary' : 'check-empty'));
+    if (found.rules.length) for (const o of found.outputs) {
+      const name = table.outputs.find(x => x.id === o.outputId)!.name, row = element('div', '', `check-result ${o.status}`);
+      if (o.status === 'determined') {
+        row.append(element('strong', `${name}：${value(o.directive!)}`), element('small', numbers(o.rules))); host.append(row);
+        o.rules.slice(0, 2).forEach(i => host.append(element('p', why(i), 'check-why'))); if (o.rules.length > 2) host.append(element('p', `ほか${o.rules.length - 2}件の規則も同じ値を指定しています。`, 'check-why'));
+      } else if (o.status === 'conflict') { row.append(element('strong', `${name}：決まりません（動作指定の不一致）`), element('small', o.candidates.map(c => `${value(c.directive)}＝${numbers(c.rules)}`).join(' ／ '))); host.append(row); }
+      else if (o.status === 'open') { row.append(element('strong', `${name}：まだ決まりません`), element('small', `あり得る値：${o.candidates.map(c => value(c.directive)).join(' ／ ')}`)); host.append(row); }
+      else { row.append(element('strong', `${name}：−`), element('small', '満足される規則は、この動作を指定していません（実行しない）')); host.append(row); }
+    }
+    if (found.rules.length && !found.exact && found.uncovered !== null && found.uncovered > 0n) host.append(element('p', `この範囲のうち${found.uncovered.toLocaleString('ja-JP')}組合せには、満足される規則がありません（完備していません）。`, 'check-empty'));
+  } catch (e) { host.append(element('p', `解釈を表示できません：${(e as Error).message}`, 'muted')); }
 }
 // TASK-003 / REQ-011 / SCR-004: candidates, the repeated result and the reasons are always computed from the current table.
 function refreshMerge() {
@@ -263,73 +278,100 @@ function refreshMerge() {
 }
 function renderPanel() {
   const host = $('side-panel'); host.replaceChildren(); host.hidden = panel === 'none'; if (panel === 'none') return;
-  const head = element('div', '', 'panel-heading'); head.append(element('h2', panel === 'diagnostics' ? '表の検証' : panel === 'merge' ? '同じ結果をまとめる' : '元の組み合わせへ展開'), button('閉じる', () => { panel = 'none'; renderPanel(); })); host.append(head);
+  const head = element('div', '', 'panel-heading'); head.append(element('h2', panel === 'diagnostics' ? '検証（完備性と動作指定）' : panel === 'merge' ? '表の簡単化（規則の結合）' : panel === 'patterns' ? '決定表（単適合）' : '条件指定の全組合せ'), button('閉じる', () => { panel = 'none'; renderPanel(); })); host.append(head);
   try {
   if (panel === 'diagnostics') {
     const ds = diagnose(table); host.append(element('p', ds.length ? `${ds.length}件の診断があります。` : '定義した値域で問題は見つかりませんでした。業務上の正しさを保証する判定ではありません。'));
-    ds.forEach(d => { const row = element('div', '', `diagnostic ${d.level}`); const index = table.rules.findIndex(r => r.id === d.target); row.append(element('strong', index >= 0 ? `規則 #${index + 1}` : d.target === 'rules' ? '規則全体' : d.target), element('span', d.message)); host.append(row); });
+    ds.forEach(d => { const row = element('div', '', `diagnostic ${d.level}`); const index = table.rules.findIndex(r => r.id === d.target); row.append(element('strong', index >= 0 ? `規則 #${index + 1}` : d.target === 'rules' ? '規則全体' : table.outputs.find(o => o.id === d.target)?.name ?? d.target), element('span', d.message)); host.append(row); });
   } else if (panel === 'merge') {
-    host.append(element('p', 'どの入力についても結果が変わらないと確認できた候補だけを表示します。同じ結果の規則は、重なっていても1つにまとめます。全件を列挙できる表は全入力で比較し、超える表は条件の集合が一致することを証明します。承認前は正本を変更しません。'));
+    host.append(element('p', '条件のどの組合せについても動作が変わらないと確認できた候補だけを表示します。動作指定がすべて同じ規則を1つに結合し、条件指定を整理します。全組合せを列挙できる表は全組合せで比較し、超える表は条件指定の範囲が一致することを証明します。承認前は正本を変更しません。'));
     // Merging keeps every result, so existing contradictions survive it; say so before the user compresses a broken table.
-    const clash = contradictions(table).pairs; if (clash) host.append(element('p', `この表には結果が食い違う規則が${clash}組あります。まとめても矛盾はそのまま残ります。先に「検証」で直すことを勧めます。`, 'check-empty'));
+    const clash = contradictions(table).pairs; if (clash) host.append(element('p', `この表には動作指定が一致しない規則が${clash}組あります。結合しても不一致はそのまま残ります。先に「検証」で直すことを勧めます。`, 'check-empty'));
     const numbers = (ids: string[]) => ids.map(id => `#${table.rules.findIndex(r => r.id === id) + 1}`).join(' ');
     const reapply = (next: Table, note: string) => { commit(next, note); refreshMerge(); panel = 'merge'; renderPanel(); };
     if (compressed && compressed.steps > 0) {
       // "部分的に圧縮を繰り返す": every step is one proven candidate; the user approves the end result once.
       const all = compressed, row = element('div', '', 'candidate'), blocks = (t: Table) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
-      row.append(element('strong', `すべて繰り返し適用：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `候補の反映と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています`), button('結果のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の統合・整理を反映しました。`); }, 'primary'));
+      row.append(element('strong', `繰り返し結合：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `結合と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています`), button('簡単化後のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の結合を反映しました。`); }, 'primary'));
       host.append(row);
     }
-    if (!candidates.length) host.append(element('p', '承認可能な候補はありません。', 'muted'));
+    if (!candidates.length) host.append(element('p', '承認可能な結合候補はありません。', 'muted'));
     candidates.forEach(c => {
       const row = element('div', '', 'candidate'), sources = c.before.map(id => table.rules.find(r => r.id === id)!), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
       const toAll = c.replacement.anyOf.some(clause => table.conditions.some(x => !clause.selections.some(s => s.conditionId === x.id) && sources.some(r => r.anyOf.some(o => o.selections.some(s => s.conditionId === x.id)))));
-      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則 → 1規則` : `規則 ${numbers(c.before)} の条件を整理`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '条件の集合の一致から等価性を証明' : `${c.checked}組み合わせで等価性確認`}${toAll ? ' ／ 全区分がそろった条件は「すべて」になります（あとで追加した区分も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('統合する条件と結果'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認してまとめる', () => reapply(applyCandidate(table, c), '承認した候補を反映し、残りの候補を再計算しました。'), 'primary'));
+      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則を結合 → 1規則` : from > to ? `規則 ${numbers(c.before)} の条件指定を整理` : `規則 ${numbers(c.before)} の条件指定を「−」に`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '条件の集合の一致から等価性を証明' : `${c.checked}組合せで等価性確認`}${toAll ? ' ／ すべての値がそろった条件指定は「−」になります（あとで追加した値も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('結合する規則'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認して結合', () => reapply(applyCandidate(table, c), '承認した結合を反映し、残りの候補を再計算しました。'), 'primary'));
       host.append(row);
     });
     // Rules with an unset output are not merged (DAT-003/005); say so instead of leaving the list unexplained.
-    const unset = table.rules.filter(r => r.directives.some(d => d.state === 'unset')).length;
-    if (unset) host.append(element('p', `未設定の出力がある規則は対象外です（${unset}件）。`, 'muted'));
+    const idle = table.outputs.length ? table.rules.filter(r => r.directives.every(d => d.state === 'unset')).length : 0;
+    if (idle) host.append(element('p', `動作を何も指定していない規則は対象外です（${idle}件）。`, 'muted'));
     const distinct = new Set(table.rules.map(r => stable(r.directives))).size;
-    if (!candidates.length && !unset && table.rules.length) host.append(element('p', `現在の${table.rules.length}規則は結果が${distinct}種類で、同じ結果の規則はすでに1つずつにまとまっています。これ以上はまとめられません。`, 'muted'));
+    if (!candidates.length && table.rules.length) host.append(element('p', `現在の${table.rules.length}規則は、動作指定が${distinct}種類です。同じ動作指定の規則はすでに結合済みで、これ以上は結合できません。ここでの規則の数は、決定表（単適合）の規則の数とは別です。`, 'muted'));
+  } else if (panel === 'patterns') {
+    // TASK-009 (INS-008): the rules above are the working notation; this is the decision table itself, single-hit,
+    // in the general form of JIS X 0125 figure 1: conditions and actions in rows, one rule per column.
+    const found = patterns(table, 1000), show = (v: Scalar, at: number) => table.outputs[at].kind === 'action' ? (v ? 'X' : '−') : v === '' ? '（空文字）' : String(v);
+    if (!found) host.append(element('p', '決定表（単適合）は、計算予算を超えたため表示できません。「簡単化」で規則を結合してから試してください。', 'check-empty'));
+    else {
+      const columns = found.flatMap(x => x.chunks.map(chunk => ({ pattern: x, chunk }))), all = found.reduce((n, x) => n + x.chunkCount, 0), shown = columns.slice(0, 60);
+      const total = count(table), covered = found.filter(x => x.satisfied).reduce((n, x) => n + x.size, 0n), kinds = found.filter(x => x.satisfied).length;
+      host.append(element('p', `規則の記述から求めた単適合決定表です。条件の組合せのどの1つも、この表のただ1つの規則（列）でだけ満足されます。条件と動作を行、規則を列に書いています。規則は${all}個、動作指定の組合せは${kinds}通りです。`));
+      const wrap = element('div', '', 'jis-wrap'), grid = element('table', '', 'jis-table'), head = element('tr'), thead = element('thead'), body = element('tbody');
+      head.append(element('th', '規則')); shown.forEach((c, i) => head.append(element('th', `${i + 1}${c.pattern.satisfied ? '' : ' *'}`, c.pattern.satisfied ? '' : 'gap'))); thead.append(head); grid.append(thead);
+      for (const c of table.conditions) {
+        const tr = element('tr'); tr.append(element('th', c.name));
+        for (const col of shown) { const sel = col.chunk.selections.find(x => x.conditionId === c.id); tr.append(element('td', sel ? sel.partitionIds.map(id => c.partitions.find(x => x.id === id)!.label).join('・') : '−', col.pattern.satisfied ? '' : 'gap')); }
+        body.append(tr);
+      }
+      table.outputs.forEach((o, at) => {
+        const tr = element('tr', '', at === 0 ? 'divider' : ''); tr.append(element('th', o.name));
+        for (const col of shown) { const values = col.pattern.outputs[at].values; tr.append(element('td', !col.pattern.satisfied ? '' : values.length === 0 ? '−' : values.length > 1 ? `不一致（${values.map(v => show(v, at)).join('／')}）` : show(values[0], at), col.pattern.satisfied ? (values.length > 1 ? 'clash' : '') : 'gap')); }
+        body.append(tr);
+      });
+      const counts = element('tr', '', table.outputs.length ? 'count' : 'count divider'); counts.append(element('th', '規則数（組合せ数）')); shown.forEach(col => counts.append(element('td', col.chunk.size.toLocaleString('ja-JP'), col.pattern.satisfied ? '' : 'gap'))); body.append(counts);
+      grid.append(body); wrap.append(grid); host.append(wrap);
+      if (all > shown.length) host.append(element('p', `先頭${shown.length}規則を表示しています（全${all}規則）。`, 'muted'));
+      host.append(element('p', covered === total ? `規則数の検査：各規則の組合せ数の合計は${total.toLocaleString('ja-JP')}で、条件指定の全組合せと一致します（完備しています）。` : `規則数の検査：満足される規則がある組合せは${covered.toLocaleString('ja-JP')}で、条件指定の全組合せ${total.toLocaleString('ja-JP')}に足りません（完備していません）。「*」の列は、満足される規則がない条件の組合せです。`, covered === total ? 'check-summary' : 'check-empty'));
+      if (found.some(x => x.outputs.some(o => o.values.length > 1))) host.append(element('p', '「不一致」の欄は、同じ動作に異なる値を指定する規則が同時に満足される組合せです。「検証」で規則を確認してください。', 'check-empty'));
+    }
   } else {
     const total = count(table), pre = element('pre');
-    const effects = (ds: Directive[]) => ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}=${d.state === 'unset' ? '未設定' : JSON.stringify(d.value)}`).join(', ');
+    const effects = (ds: Directive[]) => ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}=${d.state === 'unset' ? '−' : JSON.stringify(d.value)}`).join(', ');
     const number = (ruleId: string) => table.rules.findIndex(r => r.id === ruleId) + 1;
-    host.append(element('p', '特定の条件の結果だけを見るには、表の下の「結果を確認」を使ってください。', 'muted'));
-    if (total > 1000n) host.append(element('p', `全${total.toLocaleString('ja-JP')}組み合わせのうち先頭1,000件を表示します。元データは切り捨てていません。`));
-    pre.textContent = expandRows(table, 1000).map((row, i) => { const conditions = table.conditions.map(c => `${c.name}=${c.partitions.find(p => p.id === row.atom[c.id])?.label}`).join(' / '); const lines = row.matches.map((match, order) => `${order + 1}. 規則 #${number(match.ruleId)}: ${effects(match.directives)}`).join('\n    '); return `${i + 1}. ${conditions}\n    ${lines || '適合する規則なし'}`; }).join('\n\n'); host.append(pre);
+    host.append(element('p', '特定の条件の組合せだけを見るには、表の下の「決定表の解釈」を使ってください。', 'muted'));
+    if (total > 1000n) host.append(element('p', `全${total.toLocaleString('ja-JP')}組合せのうち先頭1,000件を表示します。元データは切り捨てていません。`));
+    pre.textContent = expandRows(table, 1000).map((row, i) => { const conditions = table.conditions.map(c => `${c.name}=${c.partitions.find(p => p.id === row.atom[c.id])?.label}`).join(' / '); const lines = row.matches.map((match, order) => `${order + 1}. 規則 #${number(match.ruleId)}: ${effects(match.directives)}`).join('\n    '); return `${i + 1}. ${conditions}\n    ${lines || '満足される規則なし'}`; }).join('\n\n'); host.append(pre);
   }
   } catch (e) { host.append(element('p', `この表示は計算できませんでした：${(e as Error).message}`, 'muted')); }
 }
 function render() {
   const title = $('title') as HTMLInputElement; title.value = table.title; title.onchange = () => void run(() => commit({ ...table, title: title.value }));
   $('file-actions').replaceChildren(button('＋ 新しい表', clearWorkspace), button('JSONを開く', () => fileTask(openFile)), button('保存', () => fileTask(save)), button('別名で保存', () => fileTask(saveAs)), button('サンプルを開く', loadDemo, 'sample-button'));
-  $('edit-actions').replaceChildren(button('＋ 条件', () => conditionDialog()), button('＋ 動作・結果', () => outputDialog()), button('＋ 規則', () => {
+  $('edit-actions').replaceChildren(button('＋ 条件', () => conditionDialog()), button('＋ 動作', () => outputDialog()), button('＋ 規則', () => {
     const next = addRule(table); page = Math.floor((next.rules.length - 1) / 40);
-    commit(next, `規則を追加しました。条件のセルをクリックして対象を絞り、結果を入力してください。${table.schemaVersion === '1.0' ? 'この表はスキーマ1.1として保存されます（1.0のみ対応の旧版では読み込めません）。' : ''}`);
-  }, 'primary'), button('組み合わせを生成', () => {
-    const n = count(table); if (n > BigInt(LIMIT)) throw new Error(`${n.toLocaleString('ja-JP')}組み合わせは全件生成の上限${LIMIT.toLocaleString('ja-JP')}件を超えます。「＋ 規則」で規則を1行ずつ記述してください`);
-    if (n > 1000n && !confirm(`${n}組み合わせを生成します。続けますか？`)) return;
+    commit(next, `規則を追加しました。条件指定のセルをクリックして値を選び、動作指定を入力してください。${table.schemaVersion === '1.0' ? 'この表はスキーマ1.1として保存されます（1.0のみ対応の旧版では読み込めません）。' : ''}`);
+  }, 'primary'), button('全組合せの規則を作成', () => {
+    const n = count(table); if (n > BigInt(LIMIT)) throw new Error(`条件指定の全組合せ${n.toLocaleString('ja-JP')}件は、規則を作成できる上限${LIMIT.toLocaleString('ja-JP')}件を超えます。「＋ 規則」で規則を1つずつ記述してください`);
+    if (n > 1000n && !confirm(`条件指定の全組合せ${n}件の規則を作成します。続けますか？`)) return;
     if (table.rules.length) { regenerateDialog(); return; }
-    commit(generate(table), '条件の組み合わせを生成しました。各規則の結果を入力してください。');
-  }), button('検証', () => { panel = 'diagnostics'; renderPanel(); }), button('まとめる', async () => { message('同じ結果の候補と等価性を確認しています…'); await new Promise(r => setTimeout(r, 0)); refreshMerge(); panel = 'merge'; renderPanel(); message(`${candidates.length}件の承認可能な統合候補があります`); }), button('展開表示', () => { panel = 'expand'; renderPanel(); }));
+    commit(generate(table), '条件指定の全組合せの規則を作成しました。各規則の動作指定を入力してください。');
+  }), button('検証', () => { panel = 'diagnostics'; renderPanel(); }), button('簡単化', async () => { message('結合できる規則と等価性を確認しています…'); await new Promise(r => setTimeout(r, 0)); refreshMerge(); panel = 'merge'; renderPanel(); message(`${candidates.length}件の承認可能な結合候補があります`); }), button('決定表（単適合）', () => { panel = 'patterns'; renderPanel(); }), button('全組合せ', () => { panel = 'expand'; renderPanel(); }));
   const counts = $('counts'); counts.replaceChildren();
-  for (const [value, label] of [[count(table).toLocaleString('ja-JP'), '元の組み合わせ'], [String(table.rules.length), '現在の規則']] as [string, string][]) { const item = element('div'); item.append(element('strong', value), element('span', label)); counts.append(item); }
-  const pattern = element('div'); let patterns = '—'; try { if (table.rules.length) patterns = String(patternCount(table)); } catch { patterns = '未算出'; } pattern.append(element('strong', patterns), element('span', '結果パターン')); counts.append(pattern);
+  for (const [value, label] of [[count(table).toLocaleString('ja-JP'), '条件指定の全組合せ'], [String(table.rules.length), '規則']] as [string, string][]) { const item = element('div'); item.append(element('strong', value), element('span', label)); counts.append(item); }
+  const pattern = element('div'); let patterns = '—'; try { if (table.rules.length) patterns = String(patternCount(table)); } catch { patterns = '未算出'; } pattern.append(element('strong', patterns), element('span', '動作指定の組合せ')); counts.append(pattern);
   const defs = $('definition-list'); defs.replaceChildren();
-  for (const c of table.conditions) { const chip = element('div', '', 'definition-chip'); chip.append(button(`${c.name} · ${c.partitions.length}区分`, () => conditionDialog(c)), button('×', () => { const next = clone(table); next.conditions = next.conditions.filter(x => x.id !== c.id); if (!next.conditions.length && table.rules.length) { if (!confirm('最後の条件を削除すると規則を保持できません。先にJSONを保存してください。規則も削除しますか？')) return; commit({ ...next, rules: [] }); } else { if (table.rules.length && !confirm(`条件「${c.name}」とその区分の定義を削除しますか？規則は保持し、この条件の指定だけを外します。`)) return; applyDefinitions(next, () => {}); } }, 'tiny')); defs.append(chip); }
-  for (const o of table.outputs) { const chip = element('div', '', 'definition-chip output-chip'); chip.append(button(`${o.name} · ${o.kind === 'action' ? '動作' : o.type}`, () => outputDialog(o)), button('×', () => { if (!confirm(`出力「${o.name}」と入力済みの値を削除しますか？`)) return; const next = clone(table); next.outputs = next.outputs.filter(x => x.id !== o.id); next.rules.forEach(r => { r.directives = r.directives.filter(d => d.outputId !== o.id); }); commit(next); }, 'tiny')); defs.append(chip); }
+  for (const c of table.conditions) { const chip = element('div', '', 'definition-chip'); chip.append(button(`${c.name} · 値${c.partitions.length}個`, () => conditionDialog(c)), button('×', () => { const next = clone(table); next.conditions = next.conditions.filter(x => x.id !== c.id); if (!next.conditions.length && table.rules.length) { if (!confirm('最後の条件を削除すると規則を保持できません。先にJSONを保存してください。規則も削除しますか？')) return; commit({ ...next, rules: [] }); } else { if (table.rules.length && !confirm(`条件「${c.name}」とその値の定義を削除しますか？規則は保持し、この条件の条件指定だけを外します。`)) return; applyDefinitions(next, () => {}); } }, 'tiny')); defs.append(chip); }
+  for (const o of table.outputs) { const chip = element('div', '', 'definition-chip output-chip'); chip.append(button(`${o.name} · ${o.kind === 'action' ? '制限指定' : `拡張指定 ${o.type}`}`, () => outputDialog(o)), button('×', () => { if (!confirm(`動作「${o.name}」と入力済みの動作指定を削除しますか？`)) return; const next = clone(table); next.outputs = next.outputs.filter(x => x.id !== o.id); next.rules.forEach(r => { r.directives = r.directives.filter(d => d.outputId !== o.id); }); commit(next); }, 'tiny')); defs.append(chip); }
   const wrap = $('table-wrap'); wrap.replaceChildren();
   if (!table.rules.length) {
-    const blank = element('div', '', 'empty-state'); blank.append(element('div', '⊞', 'empty-icon'), element('h2', '最初のルールをつくりましょう'), element('p', table.conditions.length ? '「＋ 規則」で規則を1行ずつ書きます。条件は「すべて」のままにも、区分を絞ることもできます。\n組み合わせが少ない表は「組み合わせを生成」で全件を作れます。' : 'まず「＋ 条件」と「＋ 動作・結果」を定義し、「＋ 規則」で規則を1行ずつ書きます。\nサンプルなら、編集から統合までひと通り試せます。'), button('サンプルで試す →', loadDemo, 'primary')); wrap.append(blank);
+    const blank = element('div', '', 'empty-state'); blank.append(element('div', '⊞', 'empty-icon'), element('h2', '最初のルールをつくりましょう'), element('p', table.conditions.length ? '「＋ 規則」で規則を1つずつ書きます。条件指定は「−」（無関係）のままにも、値を選ぶこともできます。\n条件の値が少ない表は「全組合せの規則を作成」も使えます。' : 'まず「＋ 条件」と「＋ 動作」を定義し、「＋ 規則」で規則を1つずつ書きます。\nサンプルなら、編集から簡単化までひと通り試せます。'), button('サンプルで試す →', loadDemo, 'primary')); wrap.append(blank);
   } else {
     const grid = element('table', '', 'decision-table'), thead = element('thead'), hr = element('tr'); hr.append(element('th', '#')); table.conditions.forEach(c => hr.append(element('th', c.name))); table.outputs.forEach(o => hr.append(element('th', o.name, 'output-heading'))); hr.append(element('th', '順序')); thead.append(hr); grid.append(thead);
     const body = element('tbody');
     table.rules.slice(page * 40, page * 40 + 40).forEach((r, offset) => {
       const index = page * 40 + offset, tr = element('tr'); tr.id = `row-${r.id}`; const indexCell = element('td'); indexCell.append(element('strong', String(index + 1)), element('small', r.anyOf.length > 1 ? `OR ${r.anyOf.length}` : 'RULE')); tr.append(indexCell);
       for (const c of table.conditions) {
-        const td = element('td'); const descriptions = r.anyOf.map(clause => { const ids = clause.selections.find(s => s.conditionId === c.id)?.partitionIds; return !ids ? 'すべて' : ids.length === c.partitions.length && ids.length > 1 ? `全${ids.length}区分を個別指定` : ids.map(id => c.partitions.find(p => p.id === id)!.label).join(' / '); });
+        const td = element('td'); const descriptions = r.anyOf.map(clause => { const ids = clause.selections.find(s => s.conditionId === c.id)?.partitionIds; return !ids ? '−' : ids.length === c.partitions.length && ids.length > 1 ? `全${ids.length}値を個別に指定` : ids.map(id => c.partitions.find(p => p.id === id)!.label).join(' / '); });
         td.append(button([...new Set(descriptions)].join(' または '), () => ruleConditions(r.id), 'cell-button')); if (r.anyOf.length > 1) td.append(element('small', 'ORの組合せはクリックで確認')); tr.append(td);
       }
       table.outputs.forEach((o, i) => { const td = element('td', '', 'output-cell'); td.append(outputControl(r.id, o, r.directives[i])); tr.append(td); });
