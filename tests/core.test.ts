@@ -61,7 +61,7 @@ test('explicit missing is a separate finite partition; duplicate missing is reje
 });
 test('same output on disjoint inputs merges and preserves the entire trace', () => {
   const t = setAll(fixture(2)); assert.equal(patternCount(t), 1); const cs = proposeMerges(t); assert.equal(cs.length, 1); assert.equal(cs[0].checked, 4);
-  const merged = applyCandidate(t, cs[0]); assert.equal(merged.rules.length, 1); assert.equal(merged.rules[0].anyOf.length, 4); assert.equal(verifyEquivalent(t, merged).equal, true);
+  const merged = applyCandidate(t, cs[0]); assert.equal(merged.rules.length, 1); assert.deepEqual(merged.rules[0].anyOf, [{ selections: [] }]); assert.equal(merged.schemaVersion, '1.1'); assert.equal(verifyEquivalent(t, merged).equal, true); // four combinations fold into "all"
 });
 test('diagonal inputs retain OR structure without broadening into a rectangle', () => {
   const t = fixture(2); t.rules.forEach((r, i) => { r.directives = [{ outputId: 'o', state: 'set', value: [0, 3].includes(i) ? '1' : '2' }]; });
