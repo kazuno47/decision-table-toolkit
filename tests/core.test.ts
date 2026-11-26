@@ -41,7 +41,7 @@ test('unknown properties on union branches and malicious keys are never ignored'
 test('JSON roundtrip preserves unset, false, zero and empty string distinctions', () => {
   const t = fixture(1); t.outputs = [{ id: 'b', name: 'bool', kind: 'result', type: 'boolean' }, { id: 'n', name: 'num', kind: 'result', type: 'number' }, { id: 's', name: 'str', kind: 'result', type: 'string' }, { id: 'u', name: 'unset', kind: 'action' }];
   t.rules.forEach(r => { r.directives = [{ outputId: 'b', state: 'set', value: false }, { outputId: 'n', state: 'set', value: '0' }, { outputId: 's', state: 'set', value: '' }, { outputId: 'u', state: 'unset' }]; });
-  assert.deepEqual(decode(encode(t)), t); const ds = diagnose(t); assert.ok(ds.some(d => d.message.includes('「unset」を決める規則がない入力'))); assert.equal(ds.some(d => d.message.includes('何も決めていません')), false); // an unset output means "not decided by this rule"
+  assert.deepEqual(decode(encode(t)), t); const ds = diagnose(t); assert.equal(ds.some(d => d.message.includes('何も指定していません')), false); assert.equal(ds.length, 0); // an unset action is the entry "-" (JIS X 0125 3.3), not an unfinished cell
 });
 function rangeCondition(type: 'number' | 'date', ranges: { lower: string | null; upper: string | null; lowerInclusive: boolean; upperInclusive: boolean }[]): Condition {
   return { id: 'c', name: 'range', type, partitions: ranges.map((range, i) => ({ id: `p${i}`, label: String(i), kind: 'range', range })) };
@@ -77,9 +77,9 @@ test('two identical rules give one result and collapse into one rule (INS-004)',
 test('rules with the same result merge across a contradicting rule, and the contradiction stays reported', () => {
   const t = setAll(fixture(1)); const first = clone(t.rules[0]);
   t.rules = [first, { ...clone(first), id: 'middle', directives: [{ outputId: 'o', state: 'set', value: '2' }] }, { ...clone(first), id: 'last' }];
-  assert.ok(diagnose(t).some(d => d.level === 'error' && d.message.includes('食い違')));
+  assert.ok(diagnose(t).some(d => d.level === 'error' && d.message.includes('動作指定が一致しません')));
   const cs = proposeMerges(t); assert.equal(cs.length, 1); const merged = applyCandidate(t, cs[0]); assert.deepEqual(merged.rules.map(r => r.id), [first.id, 'middle']);
-  assert.equal(verifyEquivalent(t, merged).equal, true); assert.ok(diagnose(merged).some(d => d.level === 'error' && d.message.includes('食い違')));
+  assert.equal(verifyEquivalent(t, merged).equal, true); assert.ok(diagnose(merged).some(d => d.level === 'error' && d.message.includes('動作指定が一致しません')));
 });
 test('equivalence budgets and stale candidate protection fail closed', () => {
   const t = setAll(fixture(2)); const c = proposeMerges(t)[0]; const changed = clone(t); changed.title = '別の版'; assert.throws(() => applyCandidate(changed, c), /失効/);

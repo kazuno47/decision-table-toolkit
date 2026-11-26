@@ -144,7 +144,7 @@
       for (const p of c.partitions) {
         try {
           if (p.kind === "values") {
-            if (["number", "date"].includes(c.type)) error(c.id, "\u6570\u5024\u30FB\u65E5\u4ED8\u306F\u7BC4\u56F2\u533A\u5206\u3067\u5B9A\u7FA9\u3057\u3066\u304F\u3060\u3055\u3044");
+            if (["number", "date"].includes(c.type)) error(c.id, "\u6570\u5024\u30FB\u65E5\u4ED8\u306E\u5024\u306F\u7BC4\u56F2\u3067\u5B9A\u7FA9\u3057\u3066\u304F\u3060\u3055\u3044");
             unique(p.values.map(stable), p.id);
             if (p.values.some((v) => !validValue(c.type, v))) error(p.id, "\u6761\u4EF6\u306E\u578B\u3068\u5024\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093");
           }
@@ -158,7 +158,7 @@
       }
       for (let i = 0; i < c.partitions.length; i++) for (let j = i + 1; j < c.partitions.length; j++) {
         try {
-          if (partitionsOverlap(c.type, c.partitions[i], c.partitions[j])) error(c.id, `\u533A\u5206\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059: ${c.partitions[i].label} / ${c.partitions[j].label}`);
+          if (partitionsOverlap(c.type, c.partitions[i], c.partitions[j])) error(c.id, `\u6761\u4EF6\u306E\u5024\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059: ${c.partitions[i].label} / ${c.partitions[j].label}`);
         } catch {
         }
       }
@@ -172,14 +172,14 @@
         for (const s of clause2.selections) {
           const c = table2.conditions.find((c2) => c2.id === s.conditionId);
           unique(s.partitionIds, r.id);
-          if (!c || s.partitionIds.some((id2) => !c.partitions.some((p) => p.id === id2))) error(r.id, "\u672A\u77E5\u306E\u6761\u4EF6\u30FB\u533A\u5206\u3078\u306E\u53C2\u7167\u3067\u3059");
+          if (!c || s.partitionIds.some((id2) => !c.partitions.some((p) => p.id === id2))) error(r.id, "\u672A\u77E5\u306E\u6761\u4EF6\u30FB\u5024\u3078\u306E\u53C2\u7167\u3067\u3059");
         }
       }
-      if (r.directives.length !== table2.outputs.length) error(r.id, "\u5168\u51FA\u529B\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044");
+      if (r.directives.length !== table2.outputs.length) error(r.id, "\u3059\u3079\u3066\u306E\u52D5\u4F5C\u306B\u3064\u3044\u3066\u52D5\u4F5C\u6307\u5B9A\u304C\u5FC5\u8981\u3067\u3059");
       r.directives.forEach((d, i) => {
         const o = table2.outputs[i];
-        if (!o || d.outputId !== o.id) error(r.id, "\u51FA\u529B\u306E\u53C2\u7167\u307E\u305F\u306F\u9806\u5E8F\u304C\u4E0D\u6B63\u3067\u3059");
-        else if (d.state === "set" && !validValue(o.kind === "action" ? "boolean" : o.type, d.value, o.kind === "result" ? o.values : void 0)) error(r.id, `\u51FA\u529B\u300C${o.name}\u300D\u306E\u578B\u307E\u305F\u306F\u5024\u304C\u4E0D\u6B63\u3067\u3059`);
+        if (!o || d.outputId !== o.id) error(r.id, "\u52D5\u4F5C\u306E\u53C2\u7167\u307E\u305F\u306F\u9806\u5E8F\u304C\u4E0D\u6B63\u3067\u3059");
+        else if (d.state === "set" && !validValue(o.kind === "action" ? "boolean" : o.type, d.value, o.kind === "result" ? o.values : void 0)) error(r.id, `\u52D5\u4F5C\u300C${o.name}\u300D\u306E\u578B\u307E\u305F\u306F\u5024\u304C\u4E0D\u6B63\u3067\u3059`);
       });
     }
     return ds;
@@ -202,7 +202,7 @@
     return t.conditions.length ? t.conditions.reduce((n, c) => n * BigInt(c.partitions.length), 1n) : 0n;
   }
   function atoms(t, limit = LIMIT) {
-    if (count(t) > BigInt(limit)) throw new Error(`${count(t)}\u7D44\u307F\u5408\u308F\u305B\u306F\u8A08\u7B97\u4E88\u7B97${limit}\u4EF6\u3092\u8D85\u3048\u308B\u305F\u3081\u5168\u4EF6\u306E\u5217\u6319\u306F\u3067\u304D\u307E\u305B\u3093\u3002\u898F\u5247\u30921\u884C\u305A\u3064\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u691C\u8A3C\u30FB\u7D71\u5408\u30FB\u5C55\u958B\u306F\u5217\u6319\u306A\u3057\u3067\u5229\u7528\u3067\u304D\u307E\u3059\uFF09`);
+    if (count(t) > BigInt(limit)) throw new Error(`\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${count(t)}\u4EF6\u306F\u8A08\u7B97\u4E88\u7B97${limit}\u4EF6\u3092\u8D85\u3048\u308B\u305F\u3081\u5217\u6319\u3067\u304D\u307E\u305B\u3093\u3002\u898F\u5247\u30921\u884C\u305A\u3064\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u691C\u8A3C\u30FB\u7C21\u5358\u5316\u30FB\u89E3\u91C8\u306F\u5217\u6319\u306A\u3057\u3067\u5229\u7528\u3067\u304D\u307E\u3059\uFF09`);
     if (!t.conditions.length) return [];
     let cells = [{}];
     for (const c of t.conditions) cells = cells.flatMap((a) => c.partitions.map((p) => ({ ...a, [c.id]: p.id })));
@@ -217,6 +217,7 @@
   function normalizedDirectives(t, ds) {
     return ds.map((d, i) => {
       const o = t.outputs[i];
+      if (o?.kind === "action" && d.state === "set" && d.value !== true) return { outputId: d.outputId, state: "unset" };
       if (d.state === "set" && o?.kind === "result" && o.type === "number" && typeof d.value === "string") {
         let [value, scale] = decimal(d.value);
         while (scale > 0 && value % 10n === 0n) {
@@ -265,7 +266,7 @@
     const cells = atoms(a);
     const weight = (t) => t.rules.reduce((n, r) => n + r.anyOf.reduce((n2, c) => n2 + c.selections.reduce((n3, s) => n3 + s.partitionIds.length, 0), 0), 0);
     if (cells.length * (weight(a) + weight(b) + 1) > budget) return { equal: false, checked: 0, reason: "\u8A3C\u660E\u306E\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059" };
-    for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: "\u5165\u529B\u306B\u5BFE\u3059\u308B\u7D50\u679C\u304C\u7570\u306A\u308A\u307E\u3059" };
+    for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: "\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306B\u5BFE\u3059\u308B\u52D5\u4F5C\u304C\u7570\u306A\u308A\u307E\u3059" };
     return { equal: true, checked: cells.length };
   }
   function replaceCandidate(t, c) {
@@ -307,41 +308,30 @@
   function diagnose(t) {
     const result = validate(t);
     if (result.length) return result;
-    for (const r of t.rules) if (t.outputs.length && r.directives.every((d) => d.state === "unset")) result.push({ level: "warning", target: r.id, message: "\u3053\u306E\u898F\u5247\u306F\u52D5\u4F5C\u30FB\u7D50\u679C\u3092\u4F55\u3082\u6C7A\u3081\u3066\u3044\u307E\u305B\u3093" });
+    for (const r of t.rules) if (t.outputs.length && idle(t, r)) result.push({ level: "warning", target: r.id, message: "\u3053\u306E\u898F\u5247\u306F\u52D5\u4F5C\u3092\u4F55\u3082\u6307\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF08\u52D5\u4F5C\u6307\u5B9A\u304C\u3059\u3079\u3066\u300C\u2212\u300D\u3067\u3059\uFF09" });
     try {
       const total = count(t);
       if (total > 0n) {
         const cov = coverage(t);
-        if (!cov.complete) result.push({ level: "warning", target: "rules", message: "\u7DB2\u7F85\u6027\u306F\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093\uFF08\u554F\u984C\u306A\u3057\u3068\u306F\u5224\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF09" });
+        if (!cov.complete) result.push({ level: "warning", target: "rules", message: "\u5B8C\u5099\u6027\u306F\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u308B\u3068\u306F\u5224\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF09" });
         else if (cov.uncovered) {
-          result.push({ level: "warning", target: "rules", message: `${cov.uncovered}\u7D44\u307F\u5408\u308F\u305B\u306B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5BA3\u8A00\u3057\u305F\u5024\u57DF\u5185\uFF09` });
-          cov.chunks.slice(0, 20).forEach((chunk) => result.push({ level: "warning", target: "\u672A\u7DB2\u7F85", message: `${describeChunk(t, chunk)}\uFF08${chunk.size}\u7D44\u307F\u5408\u308F\u305B\uFF09` }));
-          if (cov.chunks.length > 20) result.push({ level: "warning", target: "\u672A\u7DB2\u7F85", message: `\u307B\u304B${cov.chunks.length - 20}\u500B\u306E\u304B\u305F\u307E\u308A\u304C\u3042\u308A\u307E\u3059\u3002\u898F\u5247\u3092\u8FFD\u52A0\u3057\u3066\u518D\u691C\u8A3C\u3057\u3066\u304F\u3060\u3055\u3044` });
+          result.push({ level: "warning", target: "rules", message: `\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF1A\u6761\u4EF6\u6307\u5B9A\u306E${cov.uncovered}\u7D44\u5408\u305B\u3092\u6E80\u8DB3\u3059\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5B9A\u7FA9\u3057\u305F\u5024\u306E\u7BC4\u56F2\u5185\uFF09` });
+          cov.chunks.slice(0, 20).forEach((chunk) => result.push({ level: "warning", target: "\u5B8C\u5099\u6027", message: `${describeChunk(t, chunk)}\uFF08${chunk.size}\u7D44\u5408\u305B\uFF09` }));
+          if (cov.chunks.length > 20) result.push({ level: "warning", target: "\u5B8C\u5099\u6027", message: `\u307B\u304B${cov.chunks.length - 20}\u500B\u306E\u304B\u305F\u307E\u308A\u304C\u3042\u308A\u307E\u3059\u3002\u898F\u5247\u3092\u8FFD\u52A0\u3057\u3066\u518D\u691C\u8A3C\u3057\u3066\u304F\u3060\u3055\u3044` });
         }
-        t.outputs.forEach((o, index) => {
-          const open = coverage(t, 2e5, 2e6, (r) => r.directives[index]?.state === "set");
-          if (!open.complete) {
-            result.push({ level: "warning", target: o.id, message: `\u300C${o.name}\u300D\u304C\u6C7A\u307E\u3089\u306A\u3044\u5165\u529B\u304C\u3042\u308B\u304B\u3069\u3046\u304B\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093` });
-            return;
-          }
-          if (!open.uncovered || cov.complete && open.uncovered === cov.uncovered) return;
-          result.push({ level: "warning", target: o.id, message: `\u300C${o.name}\u300D\u3092\u6C7A\u3081\u308B\u898F\u5247\u304C\u306A\u3044\u5165\u529B\u304C${open.uncovered}\u7D44\u307F\u5408\u308F\u305B\u3042\u308A\u307E\u3059` });
-          open.chunks.slice(0, 5).forEach((chunk) => result.push({ level: "warning", target: "\u672A\u6C7A\u5B9A", message: `\u300C${o.name}\u300D\uFF1A${describeChunk(t, chunk)}\uFF08${chunk.size}\u7D44\u307F\u5408\u308F\u305B\uFF09` }));
-          if (open.chunks.length > 5) result.push({ level: "warning", target: "\u672A\u6C7A\u5B9A", message: `\u300C${o.name}\u300D\uFF1A\u307B\u304B${open.chunks.length - 5}\u500B\u306E\u304B\u305F\u307E\u308A\u304C\u3042\u308A\u307E\u3059` });
-        });
         const clash = contradictions(t);
         if (clash.pairs) {
-          result.push({ level: "error", target: "rules", message: `${clash.pairs}\u7D44${clash.complete ? "" : "\u4EE5\u4E0A"}\u306E\u898F\u5247\u3067\u7D50\u679C\u304C\u98DF\u3044\u9055\u3063\u3066\u3044\u307E\u3059\u3002\u540C\u3058\u5165\u529B\u306B\u3001\u540C\u3058\u52D5\u4F5C\u30FB\u7D50\u679C\u3078\u9055\u3046\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u9069\u5408\u3059\u308B\u305F\u3081\u3001\u7D50\u679C\u304C1\u3064\u306B\u6C7A\u307E\u308A\u307E\u305B\u3093` });
-          clash.examples.forEach((e) => result.push({ level: "error", target: "\u77DB\u76FE", message: `\u898F\u5247 #${e.rules[0] + 1} \u3068 #${e.rules[1] + 1}\uFF1A${describeChunk(t, e.chunk)}\uFF08${e.chunk.size}\u7D44\u307F\u5408\u308F\u305B${e.more ? "\u307B\u304B" : ""}\uFF09\u3067\u300C${e.outputs.map((o) => t.outputs[o].name).join("\u300D\u300C")}\u300D\u304C\u98DF\u3044\u9055\u3044\u307E\u3059` }));
-          if (clash.pairs > clash.examples.length) result.push({ level: "error", target: "\u77DB\u76FE", message: `\u307B\u304B${clash.pairs - clash.examples.length}\u7D44\u3042\u308A\u307E\u3059\u3002\u898F\u5247\u3092\u76F4\u3057\u3066\u518D\u691C\u8A3C\u3057\u3066\u304F\u3060\u3055\u3044` });
+          result.push({ level: "error", target: "rules", message: `${clash.pairs}\u7D44${clash.complete ? "" : "\u4EE5\u4E0A"}\u306E\u898F\u5247\u3067\u52D5\u4F5C\u6307\u5B9A\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002\u540C\u3058\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3001\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3057\u3066\u3044\u308B\u305F\u3081\u3001\u5358\u9069\u5408\u6C7A\u5B9A\u8868\u306B\u306A\u308A\u307E\u305B\u3093` });
+          clash.examples.forEach((e) => result.push({ level: "error", target: "\u4E0D\u4E00\u81F4", message: `\u898F\u5247 #${e.rules[0] + 1} \u3068 #${e.rules[1] + 1}\uFF1A${describeChunk(t, e.chunk)}\uFF08${e.chunk.size}\u7D44\u5408\u305B${e.more ? "\u307B\u304B" : ""}\uFF09\u3067\u52D5\u4F5C\u300C${e.outputs.map((o) => t.outputs[o].name).join("\u300D\u300C")}\u300D\u306E\u6307\u5B9A\u304C\u7570\u306A\u308A\u307E\u3059` }));
+          if (clash.pairs > clash.examples.length) result.push({ level: "error", target: "\u4E0D\u4E00\u81F4", message: `\u307B\u304B${clash.pairs - clash.examples.length}\u7D44\u3042\u308A\u307E\u3059\u3002\u898F\u5247\u3092\u76F4\u3057\u3066\u518D\u691C\u8A3C\u3057\u3066\u304F\u3060\u3055\u3044` });
         }
-        if (clash.same) result.push({ level: "info", target: "rules", message: `${clash.same}\u7D44${clash.complete ? "" : "\u4EE5\u4E0A"}\u306E\u898F\u5247\u304C\u540C\u3058\u6307\u5B9A\u3067\u91CD\u306A\u3063\u3066\u3044\u307E\u3059\u3002\u300C\u307E\u3068\u3081\u308B\u300D\u3067\u6574\u7406\u3067\u304D\u307E\u3059` });
-        if (!clash.complete) result.push({ level: "warning", target: "rules", message: "\u7D50\u679C\u306E\u98DF\u3044\u9055\u3044\u306E\u78BA\u8A8D\u306F\u8A08\u7B97\u4E88\u7B97\u3067\u6253\u3061\u5207\u308A\u307E\u3057\u305F\uFF08\u6B8B\u308A\u306F\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093\uFF09" });
+        if (clash.same) result.push({ level: "info", target: "rules", message: `${clash.same}\u7D44${clash.complete ? "" : "\u4EE5\u4E0A"}\u306E\u898F\u5247\u304C\u540C\u3058\u6307\u5B9A\u3067\u91CD\u306A\u3063\u3066\u3044\u307E\u3059\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u7D50\u5408\u3067\u304D\u307E\u3059` });
+        if (!clash.complete) result.push({ level: "warning", target: "rules", message: "\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\u306E\u78BA\u8A8D\u306F\u8A08\u7B97\u4E88\u7B97\u3067\u6253\u3061\u5207\u308A\u307E\u3057\u305F\uFF08\u6B8B\u308A\u306F\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093\uFF09" });
       }
       const keys = /* @__PURE__ */ new Set();
       for (const r of t.rules) {
         const k = stable({ anyOf: r.anyOf, directives: r.directives });
-        if (keys.has(k)) result.push({ level: "warning", target: r.id, message: "\u540C\u3058\u6761\u4EF6\u3068\u51FA\u529B\u306E\u898F\u5247\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u300C\u307E\u3068\u3081\u308B\u300D\u30671\u3064\u306B\u3067\u304D\u307E\u3059" });
+        if (keys.has(k)) result.push({ level: "warning", target: r.id, message: "\u540C\u3058\u6761\u4EF6\u6307\u5B9A\u3068\u52D5\u4F5C\u6307\u5B9A\u306E\u898F\u5247\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u300C\u7C21\u5358\u5316\u300D\u30671\u3064\u306B\u7D50\u5408\u3067\u304D\u307E\u3059" });
         keys.add(k);
       }
     } catch (e) {
@@ -351,7 +341,7 @@
   }
   function patternCount(t) {
     const found = patterns(t);
-    if (!found) throw new Error("\u7D50\u679C\u30D1\u30BF\u30FC\u30F3\u6570\u306F\u8A08\u7B97\u4E88\u7B97\u306E\u305F\u3081\u672A\u7B97\u51FA");
+    if (!found) throw new Error("\u5358\u9069\u5408\u306B\u5C55\u958B\u3057\u305F\u898F\u5247\u6570\u306F\u8A08\u7B97\u4E88\u7B97\u306E\u305F\u3081\u672A\u7B97\u51FA");
     return found.length;
   }
   function regeneratePreserving(old, next) {
@@ -394,7 +384,7 @@
     assertValid(t);
     const cells = atomsHead(t, displayLimit);
     const weight = t.rules.reduce((n, r) => n + r.anyOf.reduce((n2, c) => n2 + c.selections.reduce((n3, s) => n3 + s.partitionIds.length, 0), 0), 0);
-    if (Math.min(cells.length, displayLimit) * weight > 2e6) throw new Error("\u5C55\u958B\u5BFE\u5FDC\u306E\u8868\u793A\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059\u3002\u898F\u5247\u3092\u6574\u7406\u3057\u3066\u304F\u3060\u3055\u3044");
+    if (Math.min(cells.length, displayLimit) * weight > 2e6) throw new Error("\u5168\u7D44\u5408\u305B\u306E\u8868\u793A\u306F\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059\u3002\u898F\u5247\u3092\u7C21\u5358\u5316\u3057\u3066\u304F\u3060\u3055\u3044");
     return cells.slice(0, displayLimit).map((atom) => ({ atom, matches: t.rules.filter((r) => matches(r, atom)).map((r) => ({ ruleId: r.id, directives: clone(r.directives) })) }));
   }
   var fullMask = (c) => (1n << BigInt(c.partitions.length)) - 1n;
@@ -478,11 +468,11 @@
     return { complete: true, uncovered, chunks };
   }
   function describeChunk(t, chunk) {
-    if (!chunk.selections.length) return "\u3059\u3079\u3066\u306E\u7D44\u307F\u5408\u308F\u305B";
+    if (!chunk.selections.length) return "\u3059\u3079\u3066\u306E\u7D44\u5408\u305B";
     return chunk.selections.map((s) => {
       const c = t.conditions.find((c2) => c2.id === s.conditionId);
       return `${c.name}=${s.partitionIds.map((id2) => c.partitions.find((p) => p.id === id2).label).join("\u30FB")}`;
-    }).join(" / ") + (chunk.selections.length < t.conditions.length ? " / \u4ED6\u306E\u6761\u4EF6\u306F\u3059\u3079\u3066" : "");
+    }).join(" / ") + (chunk.selections.length < t.conditions.length ? " / \u4ED6\u306E\u6761\u4EF6\u306F\u2212" : "");
   }
   var cubeInside = (a, b) => a.every((m, i) => (m & ~b[i]) === 0n);
   function cubeClause(t, cube) {
@@ -518,7 +508,8 @@
   function buildCandidate(t, rules, proof, anchor = rules[0]) {
     return { id: uid("candidate"), base: stable(t), before: rules.map((r) => r.id), replacement: { id: anchor.id, anyOf: simplifyClauses(t, rules.flatMap((r) => r.anyOf)), directives: clone(anchor.directives) }, checked: 0, proof, anchor: anchor.id };
   }
-  var mergeKey = (t, r) => !r.directives.length || r.directives.every((d) => d.state === "unset") ? null : stable(normalizedDirectives(t, r.directives));
+  var idle = (t, r) => normalizedDirectives(t, r.directives).every((d) => d.state === "unset");
+  var mergeKey = (t, r) => !r.directives.length || idle(t, r) ? null : stable(normalizedDirectives(t, r.directives));
   function directiveGroups(t) {
     const groups = /* @__PURE__ */ new Map();
     t.rules.forEach((r, i) => {
@@ -765,7 +756,7 @@
       rules,
       uncovered,
       conflict: outputs.some((x) => x.status === "conflict"),
-      determined: outputs.length > 0 && outputs.every((x) => x.status === "determined"),
+      determined: rules.length > 0 && outputs.length > 0 && outputs.every((x) => x.status === "determined" || x.status === "none"),
       relevant: t.conditions.filter((_, k) => openConditions.has(k)).map((c) => c.id),
       outputs
     };
@@ -869,7 +860,7 @@
   var fileMessage = "\u30D5\u30A1\u30A4\u30EB\u672A\u9023\u643A";
   var status = "\u65B0\u3057\u3044\u8868\u3092\u4F5C\u6210\u3059\u308B\u304B\u3001\u30B5\u30F3\u30D7\u30EB\u3092\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
   var root = document.getElementById("app");
-  root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>\u2234</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2.1</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>\u6761\u4EF6\u3092\u6574\u7406\u3002<span>\u5224\u65AD\u3092\u660E\u78BA\u306B\u3002</span></h1><p class="intro">\u6761\u4EF6\u3068\u7D50\u679C\u3092\u3072\u3068\u3064\u306E\u8868\u306B\u3002\u30AA\u30D5\u30E9\u30A4\u30F3\u3067\u7DE8\u96C6\u30FB\u691C\u8A3C\u30FB\u5171\u6709\u3067\u304D\u307E\u3059\u3002</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0\u30FB1.1</small></div></header><nav id="file-actions" aria-label="\u30D5\u30A1\u30A4\u30EB\u64CD\u4F5C"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">DECISION TABLE</label><input id="title" aria-label="\u6C7A\u5B9A\u8868\u306E\u540D\u524D" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">\u7D50\u679C\u306F\u52D5\u4F5C\u30FB\u7D50\u679C\u3054\u3068\u306B1\u3064\uFF1A\u898F\u5247\u306B\u306F\u3001\u305D\u306E\u898F\u5247\u304C\u6C7A\u3081\u308B\u52D5\u4F5C\u30FB\u7D50\u679C\u3060\u3051\u3092\u6307\u5B9A\u3057\u307E\u3059\u3002\u5165\u529B\u306B\u5BFE\u3059\u308B\u7D50\u679C\u306F\u3001\u9069\u5408\u3057\u305F\u898F\u5247\u306E\u6307\u5B9A\u3092\u52D5\u4F5C\u30FB\u7D50\u679C\u3054\u3068\u306B\u5408\u308F\u305B\u305F\u3082\u306E\u3067\u3059\u3002\u540C\u3058\u52D5\u4F5C\u30FB\u7D50\u679C\u306B\u9055\u3046\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u3058\u5165\u529B\u306B\u9069\u5408\u3059\u308B\u5834\u5408\u306F\u300C\u691C\u8A3C\u300D\u3067\u77DB\u76FE\u3068\u3057\u3066\u6307\u6458\u3057\u307E\u3059\u3002\u898F\u5247\u306E\u4E26\u3073\u9806\u306F\u7D50\u679C\u306B\u5F71\u97FF\u3057\u307E\u305B\u3093\u3002\u696D\u52D9\u51E6\u7406\u306F\u5B9F\u884C\u3057\u307E\u305B\u3093\u3002JIS\u5B8C\u5168\u6E96\u62E0\u3092\u4FDD\u8A3C\u3057\u307E\u305B\u3093\u3002</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="check" class="check-panel" hidden></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>\u4F7F\u3044\u65B9\u3068\u4FDD\u5B58\u30FB\u30D5\u30A1\u30A4\u30EB\u9023\u643A\u306B\u3064\u3044\u3066</summary><ol><li>\u6761\u4EF6\u3068\u52D5\u4F5C\u30FB\u7D50\u679C\u3092\u5B9A\u7FA9\u3057\u3001\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u884C\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\u6761\u4EF6\u306F\u300C\u3059\u3079\u3066\u300D\u306E\u307E\u307E\u306B\u3082\u3001\u533A\u5206\u3092\u7D5E\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002\u7D44\u307F\u5408\u308F\u305B\u304C\u5C11\u306A\u3044\u8868\u306F\u5168\u4EF6\u3092\u751F\u6210\u3059\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002</li><li>\u5404\u898F\u5247\u306B\u306F\u3001\u305D\u306E\u898F\u5247\u304C\u6C7A\u3081\u308B\u52D5\u4F5C\u30FB\u7D50\u679C\u3060\u3051\u3092\u5165\u529B\u3057\u307E\u3059\u3002\u6C7A\u3081\u306A\u3044\u3082\u306E\u306F\u300C\u6C7A\u3081\u306A\u3044\u300D\u306E\u307E\u307E\u306B\u3057\u307E\u3059\u3002\u300C\u4E0D\u8981\u300D\u306F\u5024\u306E1\u3064\u306A\u306E\u3067\u3001\u6C7A\u3081\u306A\u3044\u5834\u5408\u306B\u306F\u4F7F\u3044\u307E\u305B\u3093\u3002</li><li>\u691C\u8A3C\u3067\u3001\u898F\u5247\u306E\u306A\u3044\u5165\u529B\u30FB\u6C7A\u307E\u3089\u306A\u3044\u52D5\u4F5C\u3084\u7D50\u679C\u30FB\u77DB\u76FE\uFF08\u540C\u3058\u52D5\u4F5C\u3084\u7D50\u679C\u306B\u9055\u3046\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u3058\u5165\u529B\u306B\u9069\u5408\u3059\u308B\u7B87\u6240\uFF09\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002\u300C\u7D50\u679C\u30D1\u30BF\u30FC\u30F3\u300D\u3067\u3001\u3053\u306E\u8868\u304C\u51FA\u3059\u7D50\u679C\u306E\u7D44\u307F\u5408\u308F\u305B\u3092\u4E00\u89A7\u3067\u304D\u307E\u3059\u3002</li><li>\u8868\u306E\u4E0B\u306E\u300C\u7D50\u679C\u3092\u78BA\u8A8D\u300D\u3067\u6761\u4EF6\u306E\u533A\u5206\u3092\u9078\u3076\u3068\u3001\u305D\u306E\u6761\u4EF6\u306B\u9069\u7528\u3055\u308C\u308B\u7D50\u679C\u3060\u3051\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002\u9078\u3070\u306A\u3044\u6761\u4EF6\u306F\u6307\u5B9A\u306A\u3057\u3068\u3057\u3066\u6271\u3044\u307E\u3059\u3002</li><li>\u300C\u307E\u3068\u3081\u308B\u300D\u3067\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3092\u4F5C\u6210\u3057\u3001\u627F\u8A8D\u3057\u3066\u53CD\u6620\u3057\u307E\u3059\u3002</li><li>JSON\u3067\u4FDD\u5B58\u30FB\u5171\u6709\u3057\u307E\u3059\u3002Chrome\u3067\u9078\u629E\u3057\u305F\u30D5\u30A1\u30A4\u30EB\u306F1\u79D2\u3092\u76EE\u5B89\u306B\u518D\u78BA\u8A8D\u3057\u307E\u3059\u3002</li></ol><p>\u5916\u90E8\u30C4\u30FC\u30EB\u3068\u540C\u3058\u30D5\u30A1\u30A4\u30EB\u3078\u540C\u6642\u306B\u4FDD\u5B58\u3057\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002\u30D6\u30E9\u30A6\u30B6\u3060\u3051\u3067OS\u5168\u4F53\u306E\u6392\u4ED6\u306F\u4FDD\u8A3C\u3067\u304D\u307E\u305B\u3093\u3002\u4FDD\u5B58\u524D\u306B\u4ED6\u30C4\u30FC\u30EB\u306E\u7DE8\u96C6\u3092\u505C\u6B62\u3059\u308B\u304B\u3001\u5225\u540D\u3078\u66F8\u304D\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30D0\u30C3\u30AF\u30B0\u30E9\u30A6\u30F3\u30C9\u4E2D\u306F\u691C\u77E5\u304C\u9045\u308C\u307E\u3059\u3002\u6A29\u9650\u3084API\u306B\u3088\u3063\u3066\u5229\u7528\u3067\u304D\u306A\u3044\u6A5F\u80FD\u304C\u3042\u308A\u307E\u3059\u3002\u30D5\u30A1\u30A4\u30EB\u9078\u629E\u30FB\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3060\u3051\u306E\u5229\u7528\u3067\u306F\u7D99\u7D9A\u78BA\u8A8D\u306F\u3067\u304D\u307E\u305B\u3093\u3002\u672A\u4FDD\u5B58\u5185\u5BB9\u306F\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u5931\u308F\u308C\u307E\u3059\u3002</p><div id="help-actions"></div></details></main>`;
+  root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>\u2234</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2.1</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>\u6761\u4EF6\u3092\u6574\u7406\u3002<span>\u5224\u65AD\u3092\u660E\u78BA\u306B\u3002</span></h1><p class="intro">\u6761\u4EF6\u3068\u52D5\u4F5C\u3092\u3072\u3068\u3064\u306E\u8868\u306B\u3002\u30AA\u30D5\u30E9\u30A4\u30F3\u3067\u7DE8\u96C6\u30FB\u691C\u8A3C\u30FB\u5171\u6709\u3067\u304D\u307E\u3059\u3002</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0\u30FB1.1</small></div></header><nav id="file-actions" aria-label="\u30D5\u30A1\u30A4\u30EB\u64CD\u4F5C"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">DECISION TABLE</label><input id="title" aria-label="\u8868\u898B\u51FA\u3057" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">\u3053\u306E\u8868\u306F\u3001\u8907\u6570\u306E\u898F\u5247\u304C\u540C\u3058\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u66F8\u304D\u65B9\uFF08\u591A\u91CD\u9069\u5408\uFF09\u304C\u3067\u304D\u307E\u3059\u3002\u52D5\u4F5C\u306F\u898F\u5247\u3054\u3068\u306B\u300CX\uFF08\u5B9F\u884C\u3059\u308B\uFF09\u300D\u304B\u300C\u2212\uFF08\u5B9F\u884C\u3057\u306A\u3044\uFF09\u300D\u3001\u307E\u305F\u306F\u5024\u3067\u6307\u5B9A\u3057\u3001\u6E80\u8DB3\u3055\u308C\u305F\u898F\u5247\u306E\u52D5\u4F5C\u6307\u5B9A\u3092\u52D5\u4F5C\u3054\u3068\u306B\u5408\u308F\u305B\u3066\u89E3\u91C8\u3057\u307E\u3059\u3002JIS X 0125 \u304C\u5B9A\u3081\u308B\u6C7A\u5B9A\u8868\u306F\u5358\u9069\u5408\uFF08\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3054\u3068\u306B\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C1\u3064\uFF09\u3067\u3001\u300C\u5358\u9069\u5408\u306B\u5C55\u958B\u300D\u3067\u305D\u306E\u5F62\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u6642\u306B\u6E80\u8DB3\u3055\u308C\u308B\u5834\u5408\u306F\u300C\u691C\u8A3C\u300D\u3067\u6307\u6458\u3057\u307E\u3059\u3002\u898F\u5247\u306E\u9806\u756A\u306F\u610F\u5473\u3092\u3082\u3061\u307E\u305B\u3093\u3002\u696D\u52D9\u51E6\u7406\u306F\u5B9F\u884C\u3057\u307E\u305B\u3093\u3002JIS\u5B8C\u5168\u6E96\u62E0\u3092\u4FDD\u8A3C\u3057\u307E\u305B\u3093\u3002</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="check" class="check-panel" hidden></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>\u4F7F\u3044\u65B9\u3068\u4FDD\u5B58\u30FB\u30D5\u30A1\u30A4\u30EB\u9023\u643A\u306B\u3064\u3044\u3066</summary><ol><li>\u6761\u4EF6\u3068\u3001\u6761\u4EF6\u306E\u3068\u308A\u5F97\u308B\u5024\u3092\u5B9A\u7FA9\u3057\u307E\u3059\u3002\u52D5\u4F5C\u3092\u5B9A\u7FA9\u3057\u307E\u3059\uFF08X\uFF0F\u2212\u3067\u6307\u5B9A\u3059\u308B\u5236\u9650\u6307\u5B9A\u3001\u307E\u305F\u306F\u8A9E\u53E5\u30FB\u5024\u3067\u6307\u5B9A\u3059\u308B\u62E1\u5F35\u6307\u5B9A\uFF09\u3002</li><li>\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u5217\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\u6761\u4EF6\u6307\u5B9A\u306F\u5024\u3092\u9078\u3076\u304B\u3001\u7121\u95A2\u4FC2\u306A\u3089\u300C\u2212\u300D\u306E\u307E\u307E\u306B\u3057\u307E\u3059\u3002\u52D5\u4F5C\u6307\u5B9A\u306F\u3001\u305D\u306E\u898F\u5247\u3067\u5B9F\u884C\u3059\u308B\u52D5\u4F5C\u306B\u300CX\u300D\u307E\u305F\u306F\u5024\u3092\u5165\u308C\u3001\u95A2\u4FC2\u3057\u306A\u3044\u52D5\u4F5C\u306F\u300C\u2212\u300D\u306E\u307E\u307E\u306B\u3057\u307E\u3059\u3002\u6761\u4EF6\u306E\u5024\u304C\u5C11\u306A\u3044\u8868\u306F\u3001\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210\u3059\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002</li><li>\u300C\u691C\u8A3C\u300D\u3067\u3001\u5B8C\u5099\u6027\uFF08\u6761\u4EF6\u6307\u5B9A\u306E\u3059\u3079\u3066\u306E\u7D44\u5408\u305B\u306B\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308B\u304B\uFF09\u3068\u3001\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002</li><li>\u8868\u306E\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u3067\u6761\u4EF6\u306E\u5024\u3092\u9078\u3076\u3068\u3001\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002\u300C\u5358\u9069\u5408\u306B\u5C55\u958B\u300D\u3067\u3001\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3054\u3068\u306E\u52D5\u4F5C\u3092\u5358\u9069\u5408\u6C7A\u5B9A\u8868\u306E\u898F\u5247\u3068\u3057\u3066\u4E00\u89A7\u3067\u304D\u307E\u3059\u3002</li><li>\u300C\u7C21\u5358\u5316\u300D\u3067\u3001\u52D5\u4F5C\u6307\u5B9A\u304C\u540C\u3058\u898F\u5247\u3092\u7D50\u5408\u3057\u3001\u6761\u4EF6\u6307\u5B9A\u3092\u300C\u2212\u300D\u306B\u7F6E\u304D\u63DB\u3048\u3066\u6574\u7406\u3057\u307E\u3059\u3002\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3060\u3051\u3092\u8868\u793A\u3057\u3001\u627F\u8A8D\u3057\u3066\u53CD\u6620\u3057\u307E\u3059\u3002</li><li>JSON\u3067\u4FDD\u5B58\u30FB\u5171\u6709\u3057\u307E\u3059\u3002Chrome\u3067\u9078\u629E\u3057\u305F\u30D5\u30A1\u30A4\u30EB\u306F1\u79D2\u3092\u76EE\u5B89\u306B\u518D\u78BA\u8A8D\u3057\u307E\u3059\u3002</li></ol><p>\u5916\u90E8\u30C4\u30FC\u30EB\u3068\u540C\u3058\u30D5\u30A1\u30A4\u30EB\u3078\u540C\u6642\u306B\u4FDD\u5B58\u3057\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002\u30D6\u30E9\u30A6\u30B6\u3060\u3051\u3067OS\u5168\u4F53\u306E\u6392\u4ED6\u306F\u4FDD\u8A3C\u3067\u304D\u307E\u305B\u3093\u3002\u4FDD\u5B58\u524D\u306B\u4ED6\u30C4\u30FC\u30EB\u306E\u7DE8\u96C6\u3092\u505C\u6B62\u3059\u308B\u304B\u3001\u5225\u540D\u3078\u66F8\u304D\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30D0\u30C3\u30AF\u30B0\u30E9\u30A6\u30F3\u30C9\u4E2D\u306F\u691C\u77E5\u304C\u9045\u308C\u307E\u3059\u3002\u6A29\u9650\u3084API\u306B\u3088\u3063\u3066\u5229\u7528\u3067\u304D\u306A\u3044\u6A5F\u80FD\u304C\u3042\u308A\u307E\u3059\u3002\u30D5\u30A1\u30A4\u30EB\u9078\u629E\u30FB\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3060\u3051\u306E\u5229\u7528\u3067\u306F\u7D99\u7D9A\u78BA\u8A8D\u306F\u3067\u304D\u307E\u305B\u3093\u3002\u672A\u4FDD\u5B58\u5185\u5BB9\u306F\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u5931\u308F\u308C\u307E\u3059\u3002</p><div id="help-actions"></div></details></main>`;
   var $ = (id2) => document.getElementById(id2);
   function element(tag, text2 = "", cls = "") {
     const e = document.createElement(tag);
@@ -947,7 +938,7 @@
     session = null;
     fileMessage = "\u30D5\u30A1\u30A4\u30EB\u672A\u9023\u643A";
     page = 0;
-    commit(demo(), "6\u7D44\u307F\u5408\u308F\u305B\u30FB2\u7D50\u679C\u30D1\u30BF\u30FC\u30F3\u306E\u30B5\u30F3\u30D7\u30EB\u3067\u3059\u3002\u300C\u307E\u3068\u3081\u308B\u300D\u3092\u8A66\u305B\u307E\u3059\u3002");
+    commit(demo(), "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B6\u4EF6\u3092\u898F\u5247\u306B\u3057\u305F\u30B5\u30F3\u30D7\u30EB\u3067\u3059\u3002\u300C\u7C21\u5358\u5316\u300D\u3092\u8A66\u305B\u307E\u3059\u3002");
   }
   function modal(title) {
     const d = element("dialog");
@@ -991,32 +982,32 @@
     }
     const migrated = migrateRules(table, { ...next, rules: [] }), affected = migrated.dropped + migrated.widened + migrated.narrowed;
     if (!affected) {
-      commit(migrated.table, "\u6761\u4EF6\u306E\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u898F\u5247\u306F\u3059\u3079\u3066\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002\u300C\u691C\u8A3C\u300D\u3067\u672A\u7DB2\u7F85\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      commit(migrated.table, "\u6761\u4EF6\u306E\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u898F\u5247\u306F\u3059\u3079\u3066\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002\u300C\u691C\u8A3C\u300D\u3067\u5B8C\u5099\u6027\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       close();
       return;
     }
     const m = modal("\u6761\u4EF6\u5909\u66F4\u306E\u5F71\u97FF\u3092\u78BA\u8A8D");
-    m.form.append(element("p", `\u898F\u5247${table.rules.length}\u4EF6\u306E\u3046\u3061\u3001\u305D\u306E\u307E\u307E\u4FDD\u6301\u3067\u304D\u306A\u3044\u3082\u306E\u304C\u3042\u308A\u307E\u3059\u3002\u524A\u9664\u3055\u308C\u308B\u898F\u5247\uFF1A${migrated.dropped}\u4EF6\uFF0F\u6307\u5B9A\u3057\u3066\u3044\u305F\u6761\u4EF6\u304C\u306A\u304F\u306A\u308A\u5BFE\u8C61\u304C\u5E83\u304C\u308B\u898F\u5247\uFF1A${migrated.widened}\u4EF6\uFF0F\u6307\u5B9A\u3057\u3066\u3044\u305F\u533A\u5206\u306E\u4E00\u90E8\u304C\u306A\u304F\u306A\u308B\u898F\u5247\uFF1A${migrated.narrowed}\u4EF6\u3002\u5909\u66F4\u524D\u306E\u8868\u306F\u9078\u629E\u304C\u5B8C\u4E86\u3059\u308B\u307E\u3067\u4FDD\u6301\u3057\u307E\u3059\u3002`));
+    m.form.append(element("p", `\u898F\u5247${table.rules.length}\u4EF6\u306E\u3046\u3061\u3001\u305D\u306E\u307E\u307E\u4FDD\u6301\u3067\u304D\u306A\u3044\u3082\u306E\u304C\u3042\u308A\u307E\u3059\u3002\u524A\u9664\u3055\u308C\u308B\u898F\u5247\uFF1A${migrated.dropped}\u4EF6\uFF0F\u6761\u4EF6\u6307\u5B9A\u306E\u3042\u3063\u305F\u6761\u4EF6\u304C\u306A\u304F\u306A\u308A\u5BFE\u8C61\u304C\u5E83\u304C\u308B\u898F\u5247\uFF1A${migrated.widened}\u4EF6\uFF0F\u6761\u4EF6\u6307\u5B9A\u306E\u5024\u306E\u4E00\u90E8\u304C\u306A\u304F\u306A\u308B\u898F\u5247\uFF1A${migrated.narrowed}\u4EF6\u3002\u5909\u66F4\u524D\u306E\u8868\u306F\u9078\u629E\u304C\u5B8C\u4E86\u3059\u308B\u307E\u3067\u4FDD\u6301\u3057\u307E\u3059\u3002`));
     const actions = element("div", "", "modal-actions");
     actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u898F\u5247\u3092\u4FDD\u6301\u3057\u3066\u53CD\u6620", () => {
-      commit(migrated.table, "\u6761\u4EF6\u306E\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u300C\u691C\u8A3C\u300D\u3067\u672A\u7DB2\u7F85\u3068\u77DB\u76FE\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      commit(migrated.table, "\u6761\u4EF6\u306E\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u300C\u691C\u8A3C\u300D\u3067\u5B8C\u5099\u6027\u3068\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       m.close();
       close();
     }, "primary"));
-    if (count(next) <= BigInt(LIMIT)) actions.append(button("\u5909\u66F4\u524DJSON\u3092\u66F8\u51FA\u5F8C\u3001\u5168\u7D44\u307F\u5408\u308F\u305B\u3092\u518D\u751F\u6210", () => {
+    if (count(next) <= BigInt(LIMIT)) actions.append(button("\u5909\u66F4\u524DJSON\u3092\u66F8\u51FA\u5F8C\u3001\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3059", () => {
       download(encode(table), "decision-table-before-change.json");
-      commit(generate({ ...next, rules: [] }), "\u5909\u66F4\u524DJSON\u306E\u66F8\u51FA\u3092\u958B\u59CB\u3057\u3001\u65B0\u3057\u3044\u7D44\u307F\u5408\u308F\u305B\u3092\u751F\u6210\u3057\u307E\u3057\u305F\u3002\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u5B8C\u4E86\u306F\u30D6\u30E9\u30A6\u30B6\u3067\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      commit(generate({ ...next, rules: [] }), "\u5909\u66F4\u524DJSON\u306E\u66F8\u51FA\u3092\u958B\u59CB\u3057\u3001\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3057\u307E\u3057\u305F\u3002\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u5B8C\u4E86\u306F\u30D6\u30E9\u30A6\u30B6\u3067\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
       m.close();
       close();
     }));
     m.form.append(actions);
   }
   function regenerateDialog() {
-    const migrated = regeneratePreserving(table, { ...clone(table), rules: [] }), m = modal("\u5168\u7D44\u307F\u5408\u308F\u305B\u3078\u5C55\u958B\u3057\u76F4\u3059");
-    m.form.append(element("p", `\u73FE\u5728\u306E\u898F\u5247${table.rules.length}\u4EF6\u3092\u3001${count(table)}\u7D44\u307F\u5408\u308F\u305B\u305D\u308C\u305E\u308C\u306E\u898F\u5247\u3078\u5C55\u958B\u3057\u76F4\u3057\u307E\u3059\u3002\u7D50\u679C\u3092\u5F15\u304D\u7D99\u3052\u306A\u3044\u7D44\u307F\u5408\u308F\u305B\uFF1A${migrated.affected}\u4EF6\u3002\u300C\u3059\u3079\u3066\u300D\u3084OR\u3067\u307E\u3068\u3081\u305F\u898F\u5247\u306E\u5F62\u306F\u5931\u308F\u308C\u307E\u3059\u3002`));
+    const migrated = regeneratePreserving(table, { ...clone(table), rules: [] }), m = modal("\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3059");
+    m.form.append(element("p", `\u73FE\u5728\u306E\u898F\u5247${table.rules.length}\u4EF6\u3092\u3001\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${count(table)}\u4EF6\u305D\u308C\u305E\u308C\u306E\u898F\u5247\u306B\u4F5C\u308A\u76F4\u3057\u307E\u3059\u3002\u52D5\u4F5C\u6307\u5B9A\u3092\u5F15\u304D\u7D99\u3052\u306A\u3044\u7D44\u5408\u305B\uFF1A${migrated.affected}\u4EF6\u3002\u300C\u2212\u300D\u3084OR\u3067\u7D50\u5408\u3057\u305F\u898F\u5247\u306E\u5F62\u306F\u5931\u308F\u308C\u307E\u3059\u3002`));
     const actions = element("div", "", "modal-actions");
-    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u5C55\u958B\u3057\u76F4\u3059", () => {
-      commit(migrated.table, "\u5168\u7D44\u307F\u5408\u308F\u305B\u3078\u5C55\u958B\u3057\u307E\u3057\u305F\u3002");
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u4F5C\u308A\u76F4\u3059", () => {
+      commit(migrated.table, "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3057\u307E\u3057\u305F\u3002");
       m.close();
     }, "primary"));
     m.form.append(actions);
@@ -1040,12 +1031,12 @@
       label.placeholder = "\u8868\u793A\u540D";
       const row = { low, high, li, hi, label };
       rangeRows.push(row);
-      field("\u533A\u5206\u540D", label, wrap);
+      field("\u5024\u306E\u540D\u524D", label, wrap);
       field("\u4E0B\u9650\uFF08\u7A7A\u6B04\uFF1D\u306A\u3057\uFF09", low, wrap);
       field("\u4E0B\u9650\u3092\u542B\u3080", li, wrap);
       field("\u4E0A\u9650\uFF08\u7A7A\u6B04\uFF1D\u306A\u3057\uFF09", high, wrap);
       field("\u4E0A\u9650\u3092\u542B\u3080", hi, wrap);
-      wrap.append(button("\u533A\u5206\u3092\u524A\u9664", () => {
+      wrap.append(button("\u5024\u3092\u524A\u9664", () => {
         rangeRows.splice(rangeRows.indexOf(row), 1);
         wrap.remove();
       }));
@@ -1054,7 +1045,7 @@
     function redraw() {
       defs.replaceChildren();
       rangeRows.length = 0;
-      if (type.value === "boolean") defs.append(element("p", "true / false \u306E2\u533A\u5206\u3092\u5B9A\u7FA9\u3057\u307E\u3059\u3002"));
+      if (type.value === "boolean") defs.append(element("p", "true / false \u306E2\u3064\u306E\u5024\u3092\u5B9A\u7FA9\u3057\u307E\u3059\u3002"));
       else if (type.value === "enum" || type.value === "string") {
         choices = element("textarea");
         choices.rows = 5;
@@ -1068,7 +1059,7 @@
         if (existing.length) existing.forEach((p) => addRange(p));
         else addRange();
       }
-      field("\u672A\u5B9A\u7FA9\u5024\u3092\u660E\u793A\u533A\u5206\u3068\u3057\u3066\u8FFD\u52A0", missing, defs);
+      field("\u672A\u5B9A\u7FA9\u3092\u6761\u4EF6\u306E\u5024\u3068\u3057\u3066\u8FFD\u52A0", missing, defs);
     }
     type.onchange = redraw;
     redraw();
@@ -1096,12 +1087,12 @@
     m.form.append(actions);
   }
   function outputDialog(original) {
-    const m = modal(original ? "\u52D5\u4F5C\u30FB\u7D50\u679C\u3092\u7DE8\u96C6" : "\u52D5\u4F5C\u30FB\u7D50\u679C\u3092\u8FFD\u52A0"), name = input(original?.name ?? ""), kind = select([["result", "\u7D50\u679C\u306E\u5024"], ["action", "\u52D5\u4F5C\u306E\u5B9F\u884C\u6709\u7121"]], original?.kind ?? "result"), type = select(types, original?.kind === "result" ? original.type : "boolean"), choices = element("textarea");
+    const m = modal(original ? "\u52D5\u4F5C\u3092\u7DE8\u96C6" : "\u52D5\u4F5C\u3092\u8FFD\u52A0"), name = input(original?.name ?? ""), kind = select([["result", "\u62E1\u5F35\u6307\u5B9A\uFF08\u8A9E\u53E5\u30FB\u5024\u3067\u6307\u5B9A\u3059\u308B\uFF09"], ["action", "\u5236\u9650\u6307\u5B9A\uFF08X\uFF0F\u2212\uFF1A\u5B9F\u884C\u3059\u308B\u30FB\u3057\u306A\u3044\uFF09"]], original?.kind ?? "result"), type = select(types, original?.kind === "result" ? original.type : "boolean"), choices = element("textarea");
     choices.value = original?.kind === "result" ? (original.values ?? []).join("\n") : "";
     choices.placeholder = "1\u884C\u306B1\u5019\u88DC";
     field("\u540D\u524D", name, m.form);
-    field("\u7A2E\u985E", kind, m.form);
-    const typeField = field("\u7D50\u679C\u306E\u578B", type, m.form), enumField = field("Enum\u306E\u5019\u88DC\u5024", choices, m.form);
+    field("\u52D5\u4F5C\u6307\u5B9A\u306E\u5F62\u5F0F", kind, m.form);
+    const typeField = field("\u5024\u306E\u578B", type, m.form), enumField = field("Enum\u306E\u5019\u88DC\u5024", choices, m.form);
     function redraw() {
       typeField.hidden = kind.value === "action";
       enumField.hidden = kind.value === "action" || type.value !== "enum";
@@ -1123,7 +1114,7 @@
         });
       });
       assertValid(next);
-      if (original && table.rules.length && !confirm("\u578B\u3084\u5019\u88DC\u306E\u5909\u66F4\u3067\u4FDD\u6301\u3067\u304D\u306A\u3044\u5024\u306F\u300C\u6C7A\u3081\u306A\u3044\u300D\u306B\u623B\u308A\u307E\u3059\u3002\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3059\u304B\uFF1F")) return;
+      if (original && table.rules.length && !confirm("\u578B\u3084\u5019\u88DC\u306E\u5909\u66F4\u3067\u4FDD\u6301\u3067\u304D\u306A\u3044\u52D5\u4F5C\u6307\u5B9A\u306F\u300C\u2212\u300D\u306B\u623B\u308A\u307E\u3059\u3002\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3059\u304B\uFF1F")) return;
       commit(next);
       m.close();
     }, "primary"));
@@ -1131,8 +1122,8 @@
   }
   function ruleConditions(id2) {
     const r = table.rules.find((r2) => r2.id === id2);
-    const m = modal("\u898F\u5247\u306E\u6761\u4EF6\u3092\u7DE8\u96C6\uFF08OR / AND\uFF09"), list = element("div");
-    m.form.append(element("p", "\u30D6\u30ED\u30C3\u30AF\u5185\u306E\u6761\u4EF6\u306FAND\u3001\u30D6\u30ED\u30C3\u30AF\u540C\u58EB\u306FOR\u3067\u3059\u3002\u540C\u3058\u898F\u5247\u3078\u8907\u6570\u30D6\u30ED\u30C3\u30AF\u304C\u4E00\u81F4\u3057\u3066\u3082\u9069\u7528\u306F1\u56DE\u3067\u3059\u3002\u300C\u3059\u3079\u3066\u300D\u306B\u3057\u305F\u6761\u4EF6\u306F\u3001\u3042\u3068\u304B\u3089\u533A\u5206\u3092\u8FFD\u52A0\u3057\u3066\u3082\u5BFE\u8C61\u306B\u542B\u307F\u307E\u3059\u3002\u533A\u5206\u3092\u9078\u3093\u3060\u6761\u4EF6\u306F\u3001\u9078\u3093\u3060\u533A\u5206\u3060\u3051\u304C\u5BFE\u8C61\u3067\u3059\u3002"), list);
+    const m = modal("\u898F\u5247\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u7DE8\u96C6\uFF08OR / AND\uFF09"), list = element("div");
+    m.form.append(element("p", "\u30D6\u30ED\u30C3\u30AF\u5185\u306E\u6761\u4EF6\u6307\u5B9A\u306FAND\u3001\u30D6\u30ED\u30C3\u30AF\u540C\u58EB\u306FOR\u3067\u3059\u3002\u300C\u2212\u300D\u306F\u3001\u305D\u306E\u6761\u4EF6\u304C\u3053\u306E\u898F\u5247\u306B\u306F\u7121\u95A2\u4FC2\u3067\u3042\u308B\u3053\u3068\u3092\u793A\u3057\u3001\u3042\u3068\u304B\u3089\u5024\u3092\u8FFD\u52A0\u3057\u3066\u3082\u5BFE\u8C61\u306B\u542B\u307F\u307E\u3059\u3002\u5024\u3092\u9078\u3093\u3060\u6761\u4EF6\u306F\u3001\u9078\u3093\u3060\u5024\u306E\u3068\u304D\u3060\u3051\u6E80\u8DB3\u3055\u308C\u307E\u3059\u3002"), list);
     const clauses = [];
     function add(c) {
       const block = element("div", "", "clause"), rows = [];
@@ -1150,9 +1141,9 @@
         all.onchange = () => {
           pick.disabled = all.checked;
         };
-        pick.setAttribute("aria-label", `${condition2.name}\u306E\u533A\u5206`);
+        pick.setAttribute("aria-label", `${condition2.name}\u306E\u5024`);
         line.append(element("strong", condition2.name));
-        field("\u3059\u3079\u3066", all, line);
+        field("\u2212\uFF08\u7121\u95A2\u4FC2\uFF09", all, line);
         line.append(pick);
         block.append(line);
         rows.push({ all, pick });
@@ -1167,7 +1158,7 @@
     r.anyOf.forEach(add);
     m.form.append(button("\uFF0B OR\u30D6\u30ED\u30C3\u30AF", () => add()));
     const actions = element("div", "", "modal-actions");
-    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u6761\u4EF6\u3092\u53CD\u6620", () => {
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u6761\u4EF6\u6307\u5B9A\u3092\u53CD\u6620", () => {
       if (!clauses.length) throw new Error("\u6761\u4EF6\u30D6\u30ED\u30C3\u30AF\u30921\u3064\u4EE5\u4E0A\u6B8B\u3057\u3066\u304F\u3060\u3055\u3044");
       const next = clone(table);
       let omitted = false;
@@ -1177,7 +1168,7 @@
           return [];
         }
         const ids = Array.from(c.rows[i].pick.selectedOptions).map((o) => o.value);
-        if (!ids.length) throw new Error(`\u300C${x.name}\u300D\u306E\u533A\u5206\u30921\u3064\u4EE5\u4E0A\u9078\u3076\u304B\u3001\u300C\u3059\u3079\u3066\u300D\u306B\u3057\u3066\u304F\u3060\u3055\u3044`);
+        if (!ids.length) throw new Error(`\u300C${x.name}\u300D\u306E\u5024\u30921\u3064\u4EE5\u4E0A\u9078\u3076\u304B\u3001\u300C\u2212\u300D\u306B\u3057\u3066\u304F\u3060\u3055\u3044`);
         return [{ conditionId: x.id, partitionIds: ids }];
       }) }));
       if (omitted) next.schemaVersion = "1.1";
@@ -1194,18 +1185,18 @@
       commit(next, "\u5024\u3092\u53CD\u6620\u3057\u307E\u3057\u305F");
     };
     if (output2.kind === "action" || output2.type === "boolean") {
-      const s = select([["unset", "\u2014 \u6C7A\u3081\u306A\u3044"], ["true", output2.kind === "action" ? "\u5B9F\u884C\u3059\u308B" : "true"], ["false", output2.kind === "action" ? "\u5B9F\u884C\u3057\u306A\u3044" : "false"]], d.state === "unset" ? "unset" : String(d.value));
+      const s = select(output2.kind === "action" ? [["unset", "\u2212"], ["true", "X"]] : [["unset", "\u2212"], ["true", "true"], ["false", "false"]], output2.kind === "action" ? d.state === "set" && d.value === true ? "true" : "unset" : d.state === "unset" ? "unset" : String(d.value));
       s.setAttribute("aria-label", output2.name);
       s.onchange = () => void run(() => set(s.value === "unset" ? { outputId: output2.id, state: "unset" } : { outputId: output2.id, state: "set", value: s.value === "true" }));
       wrap.append(s);
     } else if (output2.type === "enum") {
-      const s = select([["unset", "\u2014 \u6C7A\u3081\u306A\u3044"], ...(output2.values ?? []).map((v, i) => [String(i), v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : v])], d.state === "unset" ? "unset" : String((output2.values ?? []).indexOf(d.value)));
+      const s = select([["unset", "\u2212"], ...(output2.values ?? []).map((v, i) => [String(i), v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : v])], d.state === "unset" ? "unset" : String((output2.values ?? []).indexOf(d.value)));
       s.setAttribute("aria-label", output2.name);
       s.onchange = () => void run(() => set(s.value === "unset" ? { outputId: output2.id, state: "unset" } : { outputId: output2.id, state: "set", value: output2.values[Number(s.value)] }));
       wrap.append(s);
     } else {
       const i = input(d.state === "set" ? String(d.value) : "");
-      i.placeholder = d.state === "unset" ? "\u6C7A\u3081\u306A\u3044" : output2.type === "string" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : "";
+      i.placeholder = d.state === "unset" ? "\u2212" : output2.type === "string" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : "";
       i.setAttribute("aria-label", output2.name);
       i.onchange = () => void run(() => set({ outputId: output2.id, state: "set", value: i.value }));
       wrap.append(i);
@@ -1344,12 +1335,12 @@
     if (host.hidden) return;
     for (const id2 of Object.keys(checkPicks)) if (!table.conditions.some((c) => c.id === id2 && c.partitions.some((p) => p.id === checkPicks[id2]))) delete checkPicks[id2];
     const head = element("div", "", "panel-heading");
-    head.append(element("h2", "\u7D50\u679C\u3092\u78BA\u8A8D"), button("\u6307\u5B9A\u3092\u89E3\u9664", () => {
+    head.append(element("h2", "\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8"), button("\u6307\u5B9A\u3092\u89E3\u9664", () => {
       checkPicks = {};
       renderCheck();
     }));
     host.append(head);
-    host.append(element("p", "\u6761\u4EF6\u306E\u533A\u5206\u3092\u9078\u3076\u3068\u3001\u305D\u306E\u5165\u529B\u306B\u5BFE\u3059\u308B\u7D50\u679C\u3092\u3001\u52D5\u4F5C\u30FB\u7D50\u679C\u3054\u3068\u306B1\u3064\u8868\u793A\u3057\u307E\u3059\u3002\u6C7A\u307E\u308B\u307E\u3067\u6761\u4EF6\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u95A2\u4FC2\u3057\u306A\u3044\u6761\u4EF6\u306F\u3001\u9078\u3070\u306A\u304F\u3066\u3082\u6C7A\u307E\u308A\u307E\u3059\u3002\u8868\u306F\u5909\u66F4\u3057\u307E\u305B\u3093\u3002", "muted"));
+    host.append(element("p", "\u6761\u4EF6\u306E\u5024\u3092\u9078\u3076\u3068\u3001\u305D\u306E\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u3068\u3001\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u52D5\u4F5C\u304C\u6C7A\u307E\u308B\u307E\u3067\u6761\u4EF6\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u7121\u95A2\u4FC2\u306A\u6761\u4EF6\uFF08\u2212\uFF09\u306F\u9078\u3070\u306A\u304F\u3066\u3082\u6C7A\u307E\u308A\u307E\u3059\u3002\u8868\u306F\u5909\u66F4\u3057\u307E\u305B\u3093\u3002", "muted"));
     let needed = [];
     try {
       needed = inspect(table, checkPicks).relevant;
@@ -1358,7 +1349,7 @@
     const filters = element("div", "", "lookup");
     for (const c of table.conditions) {
       const s = select([["", "\u6307\u5B9A\u306A\u3057"], ...c.partitions.map((p) => [p.id, p.label])], checkPicks[c.id] ?? "");
-      s.setAttribute("aria-label", `${c.name}\uFF08\u7D50\u679C\u3092\u78BA\u8A8D\uFF09`);
+      s.setAttribute("aria-label", `${c.name}\uFF08\u89E3\u91C8\u3059\u308B\u5024\uFF09`);
       s.onchange = () => {
         if (s.value) checkPicks[c.id] = s.value;
         else delete checkPicks[c.id];
@@ -1371,22 +1362,22 @@
       const found = inspect(table, checkPicks), chosen = Object.keys(checkPicks).length;
       const value = (d) => {
         const o = table.outputs.find((o2) => o2.id === d.outputId);
-        if (d.state === "unset") return "\u6C7A\u3081\u306A\u3044";
-        if (o?.kind === "action") return d.value ? "\u5B9F\u884C\u3059\u308B" : "\u5B9F\u884C\u3057\u306A\u3044";
+        if (o?.kind === "action") return d.state === "set" && d.value === true ? "X\uFF08\u5B9F\u884C\u3059\u308B\uFF09" : "\u2212\uFF08\u5B9F\u884C\u3057\u306A\u3044\uFF09";
+        if (d.state === "unset") return "\u2212";
         return d.value === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(d.value);
       };
-      const outcome = (ds) => ds.length ? ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}\uFF1A${value(d)}`).join(" \uFF0F ") : "\uFF08\u52D5\u4F5C\u30FB\u7D50\u679C\u304C\u672A\u5B9A\u7FA9\uFF09";
+      const outcome = (ds) => ds.length ? ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}\uFF1A${value(d)}`).join(" \uFF0F ") : "\uFF08\u52D5\u4F5C\u304C\u672A\u5B9A\u7FA9\uFF09";
       const numbers = (list) => `\u898F\u5247 ${list.slice(0, 12).map((i) => `#${i + 1}`).join(" ")}${list.length > 12 ? ` \u307B\u304B${list.length - 12}\u4EF6` : ""}`;
       const why = (index) => {
         const r = table.rules[index];
         return `\u898F\u5247 #${index + 1}\uFF1A` + r.anyOf.map((clause2) => clause2.selections.length ? clause2.selections.map((sel) => {
           const c = table.conditions.find((x) => x.id === sel.conditionId);
-          return `${c.name}=${sel.partitionIds.length === c.partitions.length && sel.partitionIds.length > 1 ? `\u3059\u3079\u3066\uFF08${sel.partitionIds.length}\u533A\u5206\u3092\u500B\u5225\u306B\u6307\u5B9A\uFF09` : sel.partitionIds.map((id2) => c.partitions.find((p) => p.id === id2).label).join("\u30FB")}`;
-        }).join(" \u304B\u3064 ") : "\u3059\u3079\u3066\u306E\u5165\u529B").join(" \uFF0F \u307E\u305F\u306F ") + (r.anyOf.every((clause2) => clause2.selections.length === table.conditions.length) ? "" : "\uFF08\u66F8\u3044\u3066\u3044\u306A\u3044\u6761\u4EF6\u306F\u3059\u3079\u3066\uFF09");
+          return `${c.name}=${sel.partitionIds.length === c.partitions.length && sel.partitionIds.length > 1 ? `\u5168${sel.partitionIds.length}\u5024\u3092\u500B\u5225\u306B\u6307\u5B9A` : sel.partitionIds.map((id2) => c.partitions.find((p) => p.id === id2).label).join("\u30FB")}`;
+        }).join(" \u304B\u3064 ") : "\u3059\u3079\u3066\u306E\u7D44\u5408\u305B").join(" \uFF0F \u307E\u305F\u306F ") + (r.anyOf.every((clause2) => clause2.selections.length === table.conditions.length) ? "" : "\uFF08\u66F8\u3044\u3066\u3044\u306A\u3044\u6761\u4EF6\u306F\u2212\uFF09");
       };
-      const scope = `${chosen ? `${chosen}\u6761\u4EF6\u3092\u6307\u5B9A` : "\u6761\u4EF6\u306F\u672A\u6307\u5B9A"}\uFF08\u5BFE\u8C61\u306F${found.total.toLocaleString("ja-JP")}\u7D44\u307F\u5408\u308F\u305B\uFF09`;
+      const scope = `${chosen ? `${chosen}\u6761\u4EF6\u3092\u6307\u5B9A` : "\u6761\u4EF6\u306F\u672A\u6307\u5B9A"}\uFF08\u5BFE\u8C61\u306F${found.total.toLocaleString("ja-JP")}\u7D44\u5408\u305B\uFF09`;
       const names = table.conditions.filter((c) => found.relevant.includes(c.id)).map((c) => c.name), open = found.outputs.some((o) => o.status === "open");
-      const headline = !found.rules.length ? "\u3053\u306E\u6761\u4EF6\u306B\u9069\u5408\u3059\u308B\u898F\u5247\u306F\u3042\u308A\u307E\u305B\u3093\u3002" : found.determined ? `\u3059\u3079\u3066\u306E\u52D5\u4F5C\u30FB\u7D50\u679C\u304C\u6C7A\u307E\u308A\u307E\u3057\u305F\u3002${found.exact ? "" : "\u9078\u3093\u3067\u3044\u306A\u3044\u6761\u4EF6\u304C\u4F55\u3067\u3042\u3063\u3066\u3082\u3001\u3053\u306E\u7D50\u679C\u3067\u3059\u3002"}` : found.conflict ? "\u9055\u3046\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u9069\u5408\u3057\u3066\u304A\u308A\u3001\u6C7A\u307E\u3089\u306A\u3044\u52D5\u4F5C\u30FB\u7D50\u679C\u304C\u3042\u308A\u307E\u3059\uFF08\u77DB\u76FE\uFF09\u3002\u898F\u5247\u3092\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : open ? `\u307E\u3060\u6C7A\u307E\u3063\u3066\u3044\u306A\u3044\u52D5\u4F5C\u30FB\u7D50\u679C\u304C\u3042\u308A\u307E\u3059\u3002${names.length ? `\u6B21\u306E\u6761\u4EF6\u3092\u9078\u3076\u3068\u7D5E\u308A\u8FBC\u3081\u307E\u3059\uFF1A${names.join("\u3001")}` : ""}` : "\u3053\u306E\u6761\u4EF6\u306B\u9069\u5408\u3059\u308B\u898F\u5247\u304C\u6307\u5B9A\u3057\u3066\u3044\u306A\u3044\u52D5\u4F5C\u30FB\u7D50\u679C\u304C\u3042\u308A\u307E\u3059\u3002";
+      const headline = !found.rules.length ? "\u3053\u306E\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306F\u3042\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002" : found.determined ? `\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u304C\u6C7A\u307E\u308A\u307E\u3057\u305F\u3002${found.exact ? "" : "\u9078\u3093\u3067\u3044\u306A\u3044\u6761\u4EF6\u304C\u4F55\u3067\u3042\u3063\u3066\u3082\u3001\u3053\u306E\u52D5\u4F5C\u3067\u3059\u3002"}` : found.conflict ? "\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u6E80\u8DB3\u3055\u308C\u3066\u304A\u308A\u3001\u6C7A\u307E\u3089\u306A\u3044\u52D5\u4F5C\u304C\u3042\u308A\u307E\u3059\uFF08\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\uFF09\u3002\u898F\u5247\u3092\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : open ? `\u307E\u3060\u6C7A\u307E\u3063\u3066\u3044\u306A\u3044\u52D5\u4F5C\u304C\u3042\u308A\u307E\u3059\u3002${names.length ? `\u6B21\u306E\u6761\u4EF6\u3092\u9078\u3076\u3068\u7D5E\u308A\u8FBC\u3081\u307E\u3059\uFF1A${names.join("\u3001")}` : ""}` : "\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u304C\u6C7A\u307E\u308A\u307E\u3057\u305F\u3002";
       host.append(element("p", `${scope}\uFF1A${headline}`, found.rules.length && !found.conflict ? "check-summary" : "check-empty"));
       if (found.rules.length) for (const o of found.outputs) {
         const name = table.outputs.find((x) => x.id === o.outputId).name, row = element("div", "", `check-result ${o.status}`);
@@ -1396,19 +1387,19 @@
           o.rules.slice(0, 2).forEach((i) => host.append(element("p", why(i), "check-why")));
           if (o.rules.length > 2) host.append(element("p", `\u307B\u304B${o.rules.length - 2}\u4EF6\u306E\u898F\u5247\u3082\u540C\u3058\u5024\u3092\u6307\u5B9A\u3057\u3066\u3044\u307E\u3059\u3002`, "check-why"));
         } else if (o.status === "conflict") {
-          row.append(element("strong", `${name}\uFF1A\u6C7A\u307E\u308A\u307E\u305B\u3093\uFF08\u77DB\u76FE\uFF09`), element("small", o.candidates.map((c) => `${value(c.directive)}\uFF1D${numbers(c.rules)}`).join(" \uFF0F ")));
+          row.append(element("strong", `${name}\uFF1A\u6C7A\u307E\u308A\u307E\u305B\u3093\uFF08\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\uFF09`), element("small", o.candidates.map((c) => `${value(c.directive)}\uFF1D${numbers(c.rules)}`).join(" \uFF0F ")));
           host.append(row);
         } else if (o.status === "open") {
           row.append(element("strong", `${name}\uFF1A\u307E\u3060\u6C7A\u307E\u308A\u307E\u305B\u3093`), element("small", `\u3042\u308A\u5F97\u308B\u5024\uFF1A${o.candidates.map((c) => value(c.directive)).join(" \uFF0F ")}`));
           host.append(row);
         } else {
-          row.append(element("strong", `${name}\uFF1A\u6C7A\u3081\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093`), element("small", "\u3053\u306E\u6761\u4EF6\u306B\u9069\u5408\u3059\u308B\u898F\u5247\u306F\u3001\u3053\u308C\u3092\u6307\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093"));
+          row.append(element("strong", `${name}\uFF1A\u2212`), element("small", "\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306F\u3001\u3053\u306E\u52D5\u4F5C\u3092\u6307\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF08\u5B9F\u884C\u3057\u306A\u3044\uFF09"));
           host.append(row);
         }
       }
-      if (found.rules.length && !found.exact && found.uncovered !== null && found.uncovered > 0n) host.append(element("p", `\u3053\u306E\u7BC4\u56F2\u306E\u3046\u3061${found.uncovered.toLocaleString("ja-JP")}\u7D44\u307F\u5408\u308F\u305B\u306B\u306F\u3001\u9069\u5408\u3059\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\u3002`, "check-empty"));
+      if (found.rules.length && !found.exact && found.uncovered !== null && found.uncovered > 0n) host.append(element("p", `\u3053\u306E\u7BC4\u56F2\u306E\u3046\u3061${found.uncovered.toLocaleString("ja-JP")}\u7D44\u5408\u305B\u306B\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002`, "check-empty"));
     } catch (e) {
-      host.append(element("p", `\u7D50\u679C\u3092\u8868\u793A\u3067\u304D\u307E\u305B\u3093\uFF1A${e.message}`, "muted"));
+      host.append(element("p", `\u89E3\u91C8\u3092\u8868\u793A\u3067\u304D\u307E\u305B\u3093\uFF1A${e.message}`, "muted"));
     }
   }
   function refreshMerge() {
@@ -1422,7 +1413,7 @@
     host.hidden = panel === "none";
     if (panel === "none") return;
     const head = element("div", "", "panel-heading");
-    head.append(element("h2", panel === "diagnostics" ? "\u8868\u306E\u691C\u8A3C" : panel === "merge" ? "\u540C\u3058\u6307\u5B9A\u306E\u898F\u5247\u3092\u307E\u3068\u3081\u308B" : panel === "patterns" ? "\u7D50\u679C\u30D1\u30BF\u30FC\u30F3\uFF08\u7D50\u679C\u306E\u7D44\u307F\u5408\u308F\u305B\uFF09" : "\u5143\u306E\u7D44\u307F\u5408\u308F\u305B\u3078\u5C55\u958B"), button("\u9589\u3058\u308B", () => {
+    head.append(element("h2", panel === "diagnostics" ? "\u691C\u8A3C\uFF08\u5B8C\u5099\u6027\u3068\u52D5\u4F5C\u6307\u5B9A\uFF09" : panel === "merge" ? "\u8868\u306E\u7C21\u5358\u5316\uFF08\u898F\u5247\u306E\u7D50\u5408\uFF09" : panel === "patterns" ? "\u5358\u9069\u5408\u306B\u5C55\u958B\u3057\u305F\u898F\u5247" : "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B"), button("\u9589\u3058\u308B", () => {
       panel = "none";
       renderPanel();
     }));
@@ -1438,9 +1429,9 @@
           host.append(row);
         });
       } else if (panel === "merge") {
-        host.append(element("p", "\u3069\u306E\u5165\u529B\u306B\u3064\u3044\u3066\u3082\u7D50\u679C\u304C\u5909\u308F\u3089\u306A\u3044\u3068\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3060\u3051\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u52D5\u4F5C\u30FB\u7D50\u679C\u306E\u6307\u5B9A\u304C\u3059\u3079\u3066\u540C\u3058\u898F\u5247\u306F\u3001\u91CD\u306A\u3063\u3066\u3044\u3066\u30821\u3064\u306B\u307E\u3068\u3081\u307E\u3059\u3002\u5168\u4EF6\u3092\u5217\u6319\u3067\u304D\u308B\u8868\u306F\u5168\u5165\u529B\u3067\u6BD4\u8F03\u3057\u3001\u8D85\u3048\u308B\u8868\u306F\u6761\u4EF6\u306E\u96C6\u5408\u304C\u4E00\u81F4\u3059\u308B\u3053\u3068\u3092\u8A3C\u660E\u3057\u307E\u3059\u3002\u627F\u8A8D\u524D\u306F\u6B63\u672C\u3092\u5909\u66F4\u3057\u307E\u305B\u3093\u3002"));
+        host.append(element("p", "\u6761\u4EF6\u306E\u3069\u306E\u7D44\u5408\u305B\u306B\u3064\u3044\u3066\u3082\u52D5\u4F5C\u304C\u5909\u308F\u3089\u306A\u3044\u3068\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3060\u3051\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u52D5\u4F5C\u6307\u5B9A\u304C\u3059\u3079\u3066\u540C\u3058\u898F\u5247\u30921\u3064\u306B\u7D50\u5408\u3057\u3001\u6761\u4EF6\u6307\u5B9A\u3092\u6574\u7406\u3057\u307E\u3059\u3002\u5168\u7D44\u5408\u305B\u3092\u5217\u6319\u3067\u304D\u308B\u8868\u306F\u5168\u7D44\u5408\u305B\u3067\u6BD4\u8F03\u3057\u3001\u8D85\u3048\u308B\u8868\u306F\u6761\u4EF6\u6307\u5B9A\u306E\u7BC4\u56F2\u304C\u4E00\u81F4\u3059\u308B\u3053\u3068\u3092\u8A3C\u660E\u3057\u307E\u3059\u3002\u627F\u8A8D\u524D\u306F\u6B63\u672C\u3092\u5909\u66F4\u3057\u307E\u305B\u3093\u3002"));
         const clash = contradictions(table).pairs;
-        if (clash) host.append(element("p", `\u3053\u306E\u8868\u306B\u306F\u7D50\u679C\u304C\u98DF\u3044\u9055\u3046\u898F\u5247\u304C${clash}\u7D44\u3042\u308A\u307E\u3059\u3002\u307E\u3068\u3081\u3066\u3082\u77DB\u76FE\u306F\u305D\u306E\u307E\u307E\u6B8B\u308A\u307E\u3059\u3002\u5148\u306B\u300C\u691C\u8A3C\u300D\u3067\u76F4\u3059\u3053\u3068\u3092\u52E7\u3081\u307E\u3059\u3002`, "check-empty"));
+        if (clash) host.append(element("p", `\u3053\u306E\u8868\u306B\u306F\u52D5\u4F5C\u6307\u5B9A\u304C\u4E00\u81F4\u3057\u306A\u3044\u898F\u5247\u304C${clash}\u7D44\u3042\u308A\u307E\u3059\u3002\u7D50\u5408\u3057\u3066\u3082\u4E0D\u4E00\u81F4\u306F\u305D\u306E\u307E\u307E\u6B8B\u308A\u307E\u3059\u3002\u5148\u306B\u300C\u691C\u8A3C\u300D\u3067\u76F4\u3059\u3053\u3068\u3092\u52E7\u3081\u307E\u3059\u3002`, "check-empty"));
         const numbers = (ids) => ids.map((id2) => `#${table.rules.findIndex((r) => r.id === id2) + 1}`).join(" ");
         const reapply = (next, note) => {
           commit(next, note);
@@ -1450,55 +1441,55 @@
         };
         if (compressed && compressed.steps > 0) {
           const all = compressed, row = element("div", "", "candidate"), blocks = (t) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
-          row.append(element("strong", `\u3059\u3079\u3066\u7E70\u308A\u8FD4\u3057\u9069\u7528\uFF1A${table.rules.length}\u898F\u5247 \u2192 ${all.table.rules.length}\u898F\u5247`), element("span", `\u5019\u88DC\u306E\u53CD\u6620\u3068\u518D\u8A08\u7B97\u3092${all.steps}\u56DE\u7E70\u308A\u8FD4\u3057\u305F\u7D50\u679C\u3067\u3059\u3002OR\u30D6\u30ED\u30C3\u30AF\u306F${blocks(table)}\u4EF6 \u2192 ${blocks(all.table)}\u4EF6\u3002\u5404\u56DE\u3068\u3082\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059`), button("\u7D50\u679C\u306EJSON\u3092\u78BA\u8A8D", () => {
+          row.append(element("strong", `\u7E70\u308A\u8FD4\u3057\u7D50\u5408\uFF1A${table.rules.length}\u898F\u5247 \u2192 ${all.table.rules.length}\u898F\u5247`), element("span", `\u7D50\u5408\u3068\u518D\u8A08\u7B97\u3092${all.steps}\u56DE\u7E70\u308A\u8FD4\u3057\u305F\u7D50\u679C\u3067\u3059\u3002OR\u30D6\u30ED\u30C3\u30AF\u306F${blocks(table)}\u4EF6 \u2192 ${blocks(all.table)}\u4EF6\u3002\u5404\u56DE\u3068\u3082\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059`), button("\u7C21\u5358\u5316\u5F8C\u306EJSON\u3092\u78BA\u8A8D", () => {
             const m = modal("\u7E70\u308A\u8FD4\u3057\u9069\u7528\u5F8C\u306E\u8868");
             m.form.append(element("pre", encode(all.table)), button("\u9589\u3058\u308B", m.close));
           }), button("\u627F\u8A8D\u3057\u3066\u4E00\u62EC\u3067\u53CD\u6620", () => {
             if (stable(table) !== all.base) throw new Error("\u8868\u304C\u5909\u66F4\u3055\u308C\u305F\u305F\u3081\u518D\u8A08\u7B97\u3057\u3066\u304F\u3060\u3055\u3044");
-            reapply(all.table, `${all.steps}\u56DE\u306E\u7D71\u5408\u30FB\u6574\u7406\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
+            reapply(all.table, `${all.steps}\u56DE\u306E\u7D50\u5408\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
           }, "primary"));
           host.append(row);
         }
-        if (!candidates.length) host.append(element("p", "\u627F\u8A8D\u53EF\u80FD\u306A\u5019\u88DC\u306F\u3042\u308A\u307E\u305B\u3093\u3002", "muted"));
+        if (!candidates.length) host.append(element("p", "\u627F\u8A8D\u53EF\u80FD\u306A\u7D50\u5408\u5019\u88DC\u306F\u3042\u308A\u307E\u305B\u3093\u3002", "muted"));
         candidates.forEach((c) => {
           const row = element("div", "", "candidate"), sources = c.before.map((id2) => table.rules.find((r) => r.id === id2)), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
           const toAll = c.replacement.anyOf.some((clause2) => table.conditions.some((x) => !clause2.selections.some((s) => s.conditionId === x.id) && sources.some((r) => r.anyOf.some((o) => o.selections.some((s) => s.conditionId === x.id)))));
-          row.append(element("strong", c.before.length > 1 ? `${c.before.length}\u898F\u5247 \u2192 1\u898F\u5247` : from > to ? `\u898F\u5247 ${numbers(c.before)} \u306E\u6761\u4EF6\u3092\u6574\u7406` : `\u898F\u5247 ${numbers(c.before)} \u306E\u500B\u5225\u6307\u5B9A\u3092\u300C\u3059\u3079\u3066\u300D\u306B`), element("span", `\u5BFE\u8C61\uFF1A\u898F\u5247 ${numbers(c.before)} \uFF0F OR\u30D6\u30ED\u30C3\u30AF ${from}\u4EF6 \u2192 ${to}\u4EF6 \uFF0F ${c.proof === "structural" ? "\u6761\u4EF6\u306E\u96C6\u5408\u306E\u4E00\u81F4\u304B\u3089\u7B49\u4FA1\u6027\u3092\u8A3C\u660E" : `${c.checked}\u7D44\u307F\u5408\u308F\u305B\u3067\u7B49\u4FA1\u6027\u78BA\u8A8D`}${toAll ? " \uFF0F \u5168\u533A\u5206\u304C\u305D\u308D\u3063\u305F\u6761\u4EF6\u306F\u300C\u3059\u3079\u3066\u300D\u306B\u306A\u308A\u307E\u3059\uFF08\u3042\u3068\u3067\u8FFD\u52A0\u3057\u305F\u533A\u5206\u3082\u5BFE\u8C61\u306B\u306A\u308A\u307E\u3059\uFF09" : ""}`), button("\u5BFE\u8C61\u6761\u4EF6\u3092\u78BA\u8A8D", () => {
-            const m = modal("\u7D71\u5408\u3059\u308B\u6761\u4EF6\u3068\u7D50\u679C");
+          row.append(element("strong", c.before.length > 1 ? `${c.before.length}\u898F\u5247\u3092\u7D50\u5408 \u2192 1\u898F\u5247` : from > to ? `\u898F\u5247 ${numbers(c.before)} \u306E\u6761\u4EF6\u6307\u5B9A\u3092\u6574\u7406` : `\u898F\u5247 ${numbers(c.before)} \u306E\u6761\u4EF6\u6307\u5B9A\u3092\u300C\u2212\u300D\u306B`), element("span", `\u5BFE\u8C61\uFF1A\u898F\u5247 ${numbers(c.before)} \uFF0F OR\u30D6\u30ED\u30C3\u30AF ${from}\u4EF6 \u2192 ${to}\u4EF6 \uFF0F ${c.proof === "structural" ? "\u6761\u4EF6\u306E\u96C6\u5408\u306E\u4E00\u81F4\u304B\u3089\u7B49\u4FA1\u6027\u3092\u8A3C\u660E" : `${c.checked}\u7D44\u5408\u305B\u3067\u7B49\u4FA1\u6027\u78BA\u8A8D`}${toAll ? " \uFF0F \u3059\u3079\u3066\u306E\u5024\u304C\u305D\u308D\u3063\u305F\u6761\u4EF6\u6307\u5B9A\u306F\u300C\u2212\u300D\u306B\u306A\u308A\u307E\u3059\uFF08\u3042\u3068\u3067\u8FFD\u52A0\u3057\u305F\u5024\u3082\u5BFE\u8C61\u306B\u306A\u308A\u307E\u3059\uFF09" : ""}`), button("\u5BFE\u8C61\u6761\u4EF6\u3092\u78BA\u8A8D", () => {
+            const m = modal("\u7D50\u5408\u3059\u308B\u898F\u5247");
             m.form.append(element("pre", JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button("\u9589\u3058\u308B", m.close));
-          }), button("\u627F\u8A8D\u3057\u3066\u307E\u3068\u3081\u308B", () => reapply(applyCandidate(table, c), "\u627F\u8A8D\u3057\u305F\u5019\u88DC\u3092\u53CD\u6620\u3057\u3001\u6B8B\u308A\u306E\u5019\u88DC\u3092\u518D\u8A08\u7B97\u3057\u307E\u3057\u305F\u3002"), "primary"));
+          }), button("\u627F\u8A8D\u3057\u3066\u7D50\u5408", () => reapply(applyCandidate(table, c), "\u627F\u8A8D\u3057\u305F\u7D50\u5408\u3092\u53CD\u6620\u3057\u3001\u6B8B\u308A\u306E\u5019\u88DC\u3092\u518D\u8A08\u7B97\u3057\u307E\u3057\u305F\u3002"), "primary"));
           host.append(row);
         });
-        const idle = table.outputs.length ? table.rules.filter((r) => r.directives.every((d) => d.state === "unset")).length : 0;
-        if (idle) host.append(element("p", `\u52D5\u4F5C\u30FB\u7D50\u679C\u3092\u4F55\u3082\u6C7A\u3081\u3066\u3044\u306A\u3044\u898F\u5247\u306F\u5BFE\u8C61\u5916\u3067\u3059\uFF08${idle}\u4EF6\uFF09\u3002`, "muted"));
+        const idle2 = table.outputs.length ? table.rules.filter((r) => r.directives.every((d) => d.state === "unset")).length : 0;
+        if (idle2) host.append(element("p", `\u52D5\u4F5C\u3092\u4F55\u3082\u6307\u5B9A\u3057\u3066\u3044\u306A\u3044\u898F\u5247\u306F\u5BFE\u8C61\u5916\u3067\u3059\uFF08${idle2}\u4EF6\uFF09\u3002`, "muted"));
         const distinct = new Set(table.rules.map((r) => stable(r.directives))).size;
-        if (!candidates.length && table.rules.length) host.append(element("p", `\u73FE\u5728\u306E${table.rules.length}\u898F\u5247\u306F\u3001\u52D5\u4F5C\u30FB\u7D50\u679C\u306E\u6307\u5B9A\u304C${distinct}\u7A2E\u985E\u3067\u3059\u3002\u540C\u3058\u6307\u5B9A\u306E\u898F\u5247\u306F\u3059\u3067\u306B1\u3064\u305A\u3064\u306B\u307E\u3068\u307E\u3063\u3066\u304A\u308A\u3001\u3053\u308C\u4EE5\u4E0A\u306F\u307E\u3068\u3081\u3089\u308C\u307E\u305B\u3093\u3002\u898F\u5247\u306E\u6570\u306F\u3001\u7D50\u679C\u306E\u7D44\u307F\u5408\u308F\u305B\u306E\u6570\uFF08\u7D50\u679C\u30D1\u30BF\u30FC\u30F3\uFF09\u3068\u306F\u5225\u3067\u3059\u3002`, "muted"));
+        if (!candidates.length && table.rules.length) host.append(element("p", `\u73FE\u5728\u306E${table.rules.length}\u898F\u5247\u306F\u3001\u52D5\u4F5C\u6307\u5B9A\u304C${distinct}\u7A2E\u985E\u3067\u3059\u3002\u540C\u3058\u52D5\u4F5C\u6307\u5B9A\u306E\u898F\u5247\u306F\u3059\u3067\u306B\u7D50\u5408\u6E08\u307F\u3067\u3001\u3053\u308C\u4EE5\u4E0A\u306F\u7D50\u5408\u3067\u304D\u307E\u305B\u3093\u3002\u5143\u306E\u898F\u5247\u306E\u6570\u306F\u3001\u5358\u9069\u5408\u306B\u5C55\u958B\u3057\u305F\u898F\u5247\u306E\u6570\u3068\u306F\u5225\u3067\u3059\u3002`, "muted"));
       } else if (panel === "patterns") {
-        const found = patterns(table), show = (v, at) => table.outputs[at].kind === "action" ? v ? "\u5B9F\u884C\u3059\u308B" : "\u5B9F\u884C\u3057\u306A\u3044" : v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(v);
-        if (!found) host.append(element("p", "\u7D50\u679C\u30D1\u30BF\u30FC\u30F3\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u8868\u793A\u3067\u304D\u307E\u305B\u3093\u3002\u898F\u5247\u3092\u300C\u307E\u3068\u3081\u308B\u300D\u3067\u6574\u7406\u3057\u3066\u304B\u3089\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "check-empty"));
+        const found = patterns(table), show = (v, at) => table.outputs[at].kind === "action" ? v ? "X" : "\u2212" : v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(v);
+        if (!found) host.append(element("p", "\u5358\u9069\u5408\u3078\u306E\u5C55\u958B\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u8868\u793A\u3067\u304D\u307E\u305B\u3093\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u898F\u5247\u3092\u7D50\u5408\u3057\u3066\u304B\u3089\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "check-empty"));
         else {
-          host.append(element("p", `\u3053\u306E\u8868\u304C\u51FA\u3059\u7D50\u679C\u306E\u7D44\u307F\u5408\u308F\u305B\u306F${found.length}\u30D1\u30BF\u30FC\u30F3\u3067\u3059\u3002\u5404\u30D1\u30BF\u30FC\u30F3\u306F\u3001\u52D5\u4F5C\u30FB\u7D50\u679C\u306E\u5024\u306E\u7D44\u307F\u5408\u308F\u305B\u3068\u3001\u305D\u306E\u7D50\u679C\u306B\u306A\u308B\u6761\u4EF6\u306E\u7BC4\u56F2\u3067\u3059\u3002\u898F\u5247\u3092\u7D44\u307F\u5408\u308F\u305B\u305F\u7D50\u679C\u3067\u3042\u308A\u3001\u898F\u5247\u306E\u6570\u3068\u306F\u5225\u3067\u3059\u3002`));
+          host.append(element("p", `\u3053\u306E\u8868\u3092\u5358\u9069\u5408\u6C7A\u5B9A\u8868\u306B\u5C55\u958B\u3059\u308B\u3068\u3001\u898F\u5247\u306F${found.length}\u500B\u3067\u3059\u3002\u5404\u898F\u5247\u306F\u3001\u52D5\u4F5C\u6307\u5B9A\u306E\u7D44\u5408\u305B\u3068\u3001\u305D\u308C\u304C\u6E80\u8DB3\u3055\u308C\u308B\u6761\u4EF6\u6307\u5B9A\u306E\u7BC4\u56F2\u3067\u3059\u3002\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3054\u3068\u306B\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306F1\u3064\u3060\u3051\u306B\u306A\u308A\u307E\u3059\u3002\u5143\u306E\u898F\u5247\u306E\u6570\u3068\u306F\u5225\u3067\u3059\u3002`));
           found.slice(0, 80).forEach((x, i) => {
-            const text2 = x.outputs.map((o, at) => `${table.outputs[at].name}\uFF1A${o.values.length === 0 ? "\uFF08\u6C7A\u307E\u3089\u306A\u3044\uFF09" : o.values.length > 1 ? `\u77DB\u76FE\uFF08${o.values.map((v) => show(v, at)).join("\uFF0F")}\uFF09` : show(o.values[0], at)}`).join(" \uFF0F ") || "\uFF08\u52D5\u4F5C\u30FB\u7D50\u679C\u304C\u672A\u5B9A\u7FA9\uFF09";
+            const text2 = x.outputs.map((o, at) => `${table.outputs[at].name}\uFF1A${o.values.length === 0 ? "\u2212" : o.values.length > 1 ? `\u4E0D\u4E00\u81F4\uFF08${o.values.map((v) => show(v, at)).join("\uFF0F")}\uFF09` : show(o.values[0], at)}`).join(" \uFF0F ") || "\uFF08\u52D5\u4F5C\u304C\u672A\u5B9A\u7FA9\uFF09";
             const bad = x.outputs.some((o) => o.values.length !== 1), row = element("div", "", `check-result ${bad ? "open" : ""}`);
-            row.append(element("strong", `${i + 1}. ${text2}`), element("small", `${x.size.toLocaleString("ja-JP")}\u7D44\u307F\u5408\u308F\u305B`));
+            row.append(element("strong", `${i + 1}. ${text2}`), element("small", `${x.size.toLocaleString("ja-JP")}\u7D44\u5408\u305B`));
             host.append(row);
-            x.chunks.forEach((c) => host.append(element("p", `${describeChunk(table, c)}\uFF08${c.size.toLocaleString("ja-JP")}\u7D44\u307F\u5408\u308F\u305B\uFF09`, "check-why")));
+            x.chunks.forEach((c) => host.append(element("p", `${describeChunk(table, c)}\uFF08${c.size.toLocaleString("ja-JP")}\u7D44\u5408\u305B\uFF09`, "check-why")));
             if (x.chunkCount > x.chunks.length) host.append(element("p", `\u307B\u304B${x.chunkCount - x.chunks.length}\u500B\u306E\u6761\u4EF6\u306E\u304B\u305F\u307E\u308A\u304C\u3042\u308A\u307E\u3059\u3002`, "check-why"));
           });
-          if (found.length > 80) host.append(element("p", `\u5148\u982D80\u30D1\u30BF\u30FC\u30F3\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\uFF08\u5168${found.length}\u30D1\u30BF\u30FC\u30F3\uFF09\u3002`, "muted"));
+          if (found.length > 80) host.append(element("p", `\u5148\u982D80\u898F\u5247\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\uFF08\u5168${found.length}\u898F\u5247\uFF09\u3002`, "muted"));
         }
       } else {
         const total = count(table), pre = element("pre");
-        const effects = (ds) => ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}=${d.state === "unset" ? "\u6C7A\u3081\u306A\u3044" : JSON.stringify(d.value)}`).join(", ");
+        const effects = (ds) => ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}=${d.state === "unset" ? "\u2212" : JSON.stringify(d.value)}`).join(", ");
         const number = (ruleId) => table.rules.findIndex((r) => r.id === ruleId) + 1;
-        host.append(element("p", "\u7279\u5B9A\u306E\u6761\u4EF6\u306E\u7D50\u679C\u3060\u3051\u3092\u898B\u308B\u306B\u306F\u3001\u8868\u306E\u4E0B\u306E\u300C\u7D50\u679C\u3092\u78BA\u8A8D\u300D\u3092\u4F7F\u3063\u3066\u304F\u3060\u3055\u3044\u3002", "muted"));
-        if (total > 1000n) host.append(element("p", `\u5168${total.toLocaleString("ja-JP")}\u7D44\u307F\u5408\u308F\u305B\u306E\u3046\u3061\u5148\u982D1,000\u4EF6\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u5143\u30C7\u30FC\u30BF\u306F\u5207\u308A\u6368\u3066\u3066\u3044\u307E\u305B\u3093\u3002`));
+        host.append(element("p", "\u7279\u5B9A\u306E\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3060\u3051\u3092\u898B\u308B\u306B\u306F\u3001\u8868\u306E\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u3092\u4F7F\u3063\u3066\u304F\u3060\u3055\u3044\u3002", "muted"));
+        if (total > 1000n) host.append(element("p", `\u5168${total.toLocaleString("ja-JP")}\u7D44\u5408\u305B\u306E\u3046\u3061\u5148\u982D1,000\u4EF6\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u5143\u30C7\u30FC\u30BF\u306F\u5207\u308A\u6368\u3066\u3066\u3044\u307E\u305B\u3093\u3002`));
         pre.textContent = expandRows(table, 1e3).map((row, i) => {
           const conditions = table.conditions.map((c) => `${c.name}=${c.partitions.find((p) => p.id === row.atom[c.id])?.label}`).join(" / ");
           const lines = row.matches.map((match, order) => `${order + 1}. \u898F\u5247 #${number(match.ruleId)}: ${effects(match.directives)}`).join("\n    ");
           return `${i + 1}. ${conditions}
-    ${lines || "\u9069\u5408\u3059\u308B\u898F\u5247\u306A\u3057"}`;
+    ${lines || "\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306A\u3057"}`;
         }).join("\n\n");
         host.append(pre);
       }
@@ -1511,39 +1502,39 @@
     title.value = table.title;
     title.onchange = () => void run(() => commit({ ...table, title: title.value }));
     $("file-actions").replaceChildren(button("\uFF0B \u65B0\u3057\u3044\u8868", clearWorkspace), button("JSON\u3092\u958B\u304F", () => fileTask(openFile)), button("\u4FDD\u5B58", () => fileTask(save)), button("\u5225\u540D\u3067\u4FDD\u5B58", () => fileTask(saveAs)), button("\u30B5\u30F3\u30D7\u30EB\u3092\u958B\u304F", loadDemo, "sample-button"));
-    $("edit-actions").replaceChildren(button("\uFF0B \u6761\u4EF6", () => conditionDialog()), button("\uFF0B \u52D5\u4F5C\u30FB\u7D50\u679C", () => outputDialog()), button("\uFF0B \u898F\u5247", () => {
+    $("edit-actions").replaceChildren(button("\uFF0B \u6761\u4EF6", () => conditionDialog()), button("\uFF0B \u52D5\u4F5C", () => outputDialog()), button("\uFF0B \u898F\u5247", () => {
       const next = addRule(table);
       page = Math.floor((next.rules.length - 1) / 40);
-      commit(next, `\u898F\u5247\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002\u6761\u4EF6\u306E\u30BB\u30EB\u3092\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u5BFE\u8C61\u3092\u7D5E\u308A\u3001\u7D50\u679C\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002${table.schemaVersion === "1.0" ? "\u3053\u306E\u8868\u306F\u30B9\u30AD\u30FC\u30DE1.1\u3068\u3057\u3066\u4FDD\u5B58\u3055\u308C\u307E\u3059\uFF081.0\u306E\u307F\u5BFE\u5FDC\u306E\u65E7\u7248\u3067\u306F\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\uFF09\u3002" : ""}`);
-    }, "primary"), button("\u7D44\u307F\u5408\u308F\u305B\u3092\u751F\u6210", () => {
+      commit(next, `\u898F\u5247\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002\u6761\u4EF6\u6307\u5B9A\u306E\u30BB\u30EB\u3092\u30AF\u30EA\u30C3\u30AF\u3057\u3066\u5024\u3092\u9078\u3073\u3001\u52D5\u4F5C\u6307\u5B9A\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002${table.schemaVersion === "1.0" ? "\u3053\u306E\u8868\u306F\u30B9\u30AD\u30FC\u30DE1.1\u3068\u3057\u3066\u4FDD\u5B58\u3055\u308C\u307E\u3059\uFF081.0\u306E\u307F\u5BFE\u5FDC\u306E\u65E7\u7248\u3067\u306F\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\uFF09\u3002" : ""}`);
+    }, "primary"), button("\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210", () => {
       const n = count(table);
-      if (n > BigInt(LIMIT)) throw new Error(`${n.toLocaleString("ja-JP")}\u7D44\u307F\u5408\u308F\u305B\u306F\u5168\u4EF6\u751F\u6210\u306E\u4E0A\u9650${LIMIT.toLocaleString("ja-JP")}\u4EF6\u3092\u8D85\u3048\u307E\u3059\u3002\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u884C\u305A\u3064\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044`);
-      if (n > 1000n && !confirm(`${n}\u7D44\u307F\u5408\u308F\u305B\u3092\u751F\u6210\u3057\u307E\u3059\u3002\u7D9A\u3051\u307E\u3059\u304B\uFF1F`)) return;
+      if (n > BigInt(LIMIT)) throw new Error(`\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${n.toLocaleString("ja-JP")}\u4EF6\u306F\u3001\u898F\u5247\u3092\u4F5C\u6210\u3067\u304D\u308B\u4E0A\u9650${LIMIT.toLocaleString("ja-JP")}\u4EF6\u3092\u8D85\u3048\u307E\u3059\u3002\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044`);
+      if (n > 1000n && !confirm(`\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${n}\u4EF6\u306E\u898F\u5247\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u7D9A\u3051\u307E\u3059\u304B\uFF1F`)) return;
       if (table.rules.length) {
         regenerateDialog();
         return;
       }
-      commit(generate(table), "\u6761\u4EF6\u306E\u7D44\u307F\u5408\u308F\u305B\u3092\u751F\u6210\u3057\u307E\u3057\u305F\u3002\u5404\u898F\u5247\u306E\u7D50\u679C\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      commit(generate(table), "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002\u5404\u898F\u5247\u306E\u52D5\u4F5C\u6307\u5B9A\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
     }), button("\u691C\u8A3C", () => {
       panel = "diagnostics";
       renderPanel();
-    }), button("\u307E\u3068\u3081\u308B", async () => {
-      message("\u540C\u3058\u7D50\u679C\u306E\u5019\u88DC\u3068\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059\u2026");
+    }), button("\u7C21\u5358\u5316", async () => {
+      message("\u7D50\u5408\u3067\u304D\u308B\u898F\u5247\u3068\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059\u2026");
       await new Promise((r) => setTimeout(r, 0));
       refreshMerge();
       panel = "merge";
       renderPanel();
-      message(`${candidates.length}\u4EF6\u306E\u627F\u8A8D\u53EF\u80FD\u306A\u7D71\u5408\u5019\u88DC\u304C\u3042\u308A\u307E\u3059`);
-    }), button("\u7D50\u679C\u30D1\u30BF\u30FC\u30F3", () => {
+      message(`${candidates.length}\u4EF6\u306E\u627F\u8A8D\u53EF\u80FD\u306A\u7D50\u5408\u5019\u88DC\u304C\u3042\u308A\u307E\u3059`);
+    }), button("\u5358\u9069\u5408\u306B\u5C55\u958B", () => {
       panel = "patterns";
       renderPanel();
-    }), button("\u5C55\u958B\u8868\u793A", () => {
+    }), button("\u5168\u7D44\u5408\u305B", () => {
       panel = "expand";
       renderPanel();
     }));
     const counts = $("counts");
     counts.replaceChildren();
-    for (const [value, label] of [[count(table).toLocaleString("ja-JP"), "\u5143\u306E\u7D44\u307F\u5408\u308F\u305B"], [String(table.rules.length), "\u73FE\u5728\u306E\u898F\u5247"]]) {
+    for (const [value, label] of [[count(table).toLocaleString("ja-JP"), "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B"], [String(table.rules.length), "\u898F\u5247"]]) {
       const item = element("div");
       item.append(element("strong", value), element("span", label));
       counts.append(item);
@@ -1555,20 +1546,20 @@
     } catch {
       patterns2 = "\u672A\u7B97\u51FA";
     }
-    pattern.append(element("strong", patterns2), element("span", "\u7D50\u679C\u30D1\u30BF\u30FC\u30F3"));
+    pattern.append(element("strong", patterns2), element("span", "\u5358\u9069\u5408\u306E\u898F\u5247"));
     counts.append(pattern);
     const defs = $("definition-list");
     defs.replaceChildren();
     for (const c of table.conditions) {
       const chip = element("div", "", "definition-chip");
-      chip.append(button(`${c.name} \xB7 ${c.partitions.length}\u533A\u5206`, () => conditionDialog(c)), button("\xD7", () => {
+      chip.append(button(`${c.name} \xB7 \u5024${c.partitions.length}\u500B`, () => conditionDialog(c)), button("\xD7", () => {
         const next = clone(table);
         next.conditions = next.conditions.filter((x) => x.id !== c.id);
         if (!next.conditions.length && table.rules.length) {
           if (!confirm("\u6700\u5F8C\u306E\u6761\u4EF6\u3092\u524A\u9664\u3059\u308B\u3068\u898F\u5247\u3092\u4FDD\u6301\u3067\u304D\u307E\u305B\u3093\u3002\u5148\u306BJSON\u3092\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u898F\u5247\u3082\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
           commit({ ...next, rules: [] });
         } else {
-          if (table.rules.length && !confirm(`\u6761\u4EF6\u300C${c.name}\u300D\u3068\u305D\u306E\u533A\u5206\u306E\u5B9A\u7FA9\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F\u898F\u5247\u306F\u4FDD\u6301\u3057\u3001\u3053\u306E\u6761\u4EF6\u306E\u6307\u5B9A\u3060\u3051\u3092\u5916\u3057\u307E\u3059\u3002`)) return;
+          if (table.rules.length && !confirm(`\u6761\u4EF6\u300C${c.name}\u300D\u3068\u305D\u306E\u5024\u306E\u5B9A\u7FA9\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F\u898F\u5247\u306F\u4FDD\u6301\u3057\u3001\u3053\u306E\u6761\u4EF6\u306E\u6761\u4EF6\u6307\u5B9A\u3060\u3051\u3092\u5916\u3057\u307E\u3059\u3002`)) return;
           applyDefinitions(next, () => {
           });
         }
@@ -1577,8 +1568,8 @@
     }
     for (const o of table.outputs) {
       const chip = element("div", "", "definition-chip output-chip");
-      chip.append(button(`${o.name} \xB7 ${o.kind === "action" ? "\u52D5\u4F5C" : o.type}`, () => outputDialog(o)), button("\xD7", () => {
-        if (!confirm(`\u51FA\u529B\u300C${o.name}\u300D\u3068\u5165\u529B\u6E08\u307F\u306E\u5024\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F`)) return;
+      chip.append(button(`${o.name} \xB7 ${o.kind === "action" ? "\u5236\u9650\u6307\u5B9A" : `\u62E1\u5F35\u6307\u5B9A ${o.type}`}`, () => outputDialog(o)), button("\xD7", () => {
+        if (!confirm(`\u52D5\u4F5C\u300C${o.name}\u300D\u3068\u5165\u529B\u6E08\u307F\u306E\u52D5\u4F5C\u6307\u5B9A\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F`)) return;
         const next = clone(table);
         next.outputs = next.outputs.filter((x) => x.id !== o.id);
         next.rules.forEach((r) => {
@@ -1592,7 +1583,7 @@
     wrap.replaceChildren();
     if (!table.rules.length) {
       const blank = element("div", "", "empty-state");
-      blank.append(element("div", "\u229E", "empty-icon"), element("h2", "\u6700\u521D\u306E\u30EB\u30FC\u30EB\u3092\u3064\u304F\u308A\u307E\u3057\u3087\u3046"), element("p", table.conditions.length ? "\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u884C\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\u6761\u4EF6\u306F\u300C\u3059\u3079\u3066\u300D\u306E\u307E\u307E\u306B\u3082\u3001\u533A\u5206\u3092\u7D5E\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002\n\u7D44\u307F\u5408\u308F\u305B\u304C\u5C11\u306A\u3044\u8868\u306F\u300C\u7D44\u307F\u5408\u308F\u305B\u3092\u751F\u6210\u300D\u3067\u5168\u4EF6\u3092\u4F5C\u308C\u307E\u3059\u3002" : "\u307E\u305A\u300C\uFF0B \u6761\u4EF6\u300D\u3068\u300C\uFF0B \u52D5\u4F5C\u30FB\u7D50\u679C\u300D\u3092\u5B9A\u7FA9\u3057\u3001\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u884C\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\n\u30B5\u30F3\u30D7\u30EB\u306A\u3089\u3001\u7DE8\u96C6\u304B\u3089\u7D71\u5408\u307E\u3067\u3072\u3068\u901A\u308A\u8A66\u305B\u307E\u3059\u3002"), button("\u30B5\u30F3\u30D7\u30EB\u3067\u8A66\u3059 \u2192", loadDemo, "primary"));
+      blank.append(element("div", "\u229E", "empty-icon"), element("h2", "\u6700\u521D\u306E\u30EB\u30FC\u30EB\u3092\u3064\u304F\u308A\u307E\u3057\u3087\u3046"), element("p", table.conditions.length ? "\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\u6761\u4EF6\u6307\u5B9A\u306F\u300C\u2212\u300D\uFF08\u7121\u95A2\u4FC2\uFF09\u306E\u307E\u307E\u306B\u3082\u3001\u5024\u3092\u9078\u3076\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002\n\u6761\u4EF6\u306E\u5024\u304C\u5C11\u306A\u3044\u8868\u306F\u300C\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210\u300D\u3082\u4F7F\u3048\u307E\u3059\u3002" : "\u307E\u305A\u300C\uFF0B \u6761\u4EF6\u300D\u3068\u300C\uFF0B \u52D5\u4F5C\u300D\u3092\u5B9A\u7FA9\u3057\u3001\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\n\u30B5\u30F3\u30D7\u30EB\u306A\u3089\u3001\u7DE8\u96C6\u304B\u3089\u7C21\u5358\u5316\u307E\u3067\u3072\u3068\u901A\u308A\u8A66\u305B\u307E\u3059\u3002"), button("\u30B5\u30F3\u30D7\u30EB\u3067\u8A66\u3059 \u2192", loadDemo, "primary"));
       wrap.append(blank);
     } else {
       const grid = element("table", "", "decision-table"), thead = element("thead"), hr = element("tr");
@@ -1613,7 +1604,7 @@
           const td = element("td");
           const descriptions = r.anyOf.map((clause2) => {
             const ids = clause2.selections.find((s) => s.conditionId === c.id)?.partitionIds;
-            return !ids ? "\u3059\u3079\u3066" : ids.length === c.partitions.length && ids.length > 1 ? `\u3059\u3079\u3066\uFF08${ids.length}\u533A\u5206\u3092\u500B\u5225\u306B\u6307\u5B9A\uFF09` : ids.map((id2) => c.partitions.find((p) => p.id === id2).label).join(" / ");
+            return !ids ? "\u2212" : ids.length === c.partitions.length && ids.length > 1 ? `\u5168${ids.length}\u5024\u3092\u500B\u5225\u306B\u6307\u5B9A` : ids.map((id2) => c.partitions.find((p) => p.id === id2).label).join(" / ");
           });
           td.append(button([...new Set(descriptions)].join(" \u307E\u305F\u306F "), () => ruleConditions(r.id), "cell-button"));
           if (r.anyOf.length > 1) td.append(element("small", "OR\u306E\u7D44\u5408\u305B\u306F\u30AF\u30EA\u30C3\u30AF\u3067\u78BA\u8A8D"));

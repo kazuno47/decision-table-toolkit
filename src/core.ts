@@ -1,4 +1,4 @@
-// TASK-001..007 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..008 / REQ-001..013. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -74,12 +74,12 @@ export function validate(table: Table): Diagnostic[] {
     unique(c.partitions.map(p => p.id), c.id);
     for (const p of c.partitions) {
       try {
-        if (p.kind === 'values') { if (['number', 'date'].includes(c.type)) error(c.id, '数値・日付は範囲区分で定義してください'); unique(p.values.map(stable), p.id); if (p.values.some(v => !validValue(c.type, v))) error(p.id, '条件の型と値が一致しません'); }
+        if (p.kind === 'values') { if (['number', 'date'].includes(c.type)) error(c.id, '数値・日付の値は範囲で定義してください'); unique(p.values.map(stable), p.id); if (p.values.some(v => !validValue(c.type, v))) error(p.id, '条件の型と値が一致しません'); }
         if (p.kind === 'range') { if (!['number', 'date'].includes(c.type)) error(p.id, 'この型では範囲を指定できません'); else if (rangeEmpty(c.type, p.range)) error(p.id, '逆転した範囲または空の範囲です'); }
       } catch (e) { error(p.id, String((e as Error).message)); }
     }
     for (let i = 0; i < c.partitions.length; i++) for (let j = i + 1; j < c.partitions.length; j++) {
-      try { if (partitionsOverlap(c.type, c.partitions[i], c.partitions[j])) error(c.id, `区分が重複しています: ${c.partitions[i].label} / ${c.partitions[j].label}`); } catch { /* already diagnosed */ }
+      try { if (partitionsOverlap(c.type, c.partitions[i], c.partitions[j])) error(c.id, `条件の値が重複しています: ${c.partitions[i].label} / ${c.partitions[j].label}`); } catch { /* already diagnosed */ }
     }
   }
   for (const o of table.outputs) if (o.kind === 'result' && o.type === 'enum') unique(o.values ?? [], o.id);
@@ -91,14 +91,14 @@ export function validate(table: Table): Diagnostic[] {
       if (table.schemaVersion === '1.0' && clause.selections.length !== table.conditions.length) error(r.id, '各条件を1回ずつ指定してください（条件の省略はスキーマ1.1のみ）');
       for (const s of clause.selections) {
         const c = table.conditions.find(c => c.id === s.conditionId); unique(s.partitionIds, r.id);
-        if (!c || s.partitionIds.some(id => !c.partitions.some(p => p.id === id))) error(r.id, '未知の条件・区分への参照です');
+        if (!c || s.partitionIds.some(id => !c.partitions.some(p => p.id === id))) error(r.id, '未知の条件・値への参照です');
       }
     }
-    if (r.directives.length !== table.outputs.length) error(r.id, '全出力を指定してください');
+    if (r.directives.length !== table.outputs.length) error(r.id, 'すべての動作について動作指定が必要です');
     r.directives.forEach((d, i) => {
       const o = table.outputs[i];
-      if (!o || d.outputId !== o.id) error(r.id, '出力の参照または順序が不正です');
-      else if (d.state === 'set' && !validValue(o.kind === 'action' ? 'boolean' : o.type, d.value, o.kind === 'result' ? o.values : undefined)) error(r.id, `出力「${o.name}」の型または値が不正です`);
+      if (!o || d.outputId !== o.id) error(r.id, '動作の参照または順序が不正です');
+      else if (d.state === 'set' && !validValue(o.kind === 'action' ? 'boolean' : o.type, d.value, o.kind === 'result' ? o.values : undefined)) error(r.id, `動作「${o.name}」の型または値が不正です`);
     });
   }
   return ds;
@@ -111,7 +111,7 @@ export function decode(text: string): Table {
 export function encode(t: Table): string { assertValid(t); return JSON.stringify(JSON.parse(stable(t)), null, 2) + '\n'; }
 export function count(t: Pick<Table, 'conditions'>): bigint { return t.conditions.length ? t.conditions.reduce((n, c) => n * BigInt(c.partitions.length), 1n) : 0n; }
 export function atoms(t: Pick<Table, 'conditions'>, limit = LIMIT): Atom[] {
-  if (count(t) > BigInt(limit)) throw new Error(`${count(t)}組み合わせは計算予算${limit}件を超えるため全件の列挙はできません。規則を1行ずつ記述してください（検証・統合・展開は列挙なしで利用できます）`);
+  if (count(t) > BigInt(limit)) throw new Error(`条件指定の全組合せ${count(t)}件は計算予算${limit}件を超えるため列挙できません。規則を1行ずつ記述してください（検証・簡単化・解釈は列挙なしで利用できます）`);
   if (!t.conditions.length) return [];
   let cells: Atom[] = [{}];
   for (const c of t.conditions) cells = cells.flatMap(a => c.partitions.map(p => ({ ...a, [c.id]: p.id })));
@@ -122,6 +122,8 @@ export function trace(table: Table, atom: Atom): Directive[][] { return table.ru
 function normalizedDirectives(t: Table, ds: Directive[]): unknown[] {
   return ds.map((d, i) => {
     const o = t.outputs[i];
+    // TASK-008 / JIS X 0125 3.3: for a limited-entry action, "not executed" is the entry "-" whether stored as false or unset.
+    if (o?.kind === 'action' && d.state === 'set' && d.value !== true) return { outputId: d.outputId, state: 'unset' };
     if (d.state === 'set' && o?.kind === 'result' && o.type === 'number' && typeof d.value === 'string') {
       let [value, scale] = decimal(d.value); while (scale > 0 && value % 10n === 0n) { value /= 10n; scale--; }
       return { ...d, value: `${value}:${scale}` };
@@ -129,13 +131,14 @@ function normalizedDirectives(t: Table, ds: Directive[]): unknown[] {
     return d;
   });
 }
-// TASK-007 / INS-006, DEC-028: rules are combined per output. A rule decides only the outputs it sets; an unset
-// output means "this rule does not decide it". The result of an input is, for every output, the set of distinct
+// TASK-007, TASK-008 / INS-006, DEC-028, DEC-029: rules are combined per action. A rule specifies only the actions it
+// concerns; the entry "-" (unset, or false for an X/- action) contributes nothing. An X/- action is executed when
+// some satisfied rule marks it X. The result of an input is, for every output, the set of distinct
 // values set by the rules that match. One value = decided, several = contradiction, none = undecided.
 // Rule order and the number of matching rules carry no meaning.
 function valueKey(t: Table, r: Rule, o: number): string | null {
   const d = normalizedDirectives(t, r.directives)[o] as { state?: string; value?: unknown } | undefined;
-  return !d || d.state !== 'set' ? null : stable(d.value);
+  return !d || d.state !== 'set' ? null : stable(d.value); // null = the entry "-"
 }
 export function resultOf(t: Table, atom: Atom): string[][] {
   const sets = t.outputs.map(() => new Set<string>());
@@ -154,7 +157,7 @@ export function verifyEquivalent(a: Table, b: Table, budget = 2_000_000): { equa
   const cells = atoms(a);
   const weight = (t: Table) => t.rules.reduce((n, r) => n + r.anyOf.reduce((n, c) => n + c.selections.reduce((n, s) => n + s.partitionIds.length, 0), 0), 0);
   if (cells.length * (weight(a) + weight(b) + 1) > budget) return { equal: false, checked: 0, reason: '証明の計算予算を超えます' };
-  for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: '入力に対する結果が異なります' };
+  for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: '条件の組合せに対する動作が異なります' };
   return { equal: true, checked: cells.length };
 }
 export function replaceCandidate(t: Table, c: Candidate): Table {
@@ -191,44 +194,35 @@ export function applyCandidate(t: Table, c: Candidate): Table {
 }
 export function diagnose(t: Table): Diagnostic[] {
   const result = validate(t); if (result.length) return result;
-  for (const r of t.rules) if (t.outputs.length && r.directives.every(d => d.state === 'unset')) result.push({ level: 'warning', target: r.id, message: 'この規則は動作・結果を何も決めていません' });
+  for (const r of t.rules) if (t.outputs.length && idle(t, r)) result.push({ level: 'warning', target: r.id, message: 'この規則は動作を何も指定していません（動作指定がすべて「−」です）' });
   try {
     // TASK-002 / REQ-008: coverage is computed on partition-set products, never by enumerating the input space.
     const total = count(t);
     if (total > 0n) {
       const cov = coverage(t);
-      if (!cov.complete) result.push({ level: 'warning', target: 'rules', message: '網羅性は計算予算を超えたため判定できていません（問題なしとは判定していません）' });
+      if (!cov.complete) result.push({ level: 'warning', target: 'rules', message: '完備性は計算予算を超えたため判定できていません（完備しているとは判定していません）' });
       else if (cov.uncovered) {
-        result.push({ level: 'warning', target: 'rules', message: `${cov.uncovered}組み合わせに規則がありません（宣言した値域内）` });
-        cov.chunks.slice(0, 20).forEach(chunk => result.push({ level: 'warning', target: '未網羅', message: `${describeChunk(t, chunk)}（${chunk.size}組み合わせ）` }));
-        if (cov.chunks.length > 20) result.push({ level: 'warning', target: '未網羅', message: `ほか${cov.chunks.length - 20}個のかたまりがあります。規則を追加して再検証してください` });
+        result.push({ level: 'warning', target: 'rules', message: `完備していません：条件指定の${cov.uncovered}組合せを満足する規則がありません（定義した値の範囲内）` });
+        cov.chunks.slice(0, 20).forEach(chunk => result.push({ level: 'warning', target: '完備性', message: `${describeChunk(t, chunk)}（${chunk.size}組合せ）` }));
+        if (cov.chunks.length > 20) result.push({ level: 'warning', target: '完備性', message: `ほか${cov.chunks.length - 20}個のかたまりがあります。規則を追加して再検証してください` });
       }
-      // TASK-007 / REQ-008: an output that no matching rule decides is reported per output.
-      t.outputs.forEach((o, index) => {
-        const open = coverage(t, 200_000, 2_000_000, r => r.directives[index]?.state === 'set');
-        if (!open.complete) { result.push({ level: 'warning', target: o.id, message: `「${o.name}」が決まらない入力があるかどうかは、計算予算を超えたため判定できていません` }); return; }
-        if (!open.uncovered || (cov.complete && open.uncovered === cov.uncovered)) return; // nothing undecided beyond the inputs that have no rule at all
-        result.push({ level: 'warning', target: o.id, message: `「${o.name}」を決める規則がない入力が${open.uncovered}組み合わせあります` });
-        open.chunks.slice(0, 5).forEach(chunk => result.push({ level: 'warning', target: '未決定', message: `「${o.name}」：${describeChunk(t, chunk)}（${chunk.size}組み合わせ）` }));
-        if (open.chunks.length > 5) result.push({ level: 'warning', target: '未決定', message: `「${o.name}」：ほか${open.chunks.length - 5}個のかたまりがあります` });
-      });
       // TASK-004, TASK-007 / REQ-008: rules that can match the same input must not set different values for an output.
       const clash = contradictions(t);
       if (clash.pairs) {
-        result.push({ level: 'error', target: 'rules', message: `${clash.pairs}組${clash.complete ? '' : '以上'}の規則で結果が食い違っています。同じ入力に、同じ動作・結果へ違う値を指定する規則が適合するため、結果が1つに決まりません` });
-        clash.examples.forEach(e => result.push({ level: 'error', target: '矛盾', message: `規則 #${e.rules[0] + 1} と #${e.rules[1] + 1}：${describeChunk(t, e.chunk)}（${e.chunk.size}組み合わせ${e.more ? 'ほか' : ''}）で「${e.outputs.map(o => t.outputs[o].name).join('」「')}」が食い違います` }));
-        if (clash.pairs > clash.examples.length) result.push({ level: 'error', target: '矛盾', message: `ほか${clash.pairs - clash.examples.length}組あります。規則を直して再検証してください` });
+        result.push({ level: 'error', target: 'rules', message: `${clash.pairs}組${clash.complete ? '' : '以上'}の規則で動作指定が一致しません。同じ条件の組合せで満足される規則が、同じ動作に異なる値を指定しているため、単適合決定表になりません` });
+        clash.examples.forEach(e => result.push({ level: 'error', target: '不一致', message: `規則 #${e.rules[0] + 1} と #${e.rules[1] + 1}：${describeChunk(t, e.chunk)}（${e.chunk.size}組合せ${e.more ? 'ほか' : ''}）で動作「${e.outputs.map(o => t.outputs[o].name).join('」「')}」の指定が異なります` }));
+        if (clash.pairs > clash.examples.length) result.push({ level: 'error', target: '不一致', message: `ほか${clash.pairs - clash.examples.length}組あります。規則を直して再検証してください` });
       }
-      if (clash.same) result.push({ level: 'info', target: 'rules', message: `${clash.same}組${clash.complete ? '' : '以上'}の規則が同じ指定で重なっています。「まとめる」で整理できます` });
-      if (!clash.complete) result.push({ level: 'warning', target: 'rules', message: '結果の食い違いの確認は計算予算で打ち切りました（残りは判定できていません）' });
+      if (clash.same) result.push({ level: 'info', target: 'rules', message: `${clash.same}組${clash.complete ? '' : '以上'}の規則が同じ指定で重なっています。「簡単化」で結合できます` });
+      if (!clash.complete) result.push({ level: 'warning', target: 'rules', message: '動作指定の不一致の確認は計算予算で打ち切りました（残りは判定できていません）' });
     }
-    const keys = new Set<string>(); for (const r of t.rules) { const k = stable({ anyOf: r.anyOf, directives: r.directives }); if (keys.has(k)) result.push({ level: 'warning', target: r.id, message: '同じ条件と出力の規則が重複しています。「まとめる」で1つにできます' }); keys.add(k); }
+    const keys = new Set<string>(); for (const r of t.rules) { const k = stable({ anyOf: r.anyOf, directives: r.directives }); if (keys.has(k)) result.push({ level: 'warning', target: r.id, message: '同じ条件指定と動作指定の規則が重複しています。「簡単化」で1つに結合できます' }); keys.add(k); }
   } catch (e) { result.push({ level: 'warning', target: 'rules', message: (e as Error).message }); }
   return result;
 }
 // Number of distinct combined results, computed without enumerating inputs (inputs with no rule count as one pattern).
 export function patternCount(t: Table): number {
-  const found = patterns(t); if (!found) throw new Error('結果パターン数は計算予算のため未算出');
+  const found = patterns(t); if (!found) throw new Error('単適合に展開した規則数は計算予算のため未算出');
   return found.length;
 }
 // Conservative result migration; never infer business validity or changed interval membership.
@@ -254,7 +248,7 @@ export function regeneratePreserving(old: Table, next: Table): { table: Table; a
 export function expandRows(t: Table, displayLimit = 1000): { atom: Atom; matches: { ruleId: string; directives: Directive[] }[] }[] {
   assertValid(t); const cells = atomsHead(t, displayLimit);
   const weight = t.rules.reduce((n, r) => n + r.anyOf.reduce((n, c) => n + c.selections.reduce((n, s) => n + s.partitionIds.length, 0), 0), 0);
-  if (Math.min(cells.length, displayLimit) * weight > 2_000_000) throw new Error('展開対応の表示計算予算を超えます。規則を整理してください');
+  if (Math.min(cells.length, displayLimit) * weight > 2_000_000) throw new Error('全組合せの表示は計算予算を超えます。規則を簡単化してください');
   return cells.slice(0, displayLimit).map(atom => ({ atom, matches: t.rules.filter(r => matches(r, atom)).map(r => ({ ruleId: r.id, directives: clone(r.directives) })) }));
 }
 
@@ -322,8 +316,8 @@ export function coverage(t: Table, budget = 200_000, workBudget = 2_000_000, onl
   return { complete: true, uncovered, chunks };
 }
 export function describeChunk(t: Pick<Table, 'conditions'>, chunk: Chunk): string {
-  if (!chunk.selections.length) return 'すべての組み合わせ';
-  return chunk.selections.map(s => { const c = t.conditions.find(c => c.id === s.conditionId)!; return `${c.name}=${s.partitionIds.map(id => c.partitions.find(p => p.id === id)!.label).join('・')}`; }).join(' / ') + (chunk.selections.length < t.conditions.length ? ' / 他の条件はすべて' : '');
+  if (!chunk.selections.length) return 'すべての組合せ';
+  return chunk.selections.map(s => { const c = t.conditions.find(c => c.id === s.conditionId)!; return `${c.name}=${s.partitionIds.map(id => c.partitions.find(p => p.id === id)!.label).join('・')}`; }).join(' / ') + (chunk.selections.length < t.conditions.length ? ' / 他の条件は−' : '');
 }
 // Rule pairs (0-based indexes) that can match the same input.
 export function overlappingRules(t: Table, budget = 2_000_000): { pairs: number; examples: [number, number][]; complete: boolean } {
@@ -362,7 +356,8 @@ function buildCandidate(t: Table, rules: Rule[], proof: Candidate['proof'], anch
 }
 // TASK-007: rules merge when their whole specification is identical, including which outputs they leave undecided.
 // A rule that decides nothing is not a merge target.
-const mergeKey = (t: Table, r: Rule): string | null => !r.directives.length || r.directives.every(d => d.state === 'unset') ? null : stable(normalizedDirectives(t, r.directives));
+const idle = (t: Table, r: Rule) => (normalizedDirectives(t, r.directives) as { state: string }[]).every(d => d.state === 'unset');
+const mergeKey = (t: Table, r: Rule): string | null => !r.directives.length || idle(t, r) ? null : stable(normalizedDirectives(t, r.directives));
 function directiveGroups(t: Table): number[][] {
   const groups = new Map<string, number[]>();
   t.rules.forEach((r, i) => { const k = mergeKey(t, r); if (k !== null) groups.set(k, [...(groups.get(k) ?? []), i]); });
@@ -535,5 +530,5 @@ export function inspect(t: Table, picks: Record<string, string>): { total: bigin
     return { outputId: o.id, status: 'open' as const, rules: all, candidates };
   });
   return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered, conflict: outputs.some(x => x.status === 'conflict'),
-    determined: outputs.length > 0 && outputs.every(x => x.status === 'determined'), relevant: t.conditions.filter((_, k) => openConditions.has(k)).map(c => c.id), outputs };
+    determined: rules.length > 0 && outputs.length > 0 && outputs.every(x => x.status === 'determined' || x.status === 'none'), relevant: t.conditions.filter((_, k) => openConditions.has(k)).map(c => c.id), outputs };
 }
