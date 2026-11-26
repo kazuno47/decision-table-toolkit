@@ -1,5 +1,5 @@
-// TASK-001, TASK-002, TASK-003 / SCR-001..005 / REQ-001..018. All user content uses textContent.
-import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, patternCount, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, mergeBlockers, LIMIT, type MergeBlocker, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
+// TASK-001..004 / SCR-001..005 / REQ-001..018. All user content uses textContent.
+import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, patternCount, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, contradictions, LIMIT, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
 import { FileCoordinator, writeVerified, type Handle, type Observation } from './files.ts';
 import { documentSchema } from './schema.ts';
 type PickerWindow = Window & { showOpenFilePicker?: (o: unknown) => Promise<Handle[]>; showSaveFilePicker?: (o: unknown) => Promise<Handle> };
@@ -18,20 +18,20 @@ async function fileTask(operation: () => Promise<unknown>) {
 let table = emptyTable(), saved = stable(table), session: FileCoordinator | null = null;
 let candidates: Candidate[] = [], panel: 'none' | 'diagnostics' | 'merge' | 'expand' = 'none', page = 0, polling = false, pollErrors = 0;
 let externalUIKey = '';
-// TASK-003: result of applying every candidate repeatedly, and why the remaining rules cannot be merged. Recomputed, never saved.
-let compressed: { table: Table; steps: number; base: string } | null = null, blocked: { blockers: MergeBlocker[]; total: number; unset: number } | null = null;
+// TASK-003: result of applying every candidate repeatedly. Recomputed, never saved.
+let compressed: { table: Table; steps: number; base: string } | null = null;
 // INS-002 / CHG-004: partitions chosen in the "結果を確認" section; view state only, never saved.
 let checkPicks: Record<string, string> = {};
 let pending: Observation | null = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
 const root = document.getElementById('app')!;
-root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と結果をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">DECISION TABLE</label><input id="title" aria-label="決定表の名前" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">全件適用・上から順：一致する規則をすべて順に扱います。これは本ツール独自の拡張です。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="check" class="check-panel" hidden></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と動作・結果を定義し、「＋ 規則」で規則を1行ずつ書きます。条件は「すべて」のままにも、区分を絞ることもできます。組み合わせが少ない表は全件を生成することもできます。</li><li>結果を入力し、検証で未設定・未網羅（規則のない条件のかたまり）・多重適合を確認します。</li><li>表の下の「結果を確認」で条件の区分を選ぶと、その条件に適用される結果だけを確認できます。選ばない条件は指定なしとして扱います。</li><li>「まとめる」で等価性を確認できた候補を作成し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
+root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.2</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と結果をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">DECISION TABLE</label><input id="title" aria-label="決定表の名前" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">結果は1つ：どの入力にも、適合する規則の結果が1つに決まる表として扱います。同じ入力に違う結果の規則が適合する場合は「検証」で矛盾として指摘します。規則の並び順は結果に影響しません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="check" class="check-panel" hidden></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と動作・結果を定義し、「＋ 規則」で規則を1行ずつ書きます。条件は「すべて」のままにも、区分を絞ることもできます。組み合わせが少ない表は全件を生成することもできます。</li><li>結果を入力し、検証で未設定・未網羅（規則のない条件のかたまり）・矛盾（同じ入力に違う結果の規則が適合する箇所）を確認します。</li><li>表の下の「結果を確認」で条件の区分を選ぶと、その条件に適用される結果だけを確認できます。選ばない条件は指定なしとして扱います。</li><li>「まとめる」で等価性を確認できた候補を作成し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
 const $ = (id: string) => document.getElementById(id)!;
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; }
 function button(text: string, action: () => unknown, cls = ''): HTMLButtonElement { const b = element('button', text, cls); b.type = 'button'; b.addEventListener('click', () => void run(action)); return b; }
 function message(s: string) { status = s; $('status').textContent = s; }
 async function run(action: () => unknown) { try { await action(); } catch (e) { if ((e as Error).name !== 'AbortError') message(`確認が必要です：${(e as Error).message}`); } }
 const dirty = () => stable(table) !== (session?.baseModel ?? saved);
-function commit(next: Table, note = '変更を反映しました') { assertValid(next); workspaceRevision++; table = next; candidates = []; compressed = null; blocked = null; pending = null; page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1)); message(note); render(); }
+function commit(next: Table, note = '変更を反映しました') { assertValid(next); workspaceRevision++; table = next; candidates = []; compressed = null; pending = null; page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1)); message(note); render(); }
 function download(text: string, filename: string, mime = 'application/json') { const url = URL.createObjectURL(new Blob([text], { type: mime })), a = element('a'); a.href = url; a.download = filename; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000); }
 function clearWorkspace() { if (dirty() && !confirm('未保存の変更があります。現在の表を閉じますか？')) return; session = null; pending = null; saved = stable(emptyTable()); table = emptyTable(); saved = stable(table); fileMessage = 'ファイル未連携'; panel = 'none'; page = 0; commit(table, '新しい表を作成しました'); }
 function demo(): Table {
@@ -60,7 +60,7 @@ function applyDefinitions(next: Table, close: () => void) {
   const m = modal('条件変更の影響を確認');
   m.form.append(element('p', `規則${table.rules.length}件のうち、そのまま保持できないものがあります。削除される規則：${migrated.dropped}件／指定していた条件がなくなり対象が広がる規則：${migrated.widened}件／指定していた区分の一部がなくなる規則：${migrated.narrowed}件。変更前の表は選択が完了するまで保持します。`));
   const actions = element('div', '', 'modal-actions');
-  actions.append(button('キャンセル', m.close), button('規則を保持して反映', () => { commit(migrated.table, '条件の変更を反映しました。「検証」で未網羅と多重適合を確認してください。'); m.close(); close(); }, 'primary'));
+  actions.append(button('キャンセル', m.close), button('規則を保持して反映', () => { commit(migrated.table, '条件の変更を反映しました。「検証」で未網羅と矛盾を確認してください。'); m.close(); close(); }, 'primary'));
   if (count(next) <= BigInt(LIMIT)) actions.append(button('変更前JSONを書出後、全組み合わせを再生成', () => { download(encode(table), 'decision-table-before-change.json'); commit(generate({ ...next, rules: [] }), '変更前JSONの書出を開始し、新しい組み合わせを生成しました。ダウンロード完了はブラウザで確認してください。'); m.close(); close(); }));
   m.form.append(actions);
 }
@@ -246,15 +246,12 @@ function renderCheck() {
     const found = inspect(table, checkPicks), chosen = Object.keys(checkPicks).length;
     const value = (d: Directive) => { const o = table.outputs.find(o => o.id === d.outputId); if (d.state === 'unset') return '未設定'; if (o?.kind === 'action') return d.value ? '実行する' : '実行しない'; return d.value === '' ? '（空文字）' : String(d.value); };
     const outcome = (ds: Directive[]) => ds.length ? ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}：${value(d)}`).join(' ／ ') : '（動作・結果が未定義）';
-    host.append(element('p', `${chosen ? `${chosen}条件を指定` : '指定なし（表全体）'}：対象は${found.total.toLocaleString('ja-JP')}組み合わせ、適用される規則は${found.rules.length}件です。${found.exact ? '' : '結果の種類ごとにまとめて表示します。'}`, 'check-summary'));
-    if (found.exact) {
-      // every condition chosen: one input, so show every matching rule in order (DEC-007: all apply, top to bottom).
-      found.rules.forEach((r, order) => { const row = element('div', '', 'check-result'); row.append(element('strong', outcome(r.directives)), element('small', `${found.rules.length > 1 ? `${order + 1}番目に適用 ／ ` : ''}規則 #${r.index + 1}`)); host.append(row); });
-    } else {
-      const groups = new Map<string, { directives: Directive[]; rules: number[]; always: boolean }>();
-      for (const r of found.rules) { const key = stable(r.directives), g = groups.get(key) ?? { directives: r.directives, rules: [], always: false }; g.rules.push(r.index + 1); g.always ||= r.always; groups.set(key, g); }
-      for (const g of groups.values()) { const row = element('div', '', 'check-result'); row.append(element('strong', outcome(g.directives)), element('small', `${g.always ? 'この範囲で必ず適用' : '残りの条件による'} ／ 規則 ${g.rules.slice(0, 12).map(n => `#${n}`).join(' ')}${g.rules.length > 12 ? ` ほか${g.rules.length - 12}件` : ''}`)); host.append(row); }
-    }
+    host.append(element('p', `${chosen ? `${chosen}条件を指定` : '指定なし（表全体）'}：対象は${found.total.toLocaleString('ja-JP')}組み合わせ、適合する規則は${found.rules.length}件です。${found.exact ? '' : '結果の種類ごとにまとめて表示します。'}`, 'check-summary'));
+    // TASK-004: every rule that applies must give the same result; group by result and flag a contradiction.
+    const groups = new Map<string, { directives: Directive[]; rules: number[]; always: boolean }>();
+    for (const r of found.rules) { const key = stable(r.directives), g = groups.get(key) ?? { directives: r.directives, rules: [], always: false }; g.rules.push(r.index + 1); g.always ||= r.always; groups.set(key, g); }
+    if (found.conflict) host.append(element('p', found.exact ? 'この入力には違う結果の規則が適合しており、結果が1つに決まりません（矛盾）。規則を直してください。' : 'この範囲には、違う結果の規則が同じ入力に適合する箇所があります（矛盾）。「検証」で場所を確認してください。', 'check-empty'));
+    for (const g of groups.values()) { const row = element('div', '', 'check-result'); row.append(element('strong', outcome(g.directives)), element('small', `${found.exact ? '' : g.always ? 'この範囲で必ず適用 ／ ' : '残りの条件による ／ '}規則 ${g.rules.slice(0, 12).map(n => `#${n}`).join(' ')}${g.rules.length > 12 ? ` ほか${g.rules.length - 12}件` : ''}`)); host.append(row); }
     if (!found.rules.length) host.append(element('p', 'この条件に適用される規則はありません。', 'check-empty'));
     else if (found.uncovered === null) host.append(element('p', '規則のない入力があるかどうかは、計算予算を超えたため判定できていません。', 'muted'));
     else if (found.uncovered > 0n) host.append(element('p', `この範囲のうち${found.uncovered.toLocaleString('ja-JP')}組み合わせには、適用される規則がありません。`, 'check-empty'));
@@ -262,7 +259,7 @@ function renderCheck() {
 }
 // TASK-003 / REQ-011 / SCR-004: candidates, the repeated result and the reasons are always computed from the current table.
 function refreshMerge() {
-  candidates = proposeMerges(table); const all = compressAll(table); compressed = { ...all, base: stable(table) }; blocked = mergeBlockers(table);
+  candidates = proposeMerges(table); const all = compressAll(table); compressed = { ...all, base: stable(table) };
 }
 function renderPanel() {
   const host = $('side-panel'); host.replaceChildren(); host.hidden = panel === 'none'; if (panel === 'none') return;
@@ -272,7 +269,9 @@ function renderPanel() {
     const ds = diagnose(table); host.append(element('p', ds.length ? `${ds.length}件の診断があります。` : '定義した値域で問題は見つかりませんでした。業務上の正しさを保証する判定ではありません。'));
     ds.forEach(d => { const row = element('div', '', `diagnostic ${d.level}`); const index = table.rules.findIndex(r => r.id === d.target); row.append(element('strong', index >= 0 ? `規則 #${index + 1}` : d.target === 'rules' ? '規則全体' : d.target), element('span', d.message)); host.append(row); });
   } else if (panel === 'merge') {
-    host.append(element('p', '条件の集合・値・順序・適用回数が変わらないと確認できた候補だけを表示します。全件を列挙できる表は全区分で比較し、超える表は規則の重なりと順序から証明します。承認前は正本を変更しません。'));
+    host.append(element('p', 'どの入力についても結果が変わらないと確認できた候補だけを表示します。同じ結果の規則は、重なっていても1つにまとめます。全件を列挙できる表は全入力で比較し、超える表は条件の集合が一致することを証明します。承認前は正本を変更しません。'));
+    // Merging keeps every result, so existing contradictions survive it; say so before the user compresses a broken table.
+    const clash = contradictions(table).pairs; if (clash) host.append(element('p', `この表には結果が食い違う規則が${clash}組あります。まとめても矛盾はそのまま残ります。先に「検証」で直すことを勧めます。`, 'check-empty'));
     const numbers = (ids: string[]) => ids.map(id => `#${table.rules.findIndex(r => r.id === id) + 1}`).join(' ');
     const reapply = (next: Table, note: string) => { commit(next, note); refreshMerge(); panel = 'merge'; renderPanel(); };
     if (compressed && compressed.steps > 0) {
@@ -285,16 +284,14 @@ function renderPanel() {
     candidates.forEach(c => {
       const row = element('div', '', 'candidate'), sources = c.before.map(id => table.rules.find(r => r.id === id)!), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
       const toAll = c.replacement.anyOf.some(clause => table.conditions.some(x => !clause.selections.some(s => s.conditionId === x.id) && sources.some(r => r.anyOf.some(o => o.selections.some(s => s.conditionId === x.id)))));
-      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則 → 1規則` : `規則 ${numbers(c.before)} の条件を整理`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '規則の重なりと順序から等価性を証明' : `${c.checked}組み合わせで等価性確認`}${toAll ? ' ／ 全区分がそろった条件は「すべて」になります（あとで追加した区分も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('統合する条件と結果'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認してまとめる', () => reapply(applyCandidate(table, c), '承認した候補を反映し、残りの候補を再計算しました。'), 'primary'));
+      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則 → 1規則` : `規則 ${numbers(c.before)} の条件を整理`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '条件の集合の一致から等価性を証明' : `${c.checked}組み合わせで等価性確認`}${toAll ? ' ／ 全区分がそろった条件は「すべて」になります（あとで追加した区分も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('統合する条件と結果'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認してまとめる', () => reapply(applyCandidate(table, c), '承認した候補を反映し、残りの候補を再計算しました。'), 'primary'));
       host.append(row);
     });
-    if (blocked && (blocked.total || blocked.unset)) {
-      // Explain what keeps rules with the same outputs apart instead of leaving an empty list.
-      host.append(element('h3', 'まとめられない理由'));
-      if (blocked.unset) host.append(element('p', `未設定の出力がある規則は対象外です（${blocked.unset}件）。`, 'muted'));
-      blocked.blockers.forEach(b => { const row = element('div', '', 'diagnostic'); row.append(element('strong', `規則 #${b.rules[0]} と #${b.rules[1]}`), element('span', b.kind === 'overlap' ? '同じ結果ですが、同じ入力に両方が適合します。まとめると適用回数が2回から1回に変わるため、まとめません' : `同じ結果ですが、間にある規則 #${b.via} が同じ入力に適合します。まとめると適用の順序が変わるため、まとめません`)); host.append(row); });
-      if (blocked.total > blocked.blockers.length) host.append(element('p', `ほか${blocked.total - blocked.blockers.length}組あります。`, 'muted'));
-    }
+    // Rules with an unset output are not merged (DAT-003/005); say so instead of leaving the list unexplained.
+    const unset = table.rules.filter(r => r.directives.some(d => d.state === 'unset')).length;
+    if (unset) host.append(element('p', `未設定の出力がある規則は対象外です（${unset}件）。`, 'muted'));
+    const distinct = new Set(table.rules.map(r => stable(r.directives))).size;
+    if (!candidates.length && !unset && table.rules.length) host.append(element('p', `現在の${table.rules.length}規則は結果が${distinct}種類で、同じ結果の規則はすでに1つずつにまとまっています。これ以上はまとめられません。`, 'muted'));
   } else {
     const total = count(table), pre = element('pre');
     const effects = (ds: Directive[]) => ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}=${d.state === 'unset' ? '未設定' : JSON.stringify(d.value)}`).join(', ');
