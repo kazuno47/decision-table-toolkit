@@ -1,0 +1,15 @@
+# Local-only development files
+/.ads/
+/AGENTS.md
+/docs/
+/.agents/
+/.codex/
+
+# Local environment and generated output
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
