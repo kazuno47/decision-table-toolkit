@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1.0",
+  "id": "table-1",
+  "title": "会員区分の例",
+  "conditions": [
+    {
+      "id": "c1",
+      "name": "会員",
+      "type": "boolean",
+      "partitions": [
+        {
+          "id": "p1",
+          "label": "会員",
+          "kind": "values",
+          "values": [
+            true
+          ]
+        },
+        {
+          "id": "p2",
+          "label": "非会員",
+          "kind": "values",
+          "values": [
+            false
+          ]
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "id": "o1",
+      "name": "対象",
+      "kind": "result",
+      "type": "boolean"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r1",
+      "anyOf": [
+        {
+          "selections": [
+            {
+              "conditionId": "c1",
+              "partitionIds": [
+                "p1"
+              ]
+            }
+          ]
+        }
+      ],
+      "directives": [
+        {
+          "outputId": "o1",
+          "state": "set",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "r2",
+      "anyOf": [
+        {
+          "selections": [
+            {
+              "conditionId": "c1",
+              "partitionIds": [
+                "p2"
+              ]
+            }
+          ]
+        }
+      ],
+      "directives": [
+        {
+          "outputId": "o1",
+          "state": "set",
+          "value": false
+        }
+      ]
+    }
+  ]
+}
