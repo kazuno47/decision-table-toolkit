@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Decision Table Toolkit</title><style>:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#1d303e;background:#f3f5f4;font-synthesis:none;line-height:1.6;font-size:14px}*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer;border:1px solid #d8dfdc;border-radius:6px;padding:9px 14px;background:#fff;color:#283f48;transition:background .15s,box-shadow .15s}button:hover{background:#edf4ef;border-color:#8cae9b}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7ab79a;outline-offset:2px}button:disabled{cursor:default;opacity:.35}.primary{background:#24664a;color:white;border-color:#24664a}.primary:hover{background:#174d36;color:white}.tiny{padding:3px 7px;font-size:12px}.muted{color:#708079}.rail{position:fixed;inset:0 auto 0 0;width:74px;background:#18372c;display:flex;align-items:center;flex-direction:column;padding:28px 0;color:#d3e5d8}.brand-mark{font:700 27px Georgia,serif;letter-spacing:-3px}.brand-mark span{font-size:23px;margin-left:3px;color:#9ccbb3}.rail-line{height:44px;width:1px;background:#628475;margin:27px 0}.vertical{writing-mode:vertical-rl;font-size:10px;letter-spacing:3px;opacity:.65}.rail-version{margin-top:auto;font-size:10px;opacity:.55}main{margin-left:74px;padding:44px 44px 26px;max-width:1740px}header{display:flex;justify-content:space-between;gap:25px;margin-bottom:30px}.eyebrow{color:#4d7e65;font-weight:700;letter-spacing:2.8px;font-size:11px;margin:0 0 11px}h1{font-size:30px;line-height:1.5;letter-spacing:-.6px;margin:0;font-weight:700}h1 span{color:#799185;margin-left:10px}.intro{font-size:13px;color:#758079;margin:9px 0 0}.header-meta{font-size:10px;letter-spacing:1.3px;margin-top:7px;text-align:right;color:#40624f;white-space:nowrap}.header-meta small{display:block;color:#84918a;letter-spacing:0;margin-top:2px}.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3d9164;margin-right:5px}nav{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}nav .sample-button{margin-left:auto;background:transparent;border-color:transparent;color:#47755d}.workspace{background:white;border:1px solid #dce3df;border-radius:10px;overflow:hidden;box-shadow:0 5px 22px #1d443408}.workspace-top{display:flex;justify-content:space-between;padding:25px 26px;gap:24px;align-items:center}.title-label{display:block;font-size:9px;letter-spacing:2px;color:#91a197;font-weight:700}#title{border:0;padding:3px 0;font-size:22px;font-weight:600;min-width:200px;max-width:100%;color:#263d32;background:transparent}.stats{display:flex;gap:26px}.stats div{display:flex;flex-direction:column;align-items:flex-end;min-width:70px}.stats strong{font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.5}.stats span{font-size:10px;color:#84938a}.toolbar{padding:13px 24px;background:#f7f9f7;border-block:1px solid #e4eae5;display:flex;align-items:center;justify-content:space-between;gap:14px}#edit-actions{display:flex;gap:7px;flex-wrap:wrap}#edit-actions button{font-size:12px;padding:7px 11px}#table-state{font-size:10px;color:#8c8652;white-space:nowrap}.notice{font-size:10px;color:#829087;padding:11px 25px;border-bottom:1px solid #eef1ef}#definition-list{padding:12px 24px 4px;display:flex;gap:6px;flex-wrap:wrap}#definition-list:empty{padding:0}.definition-chip{display:flex;background:#edf4ef;border-radius:5px;align-items:center;overflow:hidden}.definition-chip button{background:transparent;border:0;font-size:11px;padding:5px 9px}.definition-chip .tiny{color:#84998a}.output-chip{background:#f8f1e3}#table-wrap{width:100%;overflow:auto;min-height:310px}.empty-state{padding:55px 20px;text-align:center;color:#788b7e;min-height:350px}.empty-icon{font-size:39px;line-height:1;color:#96b5a0;margin-bottom:14px}.empty-state h2{font-size:17px;color:#4c6654;font-weight:500}.empty-state p{white-space:pre-line;font-size:12px;margin-bottom:22px}.empty-state button{font-size:12px}.decision-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;white-space:nowrap}.decision-table th{background:#f7f9f7;border-bottom:1px solid #dde6df;color:#68816e;text-align:left;font-size:11px;font-weight:500;padding:14px 18px;position:sticky;top:0}.decision-table .output-heading{background:#f7f4eb;color:#8c8059}.decision-table td{padding:14px 18px;border-bottom:1px solid #edf1ee;max-width:300px}.decision-table tbody tr:last-child td{border-bottom:0}.decision-table tr:hover td{background:#fbfdfb}.decision-table td:first-child{width:65px;color:#718077}.decision-table td small{display:block;font-size:8px;letter-spacing:.7px;color:#a3afa5}.decision-table .output-cell{background:#fffefa}.cell-button{background:transparent;border:0;text-align:left;padding:0;color:#3d5946;white-space:normal;max-width:230px}.cell-button:hover{background:none;text-decoration:underline}.value-editor{display:flex;align-items:center;gap:4px}.value-editor input,.value-editor select{padding:6px 8px;border:1px solid #e0e5dd;border-radius:4px;width:140px;background:#fff;color:#405345;font-size:12px}.value-editor input::placeholder{color:#acb6ab}.row-actions{white-space:nowrap}.row-actions button{margin:0 2px;border-color:transparent;background:transparent}#pagination{display:flex;justify-content:center;align-items:center;gap:18px;padding:12px;font-size:11px}#pagination:empty{padding:0}footer{display:flex;gap:20px;justify-content:space-between;padding:15px 0;font-size:11px;color:#6c8172}#status{max-width:65%;white-space:pre-line}#file-state{text-align:right;max-width:45%;font-size:10px;color:#809487}.side-panel{margin-top:20px;padding:24px;background:white;border:1px solid #dae3dc;border-radius:9px}.panel-heading{display:flex;justify-content:space-between;align-items:center}.panel-heading h2{font-size:17px;margin:0}.side-panel>p{font-size:12px;color:#77887b}.candidate{display:flex;align-items:center;gap:18px;padding:16px 0;border-top:1px solid #e9eee9}.candidate span{font-size:11px;color:#7d8d7f;flex:1}.candidate strong{font-size:14px;color:#2b6948}.candidate button{font-size:11px}.diagnostic{display:flex;gap:12px;padding:10px;border-top:1px solid #edf0ed;font-size:12px}.diagnostic strong{font-size:10px;overflow-wrap:anywhere;max-width:180px;color:#8d7664}.diagnostic.error{background:#fff0eb}.diagnostic.warning{background:#fffaf0}.help{font-size:11px;color:#758579;margin-top:25px;max-width:950px}.help summary{cursor:pointer;color:#4b6e57}.help ol{padding-left:20px}.help p{line-height:1.9}#help-actions{display:flex;gap:8px;flex-wrap:wrap}#help-actions button{font-size:10px;background:transparent}#external-actions:not(:empty){padding:16px;background:#fff5de;border:1px solid #e9d6a9;border-radius:6px}#external-actions p{margin-top:0;font-size:12px}#external-actions button{margin-right:8px}dialog{border:1px solid #cbd8ce;border-radius:11px;box-shadow:0 20px 90px #102e3040;padding:0;color:#304c3b;max-width:min(880px,90vw);width:700px}dialog::backdrop{background:#19352866;backdrop-filter:blur(2px)}.modal-content{padding:25px;max-height:85vh;overflow:auto}.modal-content h2{font-size:20px;margin:0 0 20px}.modal-content p{font-size:12px;color:#7c8b80}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:15px;font-size:12px;color:#5c7464}.field input:not([type=checkbox]),.field textarea,.field select{width:100%;border:1px solid #d3ded4;border-radius:5px;background:#fff;padding:9px 11px;color:#304d3a}.field input[type=checkbox]{align-self:flex-start}.field textarea{min-height:100px;resize:vertical}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}.modal-actions button{font-size:12px}.range-row,.clause{padding:14px;border:1px solid #dfe7df;border-radius:5px;margin:12px 0;display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}.range-row .field:first-child{grid-column:1/-1}.clause button,.range-row>button{justify-self:start;align-self:end}pre{font:11px/1.7 ui-monospace,SFMono-Regular,monospace;overflow:auto;background:#f5f7f4;border:1px solid #e0e6dd;border-radius:6px;padding:15px;max-height:360px;white-space:pre}button:active{transform:translateY(1px)}[hidden]{display:none!important}@media(max-width:1050px){main{padding:30px 23px}.stats{gap:13px}.toolbar{align-items:flex-start;flex-direction:column}.header-meta{display:none}h1{font-size:26px}.candidate{flex-wrap:wrap}footer{flex-direction:column;gap:8px}#status,#file-state{max-width:100%;text-align:left}}@media(max-width:650px){.rail{width:46px}.brand-mark{font-size:21px}main{margin-left:46px;padding:22px 14px}.vertical{font-size:8px}h1{font-size:21px}h1 span{display:block;margin:0}.workspace-top{align-items:flex-start;flex-direction:column;padding:20px}.stats{width:100%;justify-content:space-between}.stats div{align-items:flex-start}nav .sample-button{margin-left:0}.toolbar{padding:14px}.notice{padding:12px 15px}.range-row,.clause{grid-template-columns:1fr}.candidate{gap:10px}.candidate span{flex-basis:100%}}
+</style></head>
+<body><div id="app"></div><script>(function(){'use strict';const modules={"./schema.ts": function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.documentSchema = void 0;
+exports.checkShape = checkShape;
+const text = (maxLength = 1024) => ({ type: 'string', maxLength });
+const id = { type: 'string', minLength: 1, maxLength: 128 };
+const array = (items, minItems = 0) => ({ type: 'array', items, minItems, maxItems: 10000 });
+const object = (properties, required = Object.keys(properties)) => ({ type: 'object', properties, required, additionalProperties: false });
+const scalar = { oneOf: [{ type: 'boolean' }, text()] };
+const nullable = { oneOf: [text(128), { type: 'null' }] };
+const range = object({ lower: nullable, upper: nullable, lowerInclusive: { type: 'boolean' }, upperInclusive: { type: 'boolean' } });
+const partition = { oneOf: [
+        object({ id, label: text(), kind: { const: 'values' }, values: array(scalar, 1) }),
+        object({ id, label: text(), kind: { const: 'range' }, range }),
+        object({ id, label: text(), kind: { const: 'missing' } })
+    ] };
+const condition = object({ id, name: text(), type: { enum: ['boolean', 'enum', 'number', 'string', 'date'] }, partitions: array(partition, 1) });
+const resultTypes = ['boolean', 'number', 'string', 'date'];
+const output = { oneOf: [
+        object({ id, name: text(), kind: { const: 'action' } }),
+        object({ id, name: text(), kind: { const: 'result' }, type: { enum: resultTypes } }),
+        object({ id, name: text(), kind: { const: 'result' }, type: { const: 'enum' }, values: array(text(), 1) })
+    ] };
+const directive = { oneOf: [object({ outputId: id, state: { const: 'unset' } }), object({ outputId: id, state: { const: 'set' }, value: scalar })] };
+const selection = object({ conditionId: id, partitionIds: array(id, 1) });
+const clause = object({ selections: array(selection, 1) });
+const rule = object({ id, anyOf: array(clause, 1), directives: array(directive) });
+exports.documentSchema = {
+    $schema: 'http://json-schema.org/draft-07/schema#', title: 'Decision Table Toolkit 1.0',
+    ...object({ schemaVersion: { const: '1.0' }, id, title: text(256), conditions: array(condition), outputs: array(output), rules: array(rule) })
+};
+// Interpret this bounded subset without eval, Function or remote schema requests.
+function checkShape(value, schema = exports.documentSchema, path = '$', depth = 0) {
+    if (depth > 24)
+        return [`${path}: 入れ子が深すぎます`];
+    if (schema.oneOf)
+        return schema.oneOf.filter(s => checkShape(value, s, path, depth + 1).length === 0).length === 1 ? [] : [`${path}: データ形式が一致しないか、未知フィールドがあります`];
+    if ('const' in schema && value !== schema.const)
+        return [`${path}: 未対応の値 ${String(value)}`];
+    if (schema.enum && !schema.enum.includes(value))
+        return [`${path}: 未対応の値 ${String(value)}`];
+    const type = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+    if (schema.type && type !== schema.type)
+        return [`${path}: ${schema.type} が必要です`];
+    if (type === 'string') {
+        const s = value;
+        if (s.length < (schema.minLength ?? 0) || s.length > (schema.maxLength ?? 100000))
+            return [`${path}: 文字数が範囲外です`];
+    }
+    if (schema.type === 'array') {
+        const a = value;
+        if (a.length < (schema.minItems ?? 0) || a.length > (schema.maxItems ?? 10000))
+            return [`${path}: 要素数が範囲外です`];
+        return a.flatMap((v, i) => checkShape(v, schema.items, `${path}[${i}]`, depth + 1));
+    }
+    if (schema.type === 'object') {
+        const o = value, props = schema.properties ?? {};
+        const errors = (schema.required ?? []).filter(k => !Object.hasOwn(o, k)).map(k => `${path}.${k}: 必須です`);
+        for (const k of Object.keys(o)) {
+            if (!Object.hasOwn(props, k))
+                errors.push(`${path}.${k}: 未知のフィールドです`);
+            else
+                errors.push(...checkShape(o[k], props[k], `${path}.${k}`, depth + 1));
+        }
+        return errors;
+    }
+    return [];
+}
+
+},
+"./core.ts": function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.emptyTable = exports.clone = exports.uid = exports.LIMIT = void 0;
+exports.stable = stable;
+exports.compareDecimal = compareDecimal;
+exports.day = day;
+exports.partitionsOverlap = partitionsOverlap;
+exports.validate = validate;
+exports.assertValid = assertValid;
+exports.decode = decode;
+exports.encode = encode;
+exports.count = count;
+exports.atoms = atoms;
+exports.matches = matches;
+exports.trace = trace;
+exports.traceKey = traceKey;
+exports.generate = generate;
+exports.verifyEquivalent = verifyEquivalent;
+exports.replaceCandidate = replaceCandidate;
+exports.proposeMerges = proposeMerges;
+exports.applyCandidate = applyCandidate;
+exports.diagnose = diagnose;
+exports.patternCount = patternCount;
+exports.regeneratePreserving = regeneratePreserving;
+exports.expandRows = expandRows;
+// TASK-001 / REQ-001..013 / DOM-001..009 / API-001..005.
+const schema_ts_1 = require("./schema.ts");
+exports.LIMIT = 10000;
+const uid = (prefix = 'id') => `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+exports.uid = uid;
+const clone = (v) => structuredClone(v);
+exports.clone = clone;
+function stable(v) {
+    if (Array.isArray(v))
+        return `[${v.map(stable).join(',')}]`;
+    if (v !== null && typeof v === 'object')
+        return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${stable(v[k])}`).join(',')}}`;
+    return JSON.stringify(v);
+}
+const emptyTable = () => ({ schemaVersion: '1.0', id: (0, exports.uid)('table'), title: '新しい決定表', conditions: [], outputs: [], rules: [] });
+exports.emptyTable = emptyTable;
+function decimal(s) {
+    if (!/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(s) || s.length > 128)
+        throw new Error(`数値の形式が不正です: ${s}`);
+    const [whole, fraction = ''] = s.split('.');
+    return [BigInt(whole + fraction), fraction.length];
+}
+function compareDecimal(a, b) {
+    const [x, xs] = decimal(a), [y, ys] = decimal(b), scale = Math.max(xs, ys);
+    const left = x * 10n ** BigInt(scale - xs), right = y * 10n ** BigInt(scale - ys);
+    return left < right ? -1 : left > right ? 1 : 0;
+}
+function day(s) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s))
+        throw new Error(`日付は YYYY-MM-DD: ${s}`);
+    const [y, m, d] = s.split('-').map(Number), leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+    const months = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (y < 1 || y > 9999 || m < 1 || m > 12 || d < 1 || d > months[m - 1])
+        throw new Error(`実在しない日付です: ${s}`);
+    const prev = y - 1;
+    return prev * 365 + Math.floor(prev / 4) - Math.floor(prev / 100) + Math.floor(prev / 400) + months.slice(0, m - 1).reduce((a, b) => a + b, 0) + d;
+}
+function validValue(type, value, choices) {
+    if (type === 'boolean')
+        return typeof value === 'boolean';
+    if (typeof value !== 'string')
+        return false;
+    if (type === 'enum')
+        return !choices || choices.includes(value);
+    try {
+        if (type === 'number')
+            decimal(value);
+        if (type === 'date')
+            day(value);
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+function interval(type, r) {
+    if (type === 'date')
+        return { low: r.lower === null ? day('0001-01-01') : day(r.lower) + (r.lowerInclusive ? 0 : 1), high: r.upper === null ? day('9999-12-31') : day(r.upper) - (r.upperInclusive ? 0 : 1), li: true, hi: true };
+    if (r.lower !== null)
+        decimal(r.lower);
+    if (r.upper !== null)
+        decimal(r.upper);
+    return { low: r.lower, high: r.upper, li: r.lowerInclusive, hi: r.upperInclusive };
+}
+const cmp = (a, b) => typeof a === 'number' ? Math.sign(a - b) : compareDecimal(a, b);
+function rangeEmpty(type, r) {
+    const i = interval(type, r);
+    if (i.low === null || i.high === null)
+        return false;
+    const c = cmp(i.low, i.high);
+    return c > 0 || (c === 0 && !(i.li && i.hi));
+}
+function partitionsOverlap(type, a, b) {
+    if (a.kind === 'missing' || b.kind === 'missing')
+        return a.kind === b.kind;
+    if (a.kind === 'values' && b.kind === 'values')
+        return a.values.some(x => b.values.includes(x));
+    if (a.kind !== 'range' || b.kind !== 'range')
+        return false;
+    const x = interval(type, a.range), y = interval(type, b.range);
+    if (x.high !== null && y.low !== null) {
+        const c = cmp(x.high, y.low);
+        if (c < 0 || (c === 0 && !(x.hi && y.li)))
+            return false;
+    }
+    if (y.high !== null && x.low !== null) {
+        const c = cmp(y.high, x.low);
+        if (c < 0 || (c === 0 && !(y.hi && x.li)))
+            return false;
+    }
+    return true;
+}
+function validate(table) {
+    const shape = (0, schema_ts_1.checkShape)(table);
+    if (shape.length)
+        return shape.map(message => ({ level: 'error', target: '$', message }));
+    const ds = [], error = (target, message) => ds.push({ level: 'error', target, message });
+    const unique = (ids, target) => { if (new Set(ids).size !== ids.length)
+        error(target, 'ID/候補の重複があります'); };
+    unique(table.conditions.map(c => c.id), 'conditions');
+    unique(table.outputs.map(o => o.id), 'outputs');
+    unique(table.rules.map(r => r.id), 'rules');
+    for (const c of table.conditions) {
+        unique(c.partitions.map(p => p.id), c.id);
+        for (const p of c.partitions) {
+            try {
+                if (p.kind === 'values') {
+                    if (['number', 'date'].includes(c.type))
+                        error(c.id, '数値・日付は範囲区分で定義してください');
+                    unique(p.values.map(stable), p.id);
+                    if (p.values.some(v => !validValue(c.type, v)))
+                        error(p.id, '条件の型と値が一致しません');
+                }
+                if (p.kind === 'range') {
+                    if (!['number', 'date'].includes(c.type))
+                        error(p.id, 'この型では範囲を指定できません');
+                    else if (rangeEmpty(c.type, p.range))
+                        error(p.id, '逆転した範囲または空の範囲です');
+                }
+            }
+            catch (e) {
+                error(p.id, String(e.message));
+            }
+        }
+        for (let i = 0; i < c.partitions.length; i++)
+            for (let j = i + 1; j < c.partitions.length; j++) {
+                try {
+                    if (partitionsOverlap(c.type, c.partitions[i], c.partitions[j]))
+                        error(c.id, `区分が重複しています: ${c.partitions[i].label} / ${c.partitions[j].label}`);
+                }
+                catch { /* already diagnosed */ }
+            }
+    }
+    for (const o of table.outputs)
+        if (o.kind === 'result' && o.type === 'enum')
+            unique(o.values ?? [], o.id);
+    if (table.rules.length && !table.conditions.length)
+        error('conditions', '規則には条件定義が必要です');
+    for (const r of table.rules) {
+        for (const clause of r.anyOf) {
+            unique(clause.selections.map(s => s.conditionId), r.id);
+            if (clause.selections.length !== table.conditions.length)
+                error(r.id, '各条件を1回ずつ指定してください');
+            for (const s of clause.selections) {
+                const c = table.conditions.find(c => c.id === s.conditionId);
+                unique(s.partitionIds, r.id);
+                if (!c || s.partitionIds.some(id => !c.partitions.some(p => p.id === id)))
+                    error(r.id, '未知の条件・区分への参照です');
+            }
+        }
+        if (r.directives.length !== table.outputs.length)
+            error(r.id, '全出力を指定してください');
+        r.directives.forEach((d, i) => {
+            const o = table.outputs[i];
+            if (!o || d.outputId !== o.id)
+                error(r.id, '出力の参照または順序が不正です');
+            else if (d.state === 'set' && !validValue(o.kind === 'action' ? 'boolean' : o.type, d.value, o.kind === 'result' ? o.values : undefined))
+                error(r.id, `出力「${o.name}」の型または値が不正です`);
+        });
+    }
+    return ds;
+}
+function assertValid(t) { const errors = validate(t); if (errors.length)
+    throw new Error(errors.slice(0, 8).map(e => `${e.target}: ${e.message}`).join('\n')); }
+function decode(text) {
+    if (new TextEncoder().encode(text).byteLength > 10 * 1024 * 1024)
+        throw new Error('JSONは10MiB以下にしてください');
+    const t = JSON.parse(text);
+    assertValid(t);
+    return t;
+}
+function encode(t) { assertValid(t); return JSON.stringify(JSON.parse(stable(t)), null, 2) + '\n'; }
+function count(t) { return t.conditions.length ? t.conditions.reduce((n, c) => n * BigInt(c.partitions.length), 1n) : 0n; }
+function atoms(t, limit = exports.LIMIT) {
+    if (count(t) > BigInt(limit))
+        throw new Error(`${count(t)}組み合わせは計算予算${limit}件を超えます。条件区分を見直してください`);
+    if (!t.conditions.length)
+        return [];
+    let cells = [{}];
+    for (const c of t.conditions)
+        cells = cells.flatMap(a => c.partitions.map(p => ({ ...a, [c.id]: p.id })));
+    return cells;
+}
+function matches(rule, atom) { return rule.anyOf.some(c => c.selections.every(s => s.partitionIds.includes(atom[s.conditionId]))); }
+function trace(table, atom) { return table.rules.filter(r => matches(r, atom)).map(r => r.directives); }
+function normalizedDirectives(t, ds) {
+    return ds.map((d, i) => {
+        const o = t.outputs[i];
+        if (d.state === 'set' && o?.kind === 'result' && o.type === 'number' && typeof d.value === 'string') {
+            let [value, scale] = decimal(d.value);
+            while (scale > 0 && value % 10n === 0n) {
+                value /= 10n;
+                scale--;
+            }
+            return { ...d, value: `${value}:${scale}` };
+        }
+        return d;
+    });
+}
+function traceKey(t, atom) { return stable(trace(t, atom).map(ds => normalizedDirectives(t, ds))); }
+function generate(t) {
+    assertValid(t);
+    const cells = atoms(t);
+    if (!cells.length)
+        throw new Error('条件を追加してください');
+    return { ...(0, exports.clone)(t), rules: cells.map(a => ({ id: (0, exports.uid)('r'), anyOf: [{ selections: t.conditions.map(c => ({ conditionId: c.id, partitionIds: [a[c.id]] })) }], directives: t.outputs.map(o => ({ outputId: o.id, state: 'unset' })) })) };
+}
+function verifyEquivalent(a, b, budget = 2_000_000) {
+    assertValid(a);
+    assertValid(b);
+    if (stable(a.conditions) !== stable(b.conditions) || stable(a.outputs) !== stable(b.outputs))
+        return { equal: false, checked: 0, reason: '定義が異なります' };
+    const cells = atoms(a);
+    const weight = (t) => t.rules.reduce((n, r) => n + r.anyOf.reduce((n, c) => n + c.selections.reduce((n, s) => n + s.partitionIds.length, 0), 0), 0);
+    if (cells.length * (weight(a) + weight(b) + 1) > budget)
+        return { equal: false, checked: 0, reason: '証明の計算予算を超えます' };
+    for (let i = 0; i < cells.length; i++)
+        if (traceKey(a, cells[i]) !== traceKey(b, cells[i]))
+            return { equal: false, checked: i + 1, reason: '動作・結果の値、順序、回数が異なります' };
+    return { equal: true, checked: cells.length };
+}
+function replaceCandidate(t, c) {
+    const first = t.rules.findIndex(r => r.id === c.before[0]);
+    return { ...(0, exports.clone)(t), rules: t.rules.flatMap((r, i) => i === first ? [(0, exports.clone)(c.replacement)] : c.before.includes(r.id) ? [] : [(0, exports.clone)(r)]) };
+}
+function proposeMerges(t) {
+    assertValid(t);
+    atoms(t);
+    const groups = new Map();
+    for (const r of t.rules) {
+        if (!r.directives.length || r.directives.some(d => d.state === 'unset'))
+            continue;
+        const k = stable(normalizedDirectives(t, r.directives));
+        groups.set(k, [...(groups.get(k) ?? []), r]);
+    }
+    const result = [];
+    let remainingBudget = 5_000_000;
+    for (const group of groups.values()) {
+        if (group.length < 2)
+            continue;
+        const anyOf = [], seen = new Set();
+        for (const r of group)
+            for (const c of r.anyOf) {
+                const k = stable(c);
+                if (!seen.has(k)) {
+                    anyOf.push((0, exports.clone)(c));
+                    seen.add(k);
+                }
+            }
+        const c = { id: (0, exports.uid)('candidate'), base: stable(t), before: group.map(r => r.id), replacement: { id: group[0].id, anyOf, directives: (0, exports.clone)(group[0].directives) }, checked: 0 };
+        const b = replaceCandidate(t, c);
+        const cost = Number(count(t)) * (t.rules.length + b.rules.length + 1);
+        if (cost > remainingBudget)
+            break;
+        remainingBudget -= cost;
+        const check = verifyEquivalent(t, b, Math.min(2_000_000, remainingBudget + cost));
+        if (check.equal) {
+            c.checked = check.checked;
+            result.push(c);
+        }
+    }
+    return result;
+}
+function applyCandidate(t, c) {
+    if (stable(t) !== c.base)
+        throw new Error('表が変更されたため候補は失効しました。再計算してください');
+    const b = replaceCandidate(t, c), proof = verifyEquivalent(t, b);
+    if (!proof.equal)
+        throw new Error(`等価性を確認できません: ${proof.reason}`);
+    return b;
+}
+function diagnose(t) {
+    const result = validate(t);
+    if (result.length)
+        return result;
+    for (const r of t.rules)
+        if (r.directives.some(d => d.state === 'unset'))
+            result.push({ level: 'warning', target: r.id, message: '未設定の出力があります' });
+    try {
+        const cells = atoms(t);
+        const weight = t.rules.reduce((n, r) => n + r.anyOf.length * t.conditions.length, 0);
+        if (cells.length * weight > 2_000_000)
+            throw new Error('診断の計算予算を超えるため網羅性を判定していません');
+        const uncovered = cells.filter(a => !t.rules.some(r => matches(r, a))).length;
+        const multiple = cells.filter(a => t.rules.filter(r => matches(r, a)).length > 1).length;
+        if (uncovered)
+            result.push({ level: 'warning', target: 'rules', message: `${uncovered}組み合わせに規則がありません（宣言した値域内）` });
+        if (multiple)
+            result.push({ level: 'info', target: 'rules', message: `${multiple}組み合わせが多重適合。全件を上から順に適用します。異なる結果は上書きしません` });
+        const keys = new Set();
+        for (const r of t.rules) {
+            const k = stable({ anyOf: r.anyOf, directives: r.directives });
+            if (keys.has(k))
+                result.push({ level: 'warning', target: r.id, message: '同じ条件と出力の規則が重複しています。回数が意味を持つため自動削除しません' });
+            keys.add(k);
+        }
+    }
+    catch (e) {
+        result.push({ level: 'warning', target: 'rules', message: e.message });
+    }
+    return result;
+}
+function patternCount(t) {
+    const cells = atoms(t);
+    if (cells.length * t.rules.length > 2_000_000)
+        throw new Error('結果パターン数は計算予算のため未算出');
+    return new Set(cells.map(a => traceKey(t, a))).size;
+}
+// Conservative result migration; never infer business validity or changed interval membership.
+function regeneratePreserving(old, next) {
+    assertValid(old);
+    assertValid(next);
+    const fresh = generate({ ...next, rules: [] });
+    const common = old.conditions.filter(c => next.conditions.some(n => n.id === c.id));
+    const changed = common.some(c => stable({ type: c.type, partitions: c.partitions }) !== stable({ type: next.conditions.find(n => n.id === c.id).type, partitions: next.conditions.find(n => n.id === c.id).partitions }));
+    if (changed)
+        return { table: fresh, affected: fresh.rules.length };
+    const shared = common.map(c => c.id);
+    const key = (a) => stable(shared.map(id => a[id]));
+    const buckets = new Map();
+    for (const a of atoms(old)) {
+        const k = key(a), value = trace(old, a);
+        if (!buckets.has(k))
+            buckets.set(k, (0, exports.clone)(value));
+        else if (stable(buckets.get(k)) !== stable(value))
+            buckets.set(k, null);
+    }
+    let affected = 0;
+    const rules = [];
+    for (const base of fresh.rules) {
+        const a = Object.fromEntries(base.anyOf[0].selections.map(s => [s.conditionId, s.partitionIds[0]]));
+        const values = buckets.get(key(a));
+        if (!values || !values.length) {
+            rules.push(base);
+            affected++;
+            continue;
+        }
+        for (const ds of values)
+            rules.push({ ...(0, exports.clone)(base), id: (0, exports.uid)('r'), directives: next.outputs.map(o => { const d = ds.find(d => d.outputId === o.id); const previous = old.outputs.find(x => x.id === o.id); const compatible = previous && stable({ ...previous, name: '' }) === stable({ ...o, name: '' }); return d && compatible ? (0, exports.clone)(d) : { outputId: o.id, state: 'unset' }; }) });
+    }
+    const result = { ...fresh, rules };
+    assertValid(result);
+    return { table: result, affected };
+}
+// REQ-012: retain the mapping from each original input atom to matched rules and ordered outcomes.
+function expandRows(t, displayLimit = 1000) {
+    assertValid(t);
+    const cells = atoms(t);
+    const weight = t.rules.reduce((n, r) => n + r.anyOf.reduce((n, c) => n + c.selections.reduce((n, s) => n + s.partitionIds.length, 0), 0), 0);
+    if (Math.min(cells.length, displayLimit) * weight > 2_000_000)
+        throw new Error('展開対応の表示計算予算を超えます。規則を整理してください');
+    return cells.slice(0, displayLimit).map(atom => ({ atom, matches: t.rules.filter(r => matches(r, atom)).map(r => ({ ruleId: r.id, directives: (0, exports.clone)(r.directives) })) }));
+}
+
+},
+"./files.ts": function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FileCoordinator = void 0;
+exports.writeVerified = writeVerified;
+// TASK-001 / REQ-014..016 / ARCH-006: explicit 3-version coordination.
+const core_ts_1 = require("./core.ts");
+class FileCoordinator {
+    handle;
+    baseRaw;
+    baseModel;
+    checkedAt = 0;
+    constructor(handle, raw) { this.handle = handle; this.baseRaw = raw; this.baseModel = (0, core_ts_1.stable)((0, core_ts_1.decode)(raw)); }
+    static async connect(handle) {
+        const raw = await (await handle.getFile()).text(), table = (0, core_ts_1.decode)(raw);
+        return { session: new FileCoordinator(handle, raw), table };
+    }
+    async check(local) {
+        const raw = await (await this.handle.getFile()).text();
+        this.checkedAt = Date.now();
+        const dirty = (0, core_ts_1.stable)(local) !== this.baseModel;
+        if (raw === this.baseRaw)
+            return { kind: dirty ? 'local' : 'same', raw };
+        const external = (0, core_ts_1.decode)(raw); // invalid external data never advances the baseline
+        return { kind: dirty ? 'conflict' : 'external', raw, external };
+    }
+    async accept(expectedRaw) {
+        const raw = await (await this.handle.getFile()).text();
+        if (raw !== expectedRaw)
+            throw new Error('確認後に外部ファイルが再変更されました。もう一度確認してください');
+        const table = (0, core_ts_1.decode)(raw);
+        this.baseRaw = raw;
+        this.baseModel = (0, core_ts_1.stable)(table);
+        this.checkedAt = Date.now();
+        return table;
+    }
+    async save(local) {
+        const snapshot = (0, core_ts_1.clone)(local), text = (0, core_ts_1.encode)(snapshot);
+        await writeVerified(this.handle, this.baseRaw, text);
+        this.baseRaw = text;
+        this.baseModel = (0, core_ts_1.stable)(snapshot);
+        this.checkedAt = Date.now();
+    }
+}
+exports.FileCoordinator = FileCoordinator;
+async function writeVerified(handle, expectedRaw, text) {
+    if (await (await handle.getFile()).text() !== expectedRaw)
+        throw new Error('保存直前に外部変更を検出しました。上書きを中止しました');
+    const writer = await handle.createWritable({ mode: 'exclusive' });
+    try {
+        // A browser writer lock does not imply OS-wide exclusion of external programs.
+        if (await (await handle.getFile()).text() !== expectedRaw)
+            throw new Error('書込開始時に外部変更を検出しました');
+        await writer.write(text);
+        await writer.close();
+    }
+    catch (e) {
+        try {
+            await writer.abort?.();
+        }
+        catch { /* preserve original error */ }
+        throw e;
+    }
+    if (await (await handle.getFile()).text() !== text)
+        throw new Error('保存後の再読込が一致しません。外部同時編集の可能性があります。編集中データは保持しています');
+}
+
+},
+"./app.ts": function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+// TASK-001 / SCR-001..005 / REQ-001..018. All user content uses textContent.
+const core_ts_1 = require("./core.ts");
+const files_ts_1 = require("./files.ts");
+const schema_ts_1 = require("./schema.ts");
+const picker = window;
+let workspaceRevision = 0, fileBusy = false;
+function captureWorkspace() {
+    const revision = workspaceRevision, linked = session, model = (0, core_ts_1.stable)(table);
+    return () => { if (workspaceRevision !== revision || session !== linked || (0, core_ts_1.stable)(table) !== model)
+        throw new Error('処理中に表や連携先が変更されたため、古い結果の適用を中止しました。現在の編集内容は保持されています。'); };
+}
+async function fileTask(operation) {
+    if (fileBusy)
+        throw new Error('別のファイル操作が処理中です');
+    fileBusy = true;
+    const surfaces = Array.from(document.querySelectorAll('main, dialog')).map(node => ({ node, inert: node.inert }));
+    surfaces.forEach(({ node }) => { node.inert = true; });
+    try {
+        return await operation();
+    }
+    finally {
+        surfaces.forEach(({ node, inert }) => { node.inert = inert; });
+        fileBusy = false;
+    }
+}
+let table = (0, core_ts_1.emptyTable)(), saved = (0, core_ts_1.stable)(table), session = null;
+let candidates = [], panel = 'none', page = 0, polling = false, pollErrors = 0;
+let externalUIKey = '';
+let pending = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
+const root = document.getElementById('app');
+root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.1</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と結果をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">DECISION TABLE</label><input id="title" aria-label="決定表の名前" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">全件適用・上から順：一致する規則をすべて順に扱います。これは本ツール独自の拡張です。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="side-panel" class="side-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と動作・結果を定義し、組み合わせを生成します。</li><li>結果を入力し、検証で未設定や網羅性を確認します。</li><li>「まとめる」で等価性を確認できた候補を作成し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
+const $ = (id) => document.getElementById(id);
+function element(tag, text = '', cls = '') { const e = document.createElement(tag); e.textContent = text; if (cls)
+    e.className = cls; return e; }
+function button(text, action, cls = '') { const b = element('button', text, cls); b.type = 'button'; b.addEventListener('click', () => void run(action)); return b; }
+function message(s) { status = s; $('status').textContent = s; }
+async function run(action) { try {
+    await action();
+}
+catch (e) {
+    if (e.name !== 'AbortError')
+        message(`確認が必要です：${e.message}`);
+} }
+const dirty = () => (0, core_ts_1.stable)(table) !== (session?.baseModel ?? saved);
+function commit(next, note = '変更を反映しました') { (0, core_ts_1.assertValid)(next); workspaceRevision++; table = next; candidates = []; pending = null; page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1)); message(note); render(); }
+function download(text, filename, mime = 'application/json') { const url = URL.createObjectURL(new Blob([text], { type: mime })), a = element('a'); a.href = url; a.download = filename; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000); }
+function clearWorkspace() { if (dirty() && !confirm('未保存の変更があります。現在の表を閉じますか？'))
+    return; session = null; pending = null; saved = (0, core_ts_1.stable)((0, core_ts_1.emptyTable)()); table = (0, core_ts_1.emptyTable)(); saved = (0, core_ts_1.stable)(table); fileMessage = 'ファイル未連携'; panel = 'none'; page = 0; commit(table, '新しい表を作成しました'); }
+function demo() {
+    const t = (0, core_ts_1.emptyTable)();
+    t.title = '配送ルール';
+    t.conditions = [
+        { id: 'member', name: '会員区分', type: 'enum', partitions: ['一般', '優良'].map((v, i) => ({ id: `member-${i}`, label: v, kind: 'values', values: [v] })) },
+        { id: 'region', name: '配送先', type: 'enum', partitions: ['本州', '北海道', '沖縄'].map((v, i) => ({ id: `region-${i}`, label: v, kind: 'values', values: [v] })) }
+    ];
+    t.outputs = [{ id: 'fee', name: '送料（円）', kind: 'result', type: 'number' }, { id: 'notify', name: '発送通知', kind: 'action' }];
+    const result = (0, core_ts_1.generate)(t);
+    result.rules.forEach(r => { const member = r.anyOf[0].selections[0].partitionIds[0]; r.directives = [{ outputId: 'fee', state: 'set', value: member === 'member-1' ? '0' : '500' }, { outputId: 'notify', state: 'set', value: true }]; });
+    return result;
+}
+function loadDemo() { if (dirty() && !confirm('現在の変更を破棄してサンプルを開きますか？'))
+    return; session = null; fileMessage = 'ファイル未連携'; page = 0; commit(demo(), '6組み合わせ・2結果パターンのサンプルです。「まとめる」を試せます。'); }
+function modal(title) { const d = element('dialog'); const form = element('div', '', 'modal-content'); form.append(element('h2', title)); d.append(form); document.body.append(d); d.addEventListener('close', () => d.remove()); d.showModal(); return { dialog: d, form, close: () => d.close() }; }
+function field(label, control, target) { const wrap = element('label', '', 'field'); wrap.append(element('span', label), control); target.append(wrap); return wrap; }
+function input(value = '', type = 'text') { const i = element('input'); i.type = type; i.value = value; return i; }
+function select(values, value) { const s = element('select'); for (const [v, label] of values) {
+    const o = element('option', label);
+    o.value = v;
+    s.append(o);
+} if (value !== undefined)
+    s.value = value; return s; }
+const types = [['boolean', 'Boolean / 真偽'], ['enum', 'Enum / 分類'], ['number', 'Number / 数値'], ['string', 'String / 文字列'], ['date', 'Date / 日付']];
+function applyDefinitions(next, close) {
+    (0, core_ts_1.assertValid)({ ...next, rules: [] });
+    if (!table.rules.length) {
+        commit({ ...next, rules: [] });
+        close();
+        return;
+    }
+    const migrated = (0, core_ts_1.regeneratePreserving)(table, { ...next, rules: [] });
+    const m = modal('条件変更の影響を確認');
+    m.form.append(element('p', `変更後は${(0, core_ts_1.count)(next)}組み合わせです。保持できない、または出力を確認し直す必要がある組み合わせ：${migrated.affected}件。変更前の表は選択が完了するまで保持します。`));
+    const actions = element('div', '', 'modal-actions');
+    actions.append(button('キャンセル', m.close), button('保持可能な結果を引き継ぐ', () => { commit(migrated.table); m.close(); close(); }, 'primary'), button('変更前JSONを書出後、再生成', () => { download((0, core_ts_1.encode)(table), 'decision-table-before-change.json'); commit((0, core_ts_1.generate)({ ...next, rules: [] }), '変更前JSONの書出を開始し、新しい組み合わせを生成しました。ダウンロード完了はブラウザで確認してください。'); m.close(); close(); }));
+    m.form.append(actions);
+}
+function conditionDialog(original) {
+    const m = modal(original ? '条件を編集' : '条件を追加'), name = input(original?.name ?? ''), type = select(types, original?.type ?? 'boolean'), defs = element('div');
+    name.placeholder = '例：会員区分、年齢、申込日';
+    field('条件名', name, m.form);
+    field('型', type, m.form);
+    m.form.append(defs);
+    let choices = element('textarea'), rows = element('div');
+    const missing = input('', 'checkbox');
+    missing.checked = original?.partitions.some(p => p.kind === 'missing') ?? false;
+    const rangeRows = [];
+    function addRange(p) {
+        const wrap = element('div', '', 'range-row'), low = input(p?.range.lower ?? ''), high = input(p?.range.upper ?? ''), li = input('', 'checkbox'), hi = input('', 'checkbox'), label = input(p?.label ?? '');
+        li.checked = p?.range.lowerInclusive ?? true;
+        hi.checked = p?.range.upperInclusive ?? false;
+        low.placeholder = type.value === 'date' ? '2026-01-01' : '0';
+        high.placeholder = type.value === 'date' ? '2027-01-01' : '18';
+        label.placeholder = '表示名';
+        const row = { low, high, li, hi, label };
+        rangeRows.push(row);
+        field('区分名', label, wrap);
+        field('下限（空欄＝なし）', low, wrap);
+        field('下限を含む', li, wrap);
+        field('上限（空欄＝なし）', high, wrap);
+        field('上限を含む', hi, wrap);
+        wrap.append(button('区分を削除', () => { rangeRows.splice(rangeRows.indexOf(row), 1); wrap.remove(); }));
+        rows.append(wrap);
+    }
+    function redraw() {
+        defs.replaceChildren();
+        rangeRows.length = 0;
+        if (type.value === 'boolean')
+            defs.append(element('p', 'true / false の2区分を定義します。'));
+        else if (type.value === 'enum' || type.value === 'string') {
+            choices = element('textarea');
+            choices.rows = 5;
+            choices.placeholder = '優良\n一般\n新規';
+            choices.value = original?.partitions.filter(p => p.kind === 'values').flatMap(p => p.values.map(v => typeof v === 'string' ? JSON.stringify(v) : String(v))).join('\n') ?? '';
+            field('候補値（1行1値。空文字は ""、空白を保つ値は引用符で指定）', choices, defs);
+        }
+        else {
+            rows = element('div');
+            defs.append(element('p', '数値は10進数、日付はYYYY-MM-DDで指定。区間の重複・逆転・空区間は拒否します。'), rows, button('＋ 範囲を追加', () => addRange()));
+            const existing = original?.type === type.value ? original.partitions.filter((p) => p.kind === 'range') : [];
+            if (existing.length)
+                existing.forEach(p => addRange(p));
+            else
+                addRange();
+        }
+        field('未定義値を明示区分として追加', missing, defs);
+    }
+    type.onchange = redraw;
+    redraw();
+    const actions = element('div', '', 'modal-actions');
+    actions.append(button('キャンセル', m.close), button('定義を反映', () => {
+        if (!name.value.trim())
+            throw new Error('条件名を入力してください');
+        let partitions;
+        if (type.value === 'boolean')
+            partitions = [true, false].map(v => ({ id: (0, core_ts_1.uid)('p'), label: String(v), kind: 'values', values: [v] }));
+        else if (type.value === 'enum' || type.value === 'string')
+            partitions = choices.value.split(/\r?\n/).filter(s => s.length > 0).map(s => { const v = s.startsWith('"') ? JSON.parse(s) : s; if (typeof v !== 'string')
+                throw new Error('文字列を指定してください'); return { id: (0, core_ts_1.uid)('p'), label: v === '' ? '（空文字）' : v, kind: 'values', values: [v] }; });
+        else
+            partitions = rangeRows.map(r => ({ id: (0, core_ts_1.uid)('p'), label: r.label.value || `${r.li.checked ? '[' : '('}${r.low.value || '−∞'}, ${r.high.value || '∞'}${r.hi.checked ? ']' : ')'}`, kind: 'range', range: { lower: r.low.value || null, upper: r.high.value || null, lowerInclusive: r.li.checked, upperInclusive: r.hi.checked } }));
+        if (missing.checked)
+            partitions.push({ id: (0, core_ts_1.uid)('p'), label: '未定義', kind: 'missing' });
+        // Retain identifiers for unchanged partitions rather than resetting existing results on rename.
+        if (original)
+            partitions = partitions.map(p => { const prior = original.partitions.find(old => (0, core_ts_1.stable)({ ...old, id: '', label: '' }) === (0, core_ts_1.stable)({ ...p, id: '', label: '' })); return prior ? { ...p, id: prior.id } : p; });
+        const c = { id: original?.id ?? (0, core_ts_1.uid)('c'), name: name.value, type: type.value, partitions }, next = (0, core_ts_1.clone)(table);
+        if (original)
+            next.conditions[next.conditions.findIndex(c => c.id === original.id)] = c;
+        else
+            next.conditions.push(c);
+        applyDefinitions(next, m.close);
+    }, 'primary'));
+    m.form.append(actions);
+}
+function outputDialog(original) {
+    const m = modal(original ? '動作・結果を編集' : '動作・結果を追加'), name = input(original?.name ?? ''), kind = select([['result', '結果の値'], ['action', '動作の実行有無']], original?.kind ?? 'result'), type = select(types, original?.kind === 'result' ? original.type : 'boolean'), choices = element('textarea');
+    choices.value = original?.kind === 'result' ? (original.values ?? []).join('\n') : '';
+    choices.placeholder = '1行に1候補';
+    field('名前', name, m.form);
+    field('種類', kind, m.form);
+    const typeField = field('結果の型', type, m.form), enumField = field('Enumの候補値', choices, m.form);
+    function redraw() { typeField.hidden = kind.value === 'action'; enumField.hidden = kind.value === 'action' || type.value !== 'enum'; }
+    kind.onchange = type.onchange = redraw;
+    redraw();
+    const actions = element('div', '', 'modal-actions');
+    actions.append(button('キャンセル', m.close), button('定義を反映', () => {
+        if (!name.value.trim())
+            throw new Error('名前を入力してください');
+        const o = kind.value === 'action' ? { id: original?.id ?? (0, core_ts_1.uid)('o'), name: name.value, kind: 'action' } : { id: original?.id ?? (0, core_ts_1.uid)('o'), name: name.value, kind: 'result', type: type.value, ...(type.value === 'enum' ? { values: choices.value.split(/\r?\n/).filter(Boolean) } : {}) };
+        const next = (0, core_ts_1.clone)(table);
+        if (original)
+            next.outputs[next.outputs.findIndex(x => x.id === original.id)] = o;
+        else
+            next.outputs.push(o);
+        // Output-only changes preserve rule order, OR clauses and matching multiplicity.
+        next.rules.forEach(r => { r.directives = next.outputs.map(output => { const before = table.outputs.find(x => x.id === output.id); const d = r.directives.find(d => d.outputId === output.id); return before && (0, core_ts_1.stable)({ ...before, name: '' }) === (0, core_ts_1.stable)({ ...output, name: '' }) && d ? d : { outputId: output.id, state: 'unset' }; }); });
+        (0, core_ts_1.assertValid)(next);
+        if (original && table.rules.length && !confirm('型や候補の変更で保持できない結果は未設定になります。変更を反映しますか？'))
+            return;
+        commit(next);
+        m.close();
+    }, 'primary'));
+    m.form.append(actions);
+}
+function ruleConditions(id) {
+    const r = table.rules.find(r => r.id === id);
+    const m = modal('規則の条件を編集（OR / AND）'), list = element('div');
+    m.form.append(element('p', 'ブロック内の条件はAND、ブロック同士はORです。同じ規則へ複数ブロックが一致しても適用は1回です。'), list);
+    const clauses = [];
+    function add(c) {
+        const block = element('div', '', 'clause'), selections = [];
+        list.append(block);
+        for (const condition of table.conditions) {
+            const s = select(condition.partitions.map(p => [p.id, p.label]));
+            s.multiple = true;
+            s.size = Math.min(4, condition.partitions.length);
+            const ids = c?.selections.find(x => x.conditionId === condition.id)?.partitionIds ?? condition.partitions.map(p => p.id);
+            Array.from(s.options).forEach(o => { o.selected = ids.includes(o.value); });
+            selections.push(s);
+            field(condition.name, s, block);
+        }
+        const entry = { selections, element: block };
+        clauses.push(entry);
+        block.append(button('このORブロックを削除', () => { clauses.splice(clauses.indexOf(entry), 1); block.remove(); }));
+    }
+    r.anyOf.forEach(add);
+    m.form.append(button('＋ ORブロック', () => add()));
+    const actions = element('div', '', 'modal-actions');
+    actions.append(button('キャンセル', m.close), button('条件を反映', () => { const next = (0, core_ts_1.clone)(table); next.rules.find(x => x.id === id).anyOf = clauses.map(c => ({ selections: table.conditions.map((x, i) => ({ conditionId: x.id, partitionIds: Array.from(c.selections[i].selectedOptions).map(o => o.value) })) })); commit(next); m.close(); }, 'primary'));
+    m.form.append(actions);
+}
+function outputControl(ruleId, output, d) {
+    const wrap = element('div', '', 'value-editor');
+    const set = (value) => { const next = (0, core_ts_1.clone)(table), r = next.rules.find(r => r.id === ruleId); r.directives[next.outputs.findIndex(o => o.id === output.id)] = value; commit(next, '値を反映しました'); };
+    if (output.kind === 'action' || output.type === 'boolean') {
+        const s = select([['unset', '— 未設定'], ['true', output.kind === 'action' ? '実行する' : 'true'], ['false', output.kind === 'action' ? '実行しない' : 'false']], d.state === 'unset' ? 'unset' : String(d.value));
+        s.setAttribute('aria-label', output.name);
+        s.onchange = () => void run(() => set(s.value === 'unset' ? { outputId: output.id, state: 'unset' } : { outputId: output.id, state: 'set', value: s.value === 'true' }));
+        wrap.append(s);
+    }
+    else if (output.type === 'enum') {
+        const s = select([['unset', '— 未設定'], ...(output.values ?? []).map((v, i) => [String(i), v === '' ? '（空文字）' : v])], d.state === 'unset' ? 'unset' : String((output.values ?? []).indexOf(d.value)));
+        s.setAttribute('aria-label', output.name);
+        s.onchange = () => void run(() => set(s.value === 'unset' ? { outputId: output.id, state: 'unset' } : { outputId: output.id, state: 'set', value: output.values[Number(s.value)] }));
+        wrap.append(s);
+    }
+    else {
+        const i = input(d.state === 'set' ? String(d.value) : '');
+        i.placeholder = d.state === 'unset' ? '未設定' : output.type === 'string' ? '（空文字）' : '';
+        i.setAttribute('aria-label', output.name);
+        i.onchange = () => void run(() => set({ outputId: output.id, state: 'set', value: i.value }));
+        wrap.append(i);
+        if (output.type === 'string' && d.state === 'unset')
+            wrap.append(button('空文字', () => set({ outputId: output.id, state: 'set', value: '' }), 'tiny'));
+        if (d.state === 'set')
+            wrap.append(button('×', () => set({ outputId: output.id, state: 'unset' }), 'tiny'));
+    }
+    return wrap;
+}
+async function openFile() {
+    const ensureCurrent = captureWorkspace();
+    if (dirty() && !confirm('未保存の変更があります。別のJSONを読み込みますか？（現在の内容は保存されません）'))
+        return;
+    if (picker.showOpenFilePicker) {
+        const [handle] = await picker.showOpenFilePicker({ types: [{ description: '決定表 JSON', accept: { 'application/json': ['.json'] } }] });
+        ensureCurrent();
+        const connection = await files_ts_1.FileCoordinator.connect(handle);
+        ensureCurrent();
+        session = connection.session;
+        table = connection.table;
+        saved = (0, core_ts_1.stable)(table);
+        pending = null;
+        pollErrors = 0;
+        fileMessage = `連携中：${handle.name}`;
+        page = 0;
+        commit(table, 'JSONを検証して読み込みました。選択したファイルを継続確認します。');
+    }
+    else {
+        const i = input('', 'file');
+        i.accept = '.json,application/json';
+        i.onchange = () => void run(() => fileTask(async () => { const f = i.files?.[0]; if (!f)
+            return; ensureCurrent(); const next = (0, core_ts_1.decode)(await f.text()); ensureCurrent(); session = null; table = next; saved = (0, core_ts_1.stable)(table); fileMessage = '明示読込のみ・継続確認なし'; commit(next, 'JSONを読み込みました。この環境のファイル選択方式では継続確認できません。'); }));
+        i.click();
+    }
+}
+async function saveAs() {
+    const ensureCurrent = captureWorkspace();
+    const text = (0, core_ts_1.encode)(table), snapshot = (0, core_ts_1.clone)(table);
+    if (!picker.showSaveFilePicker) {
+        download(text, 'decision-table.json');
+        message('JSONの書出を開始しました。ブラウザで保存完了を確認してください。元ファイルの保存完了は確認できません。');
+        return;
+    }
+    const h = await picker.showSaveFilePicker({ suggestedName: 'decision-table.json', types: [{ description: '決定表 JSON', accept: { 'application/json': ['.json'] } }] });
+    ensureCurrent();
+    if (session && h.isSameEntry && await h.isSameEntry(session.handle)) {
+        await save();
+        return;
+    }
+    const before = await (await h.getFile()).text();
+    ensureCurrent();
+    if (before && !confirm('既存のファイルです。外部ツールの編集を停止し、上書きしてよいことを確認してください。'))
+        return;
+    await (0, files_ts_1.writeVerified)(h, before, text);
+    ensureCurrent();
+    session = new files_ts_1.FileCoordinator(h, text);
+    saved = (0, core_ts_1.stable)(snapshot);
+    pending = null;
+    pollErrors = 0;
+    fileMessage = `連携中：${h.name}`;
+    render();
+    message('JSONを保存し、再読込で一致を確認しました。');
+}
+async function save() {
+    const ensureCurrent = captureWorkspace();
+    if (!session)
+        return saveAs();
+    if (!confirm('同じファイルを編集している外部ツールを停止してください。ブラウザだけで外部同時書込の排他は保証できません。停止を確認して保存しますか？'))
+        return;
+    await session.save(table);
+    ensureCurrent();
+    pending = null;
+    render();
+    message('保存後の再読込が一致しました。');
+}
+async function poll(force = false) {
+    if (!session || polling || (pollErrors >= 3 && !force))
+        return;
+    if (document.hidden && !force) {
+        fileMessage = '検知休止中（復帰後に再確認）';
+        updateStatus();
+        return;
+    }
+    polling = true;
+    const activeSession = session;
+    try {
+        const observation = await activeSession.check(table);
+        if (session !== activeSession)
+            return;
+        if (observation.kind === 'external' || observation.kind === 'conflict')
+            observation.kind = (0, core_ts_1.stable)(table) === activeSession.baseModel ? 'external' : 'conflict';
+        pending = observation.kind === 'external' || observation.kind === 'conflict' ? observation : null;
+        pollErrors = 0;
+        fileMessage = pending ? pending.kind === 'conflict' ? '競合：ブラウザと外部ファイルの双方が変更されています' : '外部変更：取込確認が必要です' : `連携中：${session.handle.name} / 最終確認 ${new Date(session.checkedAt).toLocaleTimeString()}`;
+    }
+    catch (e) {
+        if (session !== activeSession)
+            return;
+        pollErrors++;
+        fileMessage = `連携${pollErrors >= 3 ? '停止' : '確認失敗'}：${e.message}。権限・ファイル選択・外部ツールの状態を確認してください`;
+    }
+    finally {
+        polling = false;
+        updateStatus();
+    }
+}
+function updateStatus() {
+    $('table-state').textContent = dirty() ? '● 未保存の変更' : '✓ 変更なし';
+    $('file-state').textContent = fileMessage;
+    $('status').textContent = status;
+    const key = (0, core_ts_1.stable)({ raw: pending?.raw ?? '', kind: pending?.kind ?? '', dirty: dirty(), file: session?.handle.name ?? '' });
+    if (key === externalUIKey)
+        return;
+    externalUIKey = key;
+    const actions = $('external-actions');
+    actions.replaceChildren();
+    if (pending && session) {
+        const observation = pending, linkedSession = session;
+        actions.append(element('p', pending.kind === 'conflict' ? '両方の変更を保持しています。現在の内容を別名保存するか、外部版を確認して取り込んでください。' : '外部JSONが変更されています。自動置換はしていません。'));
+        actions.append(button('外部版を確認して取り込む', async () => {
+            const m = modal('外部版を確認'), pre = element('pre', JSON.stringify(observation.external, null, 2));
+            m.form.append(element('p', dirty() ? '取り込むと現在の未保存内容を置き換えます。必要なら先に別名保存してください。' : 'この検証済み外部版を取り込みます。'), pre, button('キャンセル', m.close), button('この外部版で置換', () => fileTask(async () => { const ensureCurrent = captureWorkspace(); if (session !== linkedSession)
+                throw new Error('連携先が変更されました'); const next = await linkedSession.accept(observation.raw); ensureCurrent(); if (session !== linkedSession)
+                throw new Error('連携先が変更されました'); pending = null; commit(next, '外部版を再確認して取り込みました'); m.close(); }), 'primary'));
+        }), button('現在の内容を別名保存', () => fileTask(saveAs)));
+    }
+}
+function renderPanel() {
+    const host = $('side-panel');
+    host.replaceChildren();
+    host.hidden = panel === 'none';
+    if (panel === 'none')
+        return;
+    const head = element('div', '', 'panel-heading');
+    head.append(element('h2', panel === 'diagnostics' ? '表の検証' : panel === 'merge' ? '同じ結果をまとめる' : '元の組み合わせへ展開'), button('閉じる', () => { panel = 'none'; renderPanel(); }));
+    host.append(head);
+    if (panel === 'diagnostics') {
+        const ds = (0, core_ts_1.diagnose)(table);
+        host.append(element('p', ds.length ? `${ds.length}件の診断があります。` : '定義した値域で問題は見つかりませんでした。業務上の正しさを保証する判定ではありません。'));
+        ds.forEach(d => { const row = element('div', '', `diagnostic ${d.level}`); row.append(element('strong', d.target), element('span', d.message)); host.append(row); });
+    }
+    else if (panel === 'merge') {
+        host.append(element('p', '条件の集合・値・順序・適用回数の等価性を全区分で確認できた候補だけを表示します。承認前は正本を変更しません。'));
+        if (!candidates.length)
+            host.append(element('p', '承認可能な候補はありません。未設定の結果、多重適合の回数・順序、計算予算も確認してください。', 'muted'));
+        candidates.forEach(c => { const row = element('div', '', 'candidate'); row.append(element('strong', `${c.before.length}規則 → 1規則`), element('span', `${c.checked}組み合わせで等価性確認 / OR条件 ${c.replacement.anyOf.length}件`), button('対象条件を確認', () => { const m = modal('統合する条件と結果'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認してまとめる', () => { commit((0, core_ts_1.applyCandidate)(table, c), '承認した候補を反映しました。他の候補は表の変更で失効します。'); panel = 'merge'; renderPanel(); }, 'primary')); host.append(row); });
+    }
+    else {
+        const cells = (0, core_ts_1.atoms)(table), pre = element('pre');
+        if (cells.length > 1000) {
+            host.append(element('p', '展開表示は先頭1,000件です。元データは切り捨てていません。'));
+        }
+        pre.textContent = (0, core_ts_1.expandRows)(table, 1000).map((row, i) => { const conditions = table.conditions.map(c => `${c.name}=${c.partitions.find(p => p.id === row.atom[c.id])?.label}`).join(' / '); const effects = row.matches.map((match, order) => `${order + 1}. 規則 ${match.ruleId}: ${match.directives.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}=${d.state === 'unset' ? '未設定' : JSON.stringify(d.value)}`).join(', ')}`).join('\n    '); return `${i + 1}. ${conditions}\n    ${effects || '適合する規則なし'}`; }).join('\n\n');
+        host.append(pre);
+    }
+}
+function render() {
+    const title = $('title');
+    title.value = table.title;
+    title.onchange = () => void run(() => commit({ ...table, title: title.value }));
+    $('file-actions').replaceChildren(button('＋ 新しい表', clearWorkspace), button('JSONを開く', () => fileTask(openFile)), button('保存', () => fileTask(save)), button('別名で保存', () => fileTask(saveAs)), button('サンプルを開く', loadDemo, 'sample-button'));
+    $('edit-actions').replaceChildren(button('＋ 条件', () => conditionDialog()), button('＋ 動作・結果', () => outputDialog()), button('組み合わせを生成', () => {
+        const n = (0, core_ts_1.count)(table);
+        if (n > 1000n && !confirm(`${n}組み合わせを生成します。続けますか？`))
+            return;
+        if (table.rules.length) {
+            applyDefinitions({ ...(0, core_ts_1.clone)(table), rules: [] }, () => { });
+            return;
+        }
+        commit((0, core_ts_1.generate)(table), '条件の組み合わせを生成しました。各規則の結果を入力してください。');
+    }, 'primary'), button('検証', () => { panel = 'diagnostics'; renderPanel(); }), button('まとめる', async () => { message('同じ結果の候補と等価性を確認しています…'); await new Promise(r => setTimeout(r, 0)); candidates = (0, core_ts_1.proposeMerges)(table); panel = 'merge'; renderPanel(); message(`${candidates.length}件の承認可能な統合候補があります`); }), button('展開表示', () => { panel = 'expand'; renderPanel(); }));
+    const counts = $('counts');
+    counts.replaceChildren();
+    for (const [value, label] of [[String((0, core_ts_1.count)(table)), '元の組み合わせ'], [String(table.rules.length), '現在の規則']]) {
+        const item = element('div');
+        item.append(element('strong', value), element('span', label));
+        counts.append(item);
+    }
+    const pattern = element('div');
+    let patterns = '—';
+    try {
+        if (table.rules.length)
+            patterns = String((0, core_ts_1.patternCount)(table));
+    }
+    catch {
+        patterns = '未算出';
+    }
+    pattern.append(element('strong', patterns), element('span', '結果パターン'));
+    counts.append(pattern);
+    const defs = $('definition-list');
+    defs.replaceChildren();
+    for (const c of table.conditions) {
+        const chip = element('div', '', 'definition-chip');
+        chip.append(button(`${c.name} · ${c.partitions.length}区分`, () => conditionDialog(c)), button('×', () => { const next = (0, core_ts_1.clone)(table); next.conditions = next.conditions.filter(x => x.id !== c.id); if (!next.conditions.length && table.rules.length) {
+            if (!confirm('最後の条件を削除すると規則を保持できません。先にJSONを保存してください。規則も削除しますか？'))
+                return;
+            commit({ ...next, rules: [] });
+        }
+        else
+            applyDefinitions(next, () => { }); }, 'tiny'));
+        defs.append(chip);
+    }
+    for (const o of table.outputs) {
+        const chip = element('div', '', 'definition-chip output-chip');
+        chip.append(button(`${o.name} · ${o.kind === 'action' ? '動作' : o.type}`, () => outputDialog(o)), button('×', () => { if (!confirm(`出力「${o.name}」と入力済みの値を削除しますか？`))
+            return; const next = (0, core_ts_1.clone)(table); next.outputs = next.outputs.filter(x => x.id !== o.id); next.rules.forEach(r => { r.directives = r.directives.filter(d => d.outputId !== o.id); }); commit(next); }, 'tiny'));
+        defs.append(chip);
+    }
+    const wrap = $('table-wrap');
+    wrap.replaceChildren();
+    if (!table.rules.length) {
+        const blank = element('div', '', 'empty-state');
+        blank.append(element('div', '⊞', 'empty-icon'), element('h2', '最初のルールをつくりましょう'), element('p', '条件と結果を定義して、組み合わせを生成します。\nサンプルなら、編集から統合までひと通り試せます。'), button('サンプルで試す →', loadDemo, 'primary'));
+        wrap.append(blank);
+    }
+    else {
+        const grid = element('table', '', 'decision-table'), thead = element('thead'), hr = element('tr');
+        hr.append(element('th', '#'));
+        table.conditions.forEach(c => hr.append(element('th', c.name)));
+        table.outputs.forEach(o => hr.append(element('th', o.name, 'output-heading')));
+        hr.append(element('th', '順序'));
+        thead.append(hr);
+        grid.append(thead);
+        const body = element('tbody');
+        table.rules.slice(page * 40, page * 40 + 40).forEach((r, offset) => {
+            const index = page * 40 + offset, tr = element('tr');
+            tr.id = `row-${r.id}`;
+            const indexCell = element('td');
+            indexCell.append(element('strong', String(index + 1)), element('small', r.anyOf.length > 1 ? `OR ${r.anyOf.length}` : 'RULE'));
+            tr.append(indexCell);
+            for (const c of table.conditions) {
+                const td = element('td');
+                const descriptions = r.anyOf.map(clause => { const ids = clause.selections.find(s => s.conditionId === c.id).partitionIds; return ids.length === c.partitions.length ? 'すべて' : ids.map(id => c.partitions.find(p => p.id === id).label).join(' / '); });
+                td.append(button([...new Set(descriptions)].join(' または '), () => ruleConditions(r.id), 'cell-button'));
+                if (r.anyOf.length > 1)
+                    td.append(element('small', 'ORの組合せはクリックで確認'));
+                tr.append(td);
+            }
+            table.outputs.forEach((o, i) => { const td = element('td', '', 'output-cell'); td.append(outputControl(r.id, o, r.directives[i])); tr.append(td); });
+            const controls = element('td', '', 'row-actions');
+            const up = button('↑', () => { if (!index)
+                return; const next = (0, core_ts_1.clone)(table); [next.rules[index - 1], next.rules[index]] = [next.rules[index], next.rules[index - 1]]; commit(next); }, 'tiny');
+            up.disabled = index === 0;
+            up.title = '規則を上へ';
+            const down = button('↓', () => { if (index >= table.rules.length - 1)
+                return; const next = (0, core_ts_1.clone)(table); [next.rules[index + 1], next.rules[index]] = [next.rules[index], next.rules[index + 1]]; commit(next); }, 'tiny');
+            down.disabled = index === table.rules.length - 1;
+            down.title = '規則を下へ';
+            controls.append(up, down, button('×', () => { if (!confirm('この規則を削除しますか？'))
+                return; const next = (0, core_ts_1.clone)(table); next.rules.splice(index, 1); commit(next); }, 'tiny'));
+            tr.append(controls);
+            body.append(tr);
+        });
+        grid.append(body);
+        wrap.append(grid);
+    }
+    const pages = $('pagination');
+    pages.replaceChildren();
+    if (table.rules.length > 40) {
+        const prev = button('← 前へ', () => { page--; render(); });
+        prev.disabled = page === 0;
+        const next = button('次へ →', () => { page++; render(); });
+        next.disabled = (page + 1) * 40 >= table.rules.length;
+        pages.append(prev, element('span', `${page + 1} / ${Math.ceil(table.rules.length / 40)}ページ · 1ページ40規則`), next);
+    }
+    $('help-actions').replaceChildren(button('対応JSON Schemaを書出', () => download(JSON.stringify(schema_ts_1.documentSchema, null, 2), 'decision-table.schema.json')), button('外部ファイルを再確認', () => poll(true)), button('現在のJSONを確認', () => { const m = modal('現在のJSON'); m.form.append(element('pre', (0, core_ts_1.encode)(table)), button('閉じる', m.close)); }));
+    updateStatus();
+    renderPanel();
+}
+window.addEventListener('beforeunload', e => { if (dirty()) {
+    e.preventDefault();
+    e.returnValue = '';
+} });
+document.addEventListener('visibilitychange', () => { if (!document.hidden)
+    void poll(true);
+else {
+    fileMessage = session ? '検知休止中（復帰後に再確認）' : fileMessage;
+    updateStatus();
+} });
+setInterval(() => void poll(), 1000);
+render();
+
+}};const cache={};function require(id){if(cache[id])return cache[id].exports;if(!Object.hasOwn(modules,id))throw Error('Unknown internal module');const m={exports:{}};cache[id]=m;modules[id](require,m,m.exports);return m.exports;}require('./app.ts');})();</script></body></html>
