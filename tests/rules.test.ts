@@ -1,7 +1,7 @@
 // TASK-002 / INS-001, CHG-001..003 / REQ-001,004,008,010,011,012,013 / NFR-006 / DR-010,011.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyTable, clone, decode, encode, validate, count, atoms, atomsHead, generate, matches, diagnose, coverage, describeChunk, overlappingRules, proposeMerges, proposeStructural, verifyStructural, applyCandidate, replaceCandidate, verifyEquivalent, addRule, migrateRules, lookup, expandRows, LIMIT, type Table, type Rule, type Clause } from '../src/core.ts';
+import { emptyTable, clone, decode, encode, validate, count, atoms, atomsHead, generate, matches, diagnose, coverage, describeChunk, overlappingRules, proposeMerges, proposeStructural, verifyStructural, applyCandidate, replaceCandidate, verifyEquivalent, addRule, migrateRules, lookup, expandRows, inspect, LIMIT, type Table, type Rule, type Clause } from '../src/core.ts';
 import { documentSchema } from '../src/schema.ts';
 
 function table(sizes: number[]): Table {
@@ -174,4 +174,24 @@ test('a candidate whose rule order was forged is rejected by both proofs', () =>
   const base = { id: 'forged', base: JSON.stringify(null), before: ['a', 'b'], replacement: { id: 'a', anyOf: [t.rules[0].anyOf[0], t.rules[2].anyOf[0]], directives: t.rules[0].directives }, checked: 0 };
   const stableBase = proposeStructural({ ...t, rules: [t.rules[0], t.rules[2]] })[0]; assert.ok(stableBase);
   for (const proof of ['structural', 'enumeration'] as const) { const c = { ...base, proof }; assert.equal(verifyStructural(t, c), false); assert.throws(() => applyCandidate(t, c)); }
+});
+// INS-002 / CHG-004 / REQ-012: the filter-like "結果を確認" calculation.
+test('inspect: partial and full partition choices agree with brute force on 300 random tables', () => {
+  for (let seed = 1; seed <= 300; seed++) {
+    const t = randomTable(seed), r = random(seed * 7 + 1), picks: Record<string, string> = {};
+    for (const c of t.conditions) if (r() < (seed % 3 ? 0.5 : 1)) picks[c.id] = c.partitions[Math.floor(r() * c.partitions.length)].id;
+    const region = atoms(t).filter(a => Object.entries(picks).every(([id, p]) => a[id] === p)), found = inspect(t, picks);
+    assert.equal(found.total, BigInt(region.length), `seed ${seed}`); assert.equal(found.exact, Object.keys(picks).length === t.conditions.length);
+    assert.deepEqual(found.rules.map(x => x.index), t.rules.flatMap((rule, i) => region.some(a => matches(rule, a)) ? [i] : []), `seed ${seed}`);
+    for (const x of found.rules) assert.equal(x.always, region.every(a => matches(t.rules[x.index], a)), `seed ${seed}`);
+    assert.equal(found.uncovered, BigInt(region.filter(a => !t.rules.some(rule => matches(rule, a))).length), `seed ${seed}`);
+    if (found.exact) assert.deepEqual(found.rules.map(x => x.ruleId), lookup(t, region[0]).map(x => x.ruleId));
+  }
+});
+test('inspect: works beyond 10,000 combinations, ignores stale choices and does not change the table', () => {
+  const t = table(Array(12).fill(4)); t.rules = [rule('a', { 0: [0] }), rule('b', { 0: [0], 1: [1] }, '2'), rule('c', { 0: [1] }, '3')]; const before = JSON.stringify(t);
+  const all = inspect(t, {}); assert.equal(all.total, 16777216n); assert.deepEqual(all.rules.map(x => [x.ruleId, x.always]), [['a', false], ['b', false], ['c', false]]); assert.equal(all.uncovered, 8388608n);
+  const one = inspect(t, { c0: 'c0p0', c5: 'gone' }); assert.equal(one.total, 4194304n); assert.deepEqual(one.rules.map(x => [x.ruleId, x.always]), [['a', true], ['b', false]]); assert.equal(one.uncovered, 0n); assert.equal(one.exact, false);
+  assert.equal(inspect(t, { c0: 'c0p3' }).rules.length, 0); assert.equal(inspect(t, { c0: 'c0p3' }).uncovered, 4194304n);
+  assert.equal(JSON.stringify(t), before); assert.deepEqual(inspect(emptyTable(), {}).rules, []);
 });
