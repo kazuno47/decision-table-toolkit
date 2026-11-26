@@ -1,4 +1,4 @@
-// TASK-001 / REQ-007,010 / DAT-001..005: a closed, versioned exchange schema.
+// TASK-001, TASK-002 / REQ-007,010 / DAT-001..005: a closed, versioned exchange schema (1.0 and 1.1).
 export type Schema = { type?: string; const?: unknown; enum?: unknown[]; properties?: Record<string, Schema>; required?: string[]; additionalProperties?: boolean; items?: Schema; minItems?: number; maxItems?: number; minLength?: number; maxLength?: number; pattern?: string; oneOf?: Schema[]; $schema?: string; title?: string };
 const text = (maxLength = 1024): Schema => ({ type: 'string', maxLength });
 const id: Schema = { type: 'string', minLength: 1, maxLength: 128 };
@@ -21,11 +21,12 @@ const output: Schema = { oneOf: [
 ] };
 const directive: Schema = { oneOf: [object({ outputId: id, state: { const: 'unset' } }), object({ outputId: id, state: { const: 'set' }, value: scalar })] };
 const selection = object({ conditionId: id, partitionIds: array(id, 1) });
-const clause = object({ selections: array(selection, 1) });
+// 1.1 (DAT-004 / DEC-025): an omitted condition means every partition; core.validate keeps 1.0 exhaustive.
+const clause = object({ selections: array(selection) });
 const rule = object({ id, anyOf: array(clause, 1), directives: array(directive) });
 export const documentSchema: Schema = {
-  $schema: 'http://json-schema.org/draft-07/schema#', title: 'Decision Table Toolkit 1.0',
-  ...object({ schemaVersion: { const: '1.0' }, id, title: text(256), conditions: array(condition), outputs: array(output), rules: array(rule) })
+  $schema: 'http://json-schema.org/draft-07/schema#', title: 'Decision Table Toolkit 1.0 / 1.1 (schemaVersion 1.0 additionally requires every condition exactly once in each clause; the application enforces this)',
+  ...object({ schemaVersion: { enum: ['1.0', '1.1'] }, id, title: text(256), conditions: array(condition), outputs: array(output), rules: array(rule) })
 };
 // Interpret this bounded subset without eval, Function or remote schema requests.
 export function checkShape(value: unknown, schema: Schema = documentSchema, path = '$', depth = 0): string[] {
