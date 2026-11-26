@@ -1,5 +1,5 @@
-// TASK-001, TASK-002 / SCR-001..005 / REQ-001..018. All user content uses textContent.
-import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, patternCount, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, LIMIT, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
+// TASK-001, TASK-002, TASK-003 / SCR-001..005 / REQ-001..018. All user content uses textContent.
+import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, patternCount, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, mergeBlockers, LIMIT, type MergeBlocker, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
 import { FileCoordinator, writeVerified, type Handle, type Observation } from './files.ts';
 import { documentSchema } from './schema.ts';
 type PickerWindow = Window & { showOpenFilePicker?: (o: unknown) => Promise<Handle[]>; showSaveFilePicker?: (o: unknown) => Promise<Handle> };
@@ -18,6 +18,8 @@ async function fileTask(operation: () => Promise<unknown>) {
 let table = emptyTable(), saved = stable(table), session: FileCoordinator | null = null;
 let candidates: Candidate[] = [], panel: 'none' | 'diagnostics' | 'merge' | 'expand' = 'none', page = 0, polling = false, pollErrors = 0;
 let externalUIKey = '';
+// TASK-003: result of applying every candidate repeatedly, and why the remaining rules cannot be merged. Recomputed, never saved.
+let compressed: { table: Table; steps: number; base: string } | null = null, blocked: { blockers: MergeBlocker[]; total: number; unset: number } | null = null;
 // INS-002 / CHG-004: partitions chosen in the "結果を確認" section; view state only, never saved.
 let checkPicks: Record<string, string> = {};
 let pending: Observation | null = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
@@ -29,7 +31,7 @@ function button(text: string, action: () => unknown, cls = ''): HTMLButtonElemen
 function message(s: string) { status = s; $('status').textContent = s; }
 async function run(action: () => unknown) { try { await action(); } catch (e) { if ((e as Error).name !== 'AbortError') message(`確認が必要です：${(e as Error).message}`); } }
 const dirty = () => stable(table) !== (session?.baseModel ?? saved);
-function commit(next: Table, note = '変更を反映しました') { assertValid(next); workspaceRevision++; table = next; candidates = []; pending = null; page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1)); message(note); render(); }
+function commit(next: Table, note = '変更を反映しました') { assertValid(next); workspaceRevision++; table = next; candidates = []; compressed = null; blocked = null; pending = null; page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1)); message(note); render(); }
 function download(text: string, filename: string, mime = 'application/json') { const url = URL.createObjectURL(new Blob([text], { type: mime })), a = element('a'); a.href = url; a.download = filename; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000); }
 function clearWorkspace() { if (dirty() && !confirm('未保存の変更があります。現在の表を閉じますか？')) return; session = null; pending = null; saved = stable(emptyTable()); table = emptyTable(); saved = stable(table); fileMessage = 'ファイル未連携'; panel = 'none'; page = 0; commit(table, '新しい表を作成しました'); }
 function demo(): Table {
@@ -258,6 +260,10 @@ function renderCheck() {
     else if (found.uncovered > 0n) host.append(element('p', `この範囲のうち${found.uncovered.toLocaleString('ja-JP')}組み合わせには、適用される規則がありません。`, 'check-empty'));
   } catch (e) { host.append(element('p', `結果を表示できません：${(e as Error).message}`, 'muted')); }
 }
+// TASK-003 / REQ-011 / SCR-004: candidates, the repeated result and the reasons are always computed from the current table.
+function refreshMerge() {
+  candidates = proposeMerges(table); const all = compressAll(table); compressed = { ...all, base: stable(table) }; blocked = mergeBlockers(table);
+}
 function renderPanel() {
   const host = $('side-panel'); host.replaceChildren(); host.hidden = panel === 'none'; if (panel === 'none') return;
   const head = element('div', '', 'panel-heading'); head.append(element('h2', panel === 'diagnostics' ? '表の検証' : panel === 'merge' ? '同じ結果をまとめる' : '元の組み合わせへ展開'), button('閉じる', () => { panel = 'none'; renderPanel(); })); host.append(head);
@@ -267,8 +273,28 @@ function renderPanel() {
     ds.forEach(d => { const row = element('div', '', `diagnostic ${d.level}`); const index = table.rules.findIndex(r => r.id === d.target); row.append(element('strong', index >= 0 ? `規則 #${index + 1}` : d.target === 'rules' ? '規則全体' : d.target), element('span', d.message)); host.append(row); });
   } else if (panel === 'merge') {
     host.append(element('p', '条件の集合・値・順序・適用回数が変わらないと確認できた候補だけを表示します。全件を列挙できる表は全区分で比較し、超える表は規則の重なりと順序から証明します。承認前は正本を変更しません。'));
-    if (!candidates.length) host.append(element('p', '承認可能な候補はありません。未設定の結果、多重適合の回数・順序、計算予算も確認してください。', 'muted'));
-    candidates.forEach(c => { const row = element('div', '', 'candidate'); row.append(element('strong', `${c.before.length}規則 → 1規則`), element('span', `${c.proof === 'structural' ? '規則の重なりと順序から等価性を証明' : `${c.checked}組み合わせで等価性確認`} / OR条件 ${c.replacement.anyOf.length}件`), button('対象条件を確認', () => { const m = modal('統合する条件と結果'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認してまとめる', () => { commit(applyCandidate(table, c), '承認した候補を反映しました。他の候補は表の変更で失効します。'); panel = 'merge'; renderPanel(); }, 'primary')); host.append(row); });
+    const numbers = (ids: string[]) => ids.map(id => `#${table.rules.findIndex(r => r.id === id) + 1}`).join(' ');
+    const reapply = (next: Table, note: string) => { commit(next, note); refreshMerge(); panel = 'merge'; renderPanel(); };
+    if (compressed && compressed.steps > 0) {
+      // "部分的に圧縮を繰り返す": every step is one proven candidate; the user approves the end result once.
+      const all = compressed, row = element('div', '', 'candidate'), blocks = (t: Table) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
+      row.append(element('strong', `すべて繰り返し適用：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `候補の反映と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています`), button('結果のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の統合・整理を反映しました。`); }, 'primary'));
+      host.append(row);
+    }
+    if (!candidates.length) host.append(element('p', '承認可能な候補はありません。', 'muted'));
+    candidates.forEach(c => {
+      const row = element('div', '', 'candidate'), sources = c.before.map(id => table.rules.find(r => r.id === id)!), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
+      const toAll = c.replacement.anyOf.some(clause => table.conditions.some(x => !clause.selections.some(s => s.conditionId === x.id) && sources.some(r => r.anyOf.some(o => o.selections.some(s => s.conditionId === x.id)))));
+      row.append(element('strong', c.before.length > 1 ? `${c.before.length}規則 → 1規則` : `規則 ${numbers(c.before)} の条件を整理`), element('span', `対象：規則 ${numbers(c.before)} ／ ORブロック ${from}件 → ${to}件 ／ ${c.proof === 'structural' ? '規則の重なりと順序から等価性を証明' : `${c.checked}組み合わせで等価性確認`}${toAll ? ' ／ 全区分がそろった条件は「すべて」になります（あとで追加した区分も対象になります）' : ''}`), button('対象条件を確認', () => { const m = modal('統合する条件と結果'); m.form.append(element('pre', JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button('閉じる', m.close)); }), button('承認してまとめる', () => reapply(applyCandidate(table, c), '承認した候補を反映し、残りの候補を再計算しました。'), 'primary'));
+      host.append(row);
+    });
+    if (blocked && (blocked.total || blocked.unset)) {
+      // Explain what keeps rules with the same outputs apart instead of leaving an empty list.
+      host.append(element('h3', 'まとめられない理由'));
+      if (blocked.unset) host.append(element('p', `未設定の出力がある規則は対象外です（${blocked.unset}件）。`, 'muted'));
+      blocked.blockers.forEach(b => { const row = element('div', '', 'diagnostic'); row.append(element('strong', `規則 #${b.rules[0]} と #${b.rules[1]}`), element('span', b.kind === 'overlap' ? '同じ結果ですが、同じ入力に両方が適合します。まとめると適用回数が2回から1回に変わるため、まとめません' : `同じ結果ですが、間にある規則 #${b.via} が同じ入力に適合します。まとめると適用の順序が変わるため、まとめません`)); host.append(row); });
+      if (blocked.total > blocked.blockers.length) host.append(element('p', `ほか${blocked.total - blocked.blockers.length}組あります。`, 'muted'));
+    }
   } else {
     const total = count(table), pre = element('pre');
     const effects = (ds: Directive[]) => ds.map(d => `${table.outputs.find(o => o.id === d.outputId)?.name}=${d.state === 'unset' ? '未設定' : JSON.stringify(d.value)}`).join(', ');
@@ -290,7 +316,7 @@ function render() {
     if (n > 1000n && !confirm(`${n}組み合わせを生成します。続けますか？`)) return;
     if (table.rules.length) { regenerateDialog(); return; }
     commit(generate(table), '条件の組み合わせを生成しました。各規則の結果を入力してください。');
-  }), button('検証', () => { panel = 'diagnostics'; renderPanel(); }), button('まとめる', async () => { message('同じ結果の候補と等価性を確認しています…'); await new Promise(r => setTimeout(r, 0)); candidates = proposeMerges(table); panel = 'merge'; renderPanel(); message(`${candidates.length}件の承認可能な統合候補があります`); }), button('展開表示', () => { panel = 'expand'; renderPanel(); }));
+  }), button('検証', () => { panel = 'diagnostics'; renderPanel(); }), button('まとめる', async () => { message('同じ結果の候補と等価性を確認しています…'); await new Promise(r => setTimeout(r, 0)); refreshMerge(); panel = 'merge'; renderPanel(); message(`${candidates.length}件の承認可能な統合候補があります`); }), button('展開表示', () => { panel = 'expand'; renderPanel(); }));
   const counts = $('counts'); counts.replaceChildren();
   for (const [value, label] of [[count(table).toLocaleString('ja-JP'), '元の組み合わせ'], [String(table.rules.length), '現在の規則']] as [string, string][]) { const item = element('div'); item.append(element('strong', value), element('span', label)); counts.append(item); }
   const pattern = element('div'); let patterns = '—'; try { if (table.rules.length) patterns = String(patternCount(table)); } catch { patterns = '未算出'; } pattern.append(element('strong', patterns), element('span', '結果パターン')); counts.append(pattern);

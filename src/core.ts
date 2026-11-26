@@ -12,7 +12,7 @@ export type Rule = { id: string; anyOf: Clause[]; directives: Directive[] };
 export type Table = { schemaVersion: '1.0' | '1.1'; id: string; title: string; conditions: Condition[]; outputs: Output[]; rules: Rule[] };
 export type Atom = Record<string, string>;
 export type Diagnostic = { level: 'error' | 'warning' | 'info'; target: string; message: string };
-export type Candidate = { id: string; base: string; before: string[]; replacement: Rule; checked: number; proof: 'enumeration' | 'structural' };
+export type Candidate = { id: string; base: string; before: string[]; replacement: Rule; checked: number; proof: 'enumeration' | 'structural'; anchor?: string };
 export const LIMIT = 10000;
 export const uid = (prefix = 'id') => `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
 export const clone = <T>(v: T): T => structuredClone(v);
@@ -144,47 +144,36 @@ export function verifyEquivalent(a: Table, b: Table, budget = 2_000_000): { equa
   return { equal: true, checked: cells.length };
 }
 export function replaceCandidate(t: Table, c: Candidate): Table {
-  const first = t.rules.findIndex(r => r.id === c.before[0]);
-  return { ...clone(t), rules: t.rules.flatMap((r, i) => i === first ? [clone(c.replacement)] : c.before.includes(r.id) ? [] : [clone(r)]) };
+  // TASK-003: the merged rule takes the anchor rule's position (the first rule when no anchor is given).
+  const at = t.rules.findIndex(r => r.id === (c.anchor ?? c.before[0]));
+  const rules = t.rules.flatMap((r, i) => i === at ? [clone(c.replacement)] : c.before.includes(r.id) ? [] : [clone(r)]);
+  // DAT-004: a replacement that omits a condition ("all") needs schema 1.1.
+  const omits = c.replacement.anyOf.some(clause => clause.selections.length < t.conditions.length);
+  return { ...clone(t), schemaVersion: omits ? '1.1' : t.schemaVersion, rules };
 }
+// REQ-011. Every candidate is first proven from rule overlap and order (DR-011) and clause set equality.
+// Tables within the enumeration budget are additionally compared input by input.
 export function proposeMerges(t: Table): Candidate[] {
-  assertValid(t); if (count(t) > BigInt(LIMIT)) return proposeStructural(t);
-  const groups = new Map<string, Rule[]>(); let cubes: Cube[][] | null = null;
-  for (const r of t.rules) {
-    if (!r.directives.length || r.directives.some(d => d.state === 'unset')) continue;
-    const k = stable(normalizedDirectives(t, r.directives)); groups.set(k, [...(groups.get(k) ?? []), r]);
-  }
+  assertValid(t); const proposed = proposeStructural(t);
+  if (count(t) > BigInt(LIMIT)) return proposed;
   const result: Candidate[] = []; let remainingBudget = 5_000_000;
-  for (const group of groups.values()) {
-    if (group.length < 2) continue;
-    const anyOf: Clause[] = [], seen = new Set<string>();
-    for (const r of group) for (const c of r.anyOf) { const k = stable(c); if (!seen.has(k)) { anyOf.push(clone(c)); seen.add(k); } }
-    const c: Candidate = { id: uid('candidate'), base: stable(t), before: group.map(r => r.id), replacement: { id: group[0].id, anyOf, directives: clone(group[0].directives) }, checked: 0, proof: 'enumeration' };
-    const b = replaceCandidate(t, c); const cost = Number(count(t)) * (t.rules.length + b.rules.length + 1);
-    cubes ??= t.rules.map(r => ruleCubes(t, r));
-    const indexes = group.map(r => t.rules.indexOf(r));
-    // DEF-006: when enumeration does not fit its budget, use the DR-011 proof instead of dropping the group.
-    const structural = () => { const chosen = mergeable(cubes!, indexes); if (chosen.length > 1) result.push(buildCandidate(t, chosen.map(i => t.rules[i]), 'structural')); };
-    if (cost > remainingBudget) { structural(); continue; }
+  for (const c of proposed) {
+    const b = replaceCandidate(t, c), cost = Number(count(t)) * (t.rules.length + b.rules.length + 1);
+    if (cost > remainingBudget) { result.push(c); continue; }
     remainingBudget -= cost;
     const check = verifyEquivalent(t, b, Math.min(2_000_000, remainingBudget + cost));
-    if (check.equal) { c.checked = check.checked; result.push(c); continue; }
-    if (check.checked === 0) { structural(); continue; }
-    // The whole group is not mergeable; offer the subset that DR-011 allows, still confirmed by enumeration here.
-    const chosen = mergeable(cubes, indexes);
-    if (chosen.length < 2) continue;
-    const subset = buildCandidate(t, chosen.map(i => t.rules[i]), 'enumeration'), proof = verifyEquivalent(t, replaceCandidate(t, subset));
-    if (proof.equal) { subset.checked = proof.checked; result.push(subset); } else if (proof.checked === 0) result.push({ ...subset, proof: 'structural' });
+    if (check.equal) result.push({ ...c, proof: 'enumeration', checked: check.checked });
+    else if (check.checked === 0 && check.reason === '証明の計算予算を超えます') result.push(c);
+    // any other mismatch drops the candidate: the two proofs must agree (fail closed).
   }
   return result;
 }
 export function applyCandidate(t: Table, c: Candidate): Table {
   if (stable(t) !== c.base) throw new Error('表が変更されたため候補は失効しました。再計算してください');
+  if (!verifyStructural(t, c)) throw new Error('等価性を確認できません: 規則の重なりと順序から証明できません');
   const b = replaceCandidate(t, c);
-  if (c.proof === 'structural') { if (!verifyStructural(t, c)) throw new Error('等価性を確認できません: 規則の重なりと順序から証明できません'); assertValid(b); return b; }
-  const proof = verifyEquivalent(t, b);
-  if (!proof.equal) throw new Error(`等価性を確認できません: ${proof.reason}`);
-  return b;
+  if (c.proof === 'enumeration') { const proof = verifyEquivalent(t, b); if (!proof.equal) throw new Error(`等価性を確認できません: ${proof.reason}`); }
+  assertValid(b); return b;
 }
 export function diagnose(t: Table): Diagnostic[] {
   const result = validate(t); if (result.length) return result;
@@ -318,39 +307,100 @@ export function overlappingRules(t: Table, budget = 2_000_000): { pairs: number;
   }
   return { pairs, examples, complete: true };
 }
-// DR-011. group = ascending rule indexes with identical directives; the merged rule takes the first position.
-// A later rule g may join only if (a) no already chosen rule can match the same input (match count stays 1) and
-// (b) no other rule between the first position and g can match the same input as g (order of effects is kept).
-function mergeable(cubes: Cube[][], group: number[]): number[] {
-  const first = group[0], chosen = [first];
-  for (const g of group.slice(1)) {
-    if (chosen.some(x => !rulesDisjoint(cubes[x], cubes[g]))) continue;
-    let blocked = false;
-    for (let x = first + 1; x < g && !blocked; x++) if (!chosen.includes(x) && !rulesDisjoint(cubes[x], cubes[g])) blocked = true;
+// DR-011. group = rule indexes with identical directives; the merged rule takes the anchor's position.
+// Another rule g may join only if (a) no already chosen rule can match the same input (match count stays 1) and
+// (b) no unchosen rule between the anchor and g can match the same input as g (order of effects is kept).
+function mergeable(cubes: Cube[][], group: number[], anchor = group[0]): number[] {
+  const chosen = [anchor];
+  for (const g of group) {
+    if (g === anchor || chosen.some(x => !rulesDisjoint(cubes[x], cubes[g]))) continue;
+    const low = Math.min(anchor, g), high = Math.max(anchor, g); let blocked = false;
+    for (let x = low + 1; x < high && !blocked; x++) if (!chosen.includes(x) && !rulesDisjoint(cubes[x], cubes[g])) blocked = true;
     if (!blocked) chosen.push(g);
   }
-  return chosen;
+  return chosen.sort((a, b) => a - b);
 }
-function buildCandidate(t: Table, rules: Rule[], proof: Candidate['proof']): Candidate {
-  const anyOf: Clause[] = [], seen = new Set<string>();
-  for (const r of rules) for (const c of r.anyOf) { const k = stable(c); if (!seen.has(k)) { anyOf.push(clone(c)); seen.add(k); } }
-  return { id: uid('candidate'), base: stable(t), before: rules.map(r => r.id), replacement: { id: rules[0].id, anyOf, directives: clone(rules[0].directives) }, checked: 0, proof };
+const cubeInside = (a: Cube, b: Cube) => a.every((m, i) => (m & ~b[i]) === 0n);
+function cubeClause(t: Pick<Table, 'conditions'>, cube: Cube): Clause {
+  return { selections: t.conditions.flatMap((c, i) => cube[i] === fullMask(c) ? [] : [{ conditionId: c.id, partitionIds: c.partitions.filter((_, j) => (cube[i] >> BigInt(j)) & 1n).map(p => p.id) }]) };
 }
-// REQ-011 beyond the enumeration budget: candidates proven from rule overlap and order alone.
+// TASK-003 / REQ-011: rewrite the OR blocks of one rule without changing the inputs it matches.
+// Blocks contained in another are dropped, blocks that differ in one condition are joined, and a condition
+// whose every partition is selected becomes "all" (omitted). A rule matches once however many blocks match.
+export function simplifyClauses(t: Pick<Table, 'conditions'>, anyOf: Clause[]): Clause[] {
+  let cubes = anyOf.map(c => clauseCube(t, c));
+  for (let round = 0; round < 8; round++) {
+    const kept = cubes.filter((a, i) => !cubes.some((b, j) => j !== i && cubeInside(a, b) && (!cubeInside(b, a) || j < i)));
+    const next = compactCubes(kept);
+    if (next.length === cubes.length) { cubes = next; break; }
+    cubes = next;
+  }
+  return cubes.map(c => cubeClause(t, c));
+}
+// Do two clause lists match exactly the same inputs? Unknown (work budget) counts as "no".
+function sameCover(a: Cube[], b: Cube[], budget = 500_000): boolean {
+  let work = 0;
+  const inside = (xs: Cube[], ys: Cube[]) => xs.every(x => { let rest: Cube[] = [x]; for (const y of ys) { work += rest.length; if (work > budget) return false; rest = rest.flatMap(r => subtractCube(r, y)); if (!rest.length) return true; } return rest.length === 0; });
+  return inside(a, b) && inside(b, a);
+}
+function buildCandidate(t: Table, rules: Rule[], proof: Candidate['proof'], anchor: Rule = rules[0]): Candidate {
+  return { id: uid('candidate'), base: stable(t), before: rules.map(r => r.id), replacement: { id: anchor.id, anyOf: simplifyClauses(t, rules.flatMap(r => r.anyOf)), directives: clone(anchor.directives) }, checked: 0, proof, anchor: anchor.id };
+}
+const mergeKey = (t: Table, r: Rule): string | null => !r.directives.length || r.directives.some(d => d.state === 'unset') ? null : stable(normalizedDirectives(t, r.directives));
+function directiveGroups(t: Table): number[][] {
+  const groups = new Map<string, number[]>();
+  t.rules.forEach((r, i) => { const k = mergeKey(t, r); if (k !== null) groups.set(k, [...(groups.get(k) ?? []), i]); });
+  return [...groups.values()];
+}
+// REQ-011: candidates proven from rule overlap and order alone. For each group of rules with the same outputs,
+// every member is tried as the position of the merged rule and the largest mergeable set wins; what is left is
+// tried again. Rules whose OR blocks can be tidied on their own are offered as single-rule candidates.
 export function proposeStructural(t: Table): Candidate[] {
-  assertValid(t); const groups = new Map<string, number[]>();
-  t.rules.forEach((r, i) => { if (!r.directives.length || r.directives.some(d => d.state === 'unset')) return; const k = stable(normalizedDirectives(t, r.directives)); groups.set(k, [...(groups.get(k) ?? []), i]); });
-  const cubes = t.rules.map(r => ruleCubes(t, r)), result: Candidate[] = [];
-  for (const group of groups.values()) { if (group.length < 2) continue; const chosen = mergeable(cubes, group); if (chosen.length > 1) result.push(buildCandidate(t, chosen.map(i => t.rules[i]), 'structural')); }
-  return result;
+  assertValid(t); const cubes = t.rules.map(r => ruleCubes(t, r)), result: Candidate[] = [], used = new Set<number>();
+  for (const group of directiveGroups(t)) {
+    let remaining = group;
+    while (remaining.length > 1) {
+      let best: number[] = [], anchor = -1;
+      for (const a of remaining.length <= 60 ? remaining : [remaining[0]]) { const chosen = mergeable(cubes, remaining, a); if (chosen.length > best.length) { best = chosen; anchor = a; } }
+      if (best.length < 2) break;
+      result.push(buildCandidate(t, best.map(i => t.rules[i]), 'structural', t.rules[anchor])); best.forEach(i => used.add(i));
+      const taken = best; remaining = remaining.filter(i => !taken.includes(i));
+    }
+  }
+  t.rules.forEach((r, i) => { if (used.has(i) || r.anyOf.length < 2) return; if (simplifyClauses(t, r.anyOf).length < r.anyOf.length) result.push(buildCandidate(t, [r], 'structural')); });
+  return result.sort((a, b) => b.before.length - a.before.length);
 }
 export function verifyStructural(t: Table, c: Candidate): boolean {
   const idx = c.before.map(id => t.rules.findIndex(r => r.id === id));
-  if (idx.length < 2 || idx.some(i => i < 0) || idx.some((v, i) => i > 0 && v <= idx[i - 1])) return false;
-  const rules = idx.map(i => t.rules[i]), key = stable(normalizedDirectives(t, rules[0].directives));
-  if (rules.some(r => !r.directives.length || r.directives.some(d => d.state === 'unset') || stable(normalizedDirectives(t, r.directives)) !== key)) return false;
-  if (stable(buildCandidate(t, rules, 'structural').replacement) !== stable(c.replacement)) return false;
-  return mergeable(t.rules.map(r => ruleCubes(t, r)), idx).length === idx.length;
+  if (!idx.length || idx.some(i => i < 0) || idx.some((v, i) => i > 0 && v <= idx[i - 1])) return false;
+  const anchor = t.rules.findIndex(r => r.id === (c.anchor ?? c.before[0])); if (!idx.includes(anchor) || c.replacement.id !== t.rules[anchor].id) return false;
+  const rules = idx.map(i => t.rules[i]);
+  if (stable(c.replacement.directives) !== stable(t.rules[anchor].directives)) return false;
+  if (rules.length > 1) { const key = mergeKey(t, rules[0]); if (key === null || rules.some(r => mergeKey(t, r) !== key)) return false; }
+  try { assertValid(replaceCandidate(t, c)); } catch { return false; }
+  if (!c.replacement.anyOf.length || !sameCover(rules.flatMap(r => ruleCubes(t, r)), ruleCubes(t, c.replacement))) return false;
+  return rules.length === 1 || mergeable(t.rules.map(r => ruleCubes(t, r)), idx, anchor).length === idx.length;
+}
+// TASK-003: apply candidates repeatedly until none is left. Each step is re-verified by applyCandidate.
+export function compressAll(t: Table, maxSteps = 500): { table: Table; steps: number } {
+  let table = t, steps = 0;
+  for (; steps < maxSteps; steps++) { const [next] = proposeStructural(table); if (!next) break; table = applyCandidate(table, next); }
+  return { table, steps };
+}
+// TASK-003: why rules with the same outputs cannot be merged (1-based rule numbers for display).
+export type MergeBlocker = { kind: 'overlap'; rules: [number, number] } | { kind: 'between'; rules: [number, number]; via: number };
+export function mergeBlockers(t: Table, limit = 12): { blockers: MergeBlocker[]; total: number; unset: number } {
+  assertValid(t); const cubes = t.rules.map(r => ruleCubes(t, r)), blockers: MergeBlocker[] = []; let total = 0;
+  for (const group of directiveGroups(t)) for (let a = 0; a < group.length; a++) for (let b = a + 1; b < group.length; b++) {
+    const i = group[a], j = group[b]; let found: MergeBlocker | null = null;
+    if (!rulesDisjoint(cubes[i], cubes[j])) found = { kind: 'overlap', rules: [i + 1, j + 1] };
+    else {
+      const hits = (target: number) => { for (let x = i + 1; x < j; x++) if (!rulesDisjoint(cubes[x], cubes[target])) return x; return -1; };
+      const down = hits(i), up = hits(j); if (down >= 0 && up >= 0) found = { kind: 'between', rules: [i + 1, j + 1], via: up + 1 };
+    }
+    if (found) { total++; if (blockers.length < limit) blockers.push(found); }
+  }
+  return { blockers, total, unset: t.rules.filter(r => r.directives.some(d => d.state === 'unset')).length };
 }
 // First n input combinations in the same order as atoms(), without materialising the whole product.
 export function atomsHead(t: Pick<Table, 'conditions'>, n: number): Atom[] {
