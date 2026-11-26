@@ -248,75 +248,39 @@
     return { equal: true, checked: cells.length };
   }
   function replaceCandidate(t, c) {
-    const first = t.rules.findIndex((r) => r.id === c.before[0]);
-    return { ...clone(t), rules: t.rules.flatMap((r, i) => i === first ? [clone(c.replacement)] : c.before.includes(r.id) ? [] : [clone(r)]) };
+    const at = t.rules.findIndex((r) => r.id === (c.anchor ?? c.before[0]));
+    const rules = t.rules.flatMap((r, i) => i === at ? [clone(c.replacement)] : c.before.includes(r.id) ? [] : [clone(r)]);
+    const omits = c.replacement.anyOf.some((clause2) => clause2.selections.length < t.conditions.length);
+    return { ...clone(t), schemaVersion: omits ? "1.1" : t.schemaVersion, rules };
   }
   function proposeMerges(t) {
     assertValid(t);
-    if (count(t) > BigInt(LIMIT)) return proposeStructural(t);
-    const groups = /* @__PURE__ */ new Map();
-    let cubes = null;
-    for (const r of t.rules) {
-      if (!r.directives.length || r.directives.some((d) => d.state === "unset")) continue;
-      const k = stable(normalizedDirectives(t, r.directives));
-      groups.set(k, [...groups.get(k) ?? [], r]);
-    }
+    const proposed = proposeStructural(t);
+    if (count(t) > BigInt(LIMIT)) return proposed;
     const result = [];
     let remainingBudget = 5e6;
-    for (const group of groups.values()) {
-      if (group.length < 2) continue;
-      const anyOf = [], seen = /* @__PURE__ */ new Set();
-      for (const r of group) for (const c2 of r.anyOf) {
-        const k = stable(c2);
-        if (!seen.has(k)) {
-          anyOf.push(clone(c2));
-          seen.add(k);
-        }
-      }
-      const c = { id: uid("candidate"), base: stable(t), before: group.map((r) => r.id), replacement: { id: group[0].id, anyOf, directives: clone(group[0].directives) }, checked: 0, proof: "enumeration" };
-      const b = replaceCandidate(t, c);
-      const cost = Number(count(t)) * (t.rules.length + b.rules.length + 1);
-      cubes ??= t.rules.map((r) => ruleCubes(t, r));
-      const indexes = group.map((r) => t.rules.indexOf(r));
-      const structural = () => {
-        const chosen2 = mergeable(cubes, indexes);
-        if (chosen2.length > 1) result.push(buildCandidate(t, chosen2.map((i) => t.rules[i]), "structural"));
-      };
+    for (const c of proposed) {
+      const b = replaceCandidate(t, c), cost = Number(count(t)) * (t.rules.length + b.rules.length + 1);
       if (cost > remainingBudget) {
-        structural();
+        result.push(c);
         continue;
       }
       remainingBudget -= cost;
       const check = verifyEquivalent(t, b, Math.min(2e6, remainingBudget + cost));
-      if (check.equal) {
-        c.checked = check.checked;
-        result.push(c);
-        continue;
-      }
-      if (check.checked === 0) {
-        structural();
-        continue;
-      }
-      const chosen = mergeable(cubes, indexes);
-      if (chosen.length < 2) continue;
-      const subset = buildCandidate(t, chosen.map((i) => t.rules[i]), "enumeration"), proof = verifyEquivalent(t, replaceCandidate(t, subset));
-      if (proof.equal) {
-        subset.checked = proof.checked;
-        result.push(subset);
-      } else if (proof.checked === 0) result.push({ ...subset, proof: "structural" });
+      if (check.equal) result.push({ ...c, proof: "enumeration", checked: check.checked });
+      else if (check.checked === 0 && check.reason === "\u8A3C\u660E\u306E\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059") result.push(c);
     }
     return result;
   }
   function applyCandidate(t, c) {
     if (stable(t) !== c.base) throw new Error("\u8868\u304C\u5909\u66F4\u3055\u308C\u305F\u305F\u3081\u5019\u88DC\u306F\u5931\u52B9\u3057\u307E\u3057\u305F\u3002\u518D\u8A08\u7B97\u3057\u3066\u304F\u3060\u3055\u3044");
+    if (!verifyStructural(t, c)) throw new Error("\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093: \u898F\u5247\u306E\u91CD\u306A\u308A\u3068\u9806\u5E8F\u304B\u3089\u8A3C\u660E\u3067\u304D\u307E\u305B\u3093");
     const b = replaceCandidate(t, c);
-    if (c.proof === "structural") {
-      if (!verifyStructural(t, c)) throw new Error("\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093: \u898F\u5247\u306E\u91CD\u306A\u308A\u3068\u9806\u5E8F\u304B\u3089\u8A3C\u660E\u3067\u304D\u307E\u305B\u3093");
-      assertValid(b);
-      return b;
+    if (c.proof === "enumeration") {
+      const proof = verifyEquivalent(t, b);
+      if (!proof.equal) throw new Error(`\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093: ${proof.reason}`);
     }
-    const proof = verifyEquivalent(t, b);
-    if (!proof.equal) throw new Error(`\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093: ${proof.reason}`);
+    assertValid(b);
     return b;
   }
   function diagnose(t) {
@@ -499,50 +463,137 @@
     }
     return { pairs, examples, complete: true };
   }
-  function mergeable(cubes, group) {
-    const first = group[0], chosen = [first];
-    for (const g of group.slice(1)) {
-      if (chosen.some((x) => !rulesDisjoint(cubes[x], cubes[g]))) continue;
-      let blocked = false;
-      for (let x = first + 1; x < g && !blocked; x++) if (!chosen.includes(x) && !rulesDisjoint(cubes[x], cubes[g])) blocked = true;
-      if (!blocked) chosen.push(g);
+  function mergeable(cubes, group, anchor = group[0]) {
+    const chosen = [anchor];
+    for (const g of group) {
+      if (g === anchor || chosen.some((x) => !rulesDisjoint(cubes[x], cubes[g]))) continue;
+      const low = Math.min(anchor, g), high = Math.max(anchor, g);
+      let blocked2 = false;
+      for (let x = low + 1; x < high && !blocked2; x++) if (!chosen.includes(x) && !rulesDisjoint(cubes[x], cubes[g])) blocked2 = true;
+      if (!blocked2) chosen.push(g);
     }
-    return chosen;
+    return chosen.sort((a, b) => a - b);
   }
-  function buildCandidate(t, rules, proof) {
-    const anyOf = [], seen = /* @__PURE__ */ new Set();
-    for (const r of rules) for (const c of r.anyOf) {
-      const k = stable(c);
-      if (!seen.has(k)) {
-        anyOf.push(clone(c));
-        seen.add(k);
+  var cubeInside = (a, b) => a.every((m, i) => (m & ~b[i]) === 0n);
+  function cubeClause(t, cube) {
+    return { selections: t.conditions.flatMap((c, i) => cube[i] === fullMask(c) ? [] : [{ conditionId: c.id, partitionIds: c.partitions.filter((_, j) => cube[i] >> BigInt(j) & 1n).map((p) => p.id) }]) };
+  }
+  function simplifyClauses(t, anyOf) {
+    let cubes = anyOf.map((c) => clauseCube(t, c));
+    for (let round = 0; round < 8; round++) {
+      const kept = cubes.filter((a, i) => !cubes.some((b, j) => j !== i && cubeInside(a, b) && (!cubeInside(b, a) || j < i)));
+      const next = compactCubes(kept);
+      if (next.length === cubes.length) {
+        cubes = next;
+        break;
       }
+      cubes = next;
     }
-    return { id: uid("candidate"), base: stable(t), before: rules.map((r) => r.id), replacement: { id: rules[0].id, anyOf, directives: clone(rules[0].directives) }, checked: 0, proof };
+    return cubes.map((c) => cubeClause(t, c));
+  }
+  function sameCover(a, b, budget = 5e5) {
+    let work = 0;
+    const inside = (xs, ys) => xs.every((x) => {
+      let rest = [x];
+      for (const y of ys) {
+        work += rest.length;
+        if (work > budget) return false;
+        rest = rest.flatMap((r) => subtractCube(r, y));
+        if (!rest.length) return true;
+      }
+      return rest.length === 0;
+    });
+    return inside(a, b) && inside(b, a);
+  }
+  function buildCandidate(t, rules, proof, anchor = rules[0]) {
+    return { id: uid("candidate"), base: stable(t), before: rules.map((r) => r.id), replacement: { id: anchor.id, anyOf: simplifyClauses(t, rules.flatMap((r) => r.anyOf)), directives: clone(anchor.directives) }, checked: 0, proof, anchor: anchor.id };
+  }
+  var mergeKey = (t, r) => !r.directives.length || r.directives.some((d) => d.state === "unset") ? null : stable(normalizedDirectives(t, r.directives));
+  function directiveGroups(t) {
+    const groups = /* @__PURE__ */ new Map();
+    t.rules.forEach((r, i) => {
+      const k = mergeKey(t, r);
+      if (k !== null) groups.set(k, [...groups.get(k) ?? [], i]);
+    });
+    return [...groups.values()];
   }
   function proposeStructural(t) {
     assertValid(t);
-    const groups = /* @__PURE__ */ new Map();
-    t.rules.forEach((r, i) => {
-      if (!r.directives.length || r.directives.some((d) => d.state === "unset")) return;
-      const k = stable(normalizedDirectives(t, r.directives));
-      groups.set(k, [...groups.get(k) ?? [], i]);
-    });
-    const cubes = t.rules.map((r) => ruleCubes(t, r)), result = [];
-    for (const group of groups.values()) {
-      if (group.length < 2) continue;
-      const chosen = mergeable(cubes, group);
-      if (chosen.length > 1) result.push(buildCandidate(t, chosen.map((i) => t.rules[i]), "structural"));
+    const cubes = t.rules.map((r) => ruleCubes(t, r)), result = [], used = /* @__PURE__ */ new Set();
+    for (const group of directiveGroups(t)) {
+      let remaining = group;
+      while (remaining.length > 1) {
+        let best = [], anchor = -1;
+        for (const a of remaining.length <= 60 ? remaining : [remaining[0]]) {
+          const chosen = mergeable(cubes, remaining, a);
+          if (chosen.length > best.length) {
+            best = chosen;
+            anchor = a;
+          }
+        }
+        if (best.length < 2) break;
+        result.push(buildCandidate(t, best.map((i) => t.rules[i]), "structural", t.rules[anchor]));
+        best.forEach((i) => used.add(i));
+        const taken = best;
+        remaining = remaining.filter((i) => !taken.includes(i));
+      }
     }
-    return result;
+    t.rules.forEach((r, i) => {
+      if (used.has(i) || r.anyOf.length < 2) return;
+      if (simplifyClauses(t, r.anyOf).length < r.anyOf.length) result.push(buildCandidate(t, [r], "structural"));
+    });
+    return result.sort((a, b) => b.before.length - a.before.length);
   }
   function verifyStructural(t, c) {
     const idx = c.before.map((id2) => t.rules.findIndex((r) => r.id === id2));
-    if (idx.length < 2 || idx.some((i) => i < 0) || idx.some((v, i) => i > 0 && v <= idx[i - 1])) return false;
-    const rules = idx.map((i) => t.rules[i]), key = stable(normalizedDirectives(t, rules[0].directives));
-    if (rules.some((r) => !r.directives.length || r.directives.some((d) => d.state === "unset") || stable(normalizedDirectives(t, r.directives)) !== key)) return false;
-    if (stable(buildCandidate(t, rules, "structural").replacement) !== stable(c.replacement)) return false;
-    return mergeable(t.rules.map((r) => ruleCubes(t, r)), idx).length === idx.length;
+    if (!idx.length || idx.some((i) => i < 0) || idx.some((v, i) => i > 0 && v <= idx[i - 1])) return false;
+    const anchor = t.rules.findIndex((r) => r.id === (c.anchor ?? c.before[0]));
+    if (!idx.includes(anchor) || c.replacement.id !== t.rules[anchor].id) return false;
+    const rules = idx.map((i) => t.rules[i]);
+    if (stable(c.replacement.directives) !== stable(t.rules[anchor].directives)) return false;
+    if (rules.length > 1) {
+      const key = mergeKey(t, rules[0]);
+      if (key === null || rules.some((r) => mergeKey(t, r) !== key)) return false;
+    }
+    try {
+      assertValid(replaceCandidate(t, c));
+    } catch {
+      return false;
+    }
+    if (!c.replacement.anyOf.length || !sameCover(rules.flatMap((r) => ruleCubes(t, r)), ruleCubes(t, c.replacement))) return false;
+    return rules.length === 1 || mergeable(t.rules.map((r) => ruleCubes(t, r)), idx, anchor).length === idx.length;
+  }
+  function compressAll(t, maxSteps = 500) {
+    let table2 = t, steps = 0;
+    for (; steps < maxSteps; steps++) {
+      const [next] = proposeStructural(table2);
+      if (!next) break;
+      table2 = applyCandidate(table2, next);
+    }
+    return { table: table2, steps };
+  }
+  function mergeBlockers(t, limit = 12) {
+    assertValid(t);
+    const cubes = t.rules.map((r) => ruleCubes(t, r)), blockers = [];
+    let total = 0;
+    for (const group of directiveGroups(t)) for (let a = 0; a < group.length; a++) for (let b = a + 1; b < group.length; b++) {
+      const i = group[a], j = group[b];
+      let found = null;
+      if (!rulesDisjoint(cubes[i], cubes[j])) found = { kind: "overlap", rules: [i + 1, j + 1] };
+      else {
+        const hits = (target) => {
+          for (let x = i + 1; x < j; x++) if (!rulesDisjoint(cubes[x], cubes[target])) return x;
+          return -1;
+        };
+        const down = hits(i), up = hits(j);
+        if (down >= 0 && up >= 0) found = { kind: "between", rules: [i + 1, j + 1], via: up + 1 };
+      }
+      if (found) {
+        total++;
+        if (blockers.length < limit) blockers.push(found);
+      }
+    }
+    return { blockers, total, unset: t.rules.filter((r) => r.directives.some((d) => d.state === "unset")).length };
   }
   function atomsHead(t, n) {
     const total = count(t);
@@ -724,6 +775,8 @@
   var polling = false;
   var pollErrors = 0;
   var externalUIKey = "";
+  var compressed = null;
+  var blocked = null;
   var checkPicks = {};
   var pending = null;
   var fileMessage = "\u30D5\u30A1\u30A4\u30EB\u672A\u9023\u643A";
@@ -760,6 +813,8 @@
     workspaceRevision++;
     table = next;
     candidates = [];
+    compressed = null;
+    blocked = null;
     pending = null;
     page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1));
     message(note);
@@ -1258,6 +1313,12 @@
       host.append(element("p", `\u7D50\u679C\u3092\u8868\u793A\u3067\u304D\u307E\u305B\u3093\uFF1A${e.message}`, "muted"));
     }
   }
+  function refreshMerge() {
+    candidates = proposeMerges(table);
+    const all = compressAll(table);
+    compressed = { ...all, base: stable(table) };
+    blocked = mergeBlockers(table);
+  }
   function renderPanel() {
     const host = $("side-panel");
     host.replaceChildren();
@@ -1281,19 +1342,44 @@
         });
       } else if (panel === "merge") {
         host.append(element("p", "\u6761\u4EF6\u306E\u96C6\u5408\u30FB\u5024\u30FB\u9806\u5E8F\u30FB\u9069\u7528\u56DE\u6570\u304C\u5909\u308F\u3089\u306A\u3044\u3068\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3060\u3051\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u5168\u4EF6\u3092\u5217\u6319\u3067\u304D\u308B\u8868\u306F\u5168\u533A\u5206\u3067\u6BD4\u8F03\u3057\u3001\u8D85\u3048\u308B\u8868\u306F\u898F\u5247\u306E\u91CD\u306A\u308A\u3068\u9806\u5E8F\u304B\u3089\u8A3C\u660E\u3057\u307E\u3059\u3002\u627F\u8A8D\u524D\u306F\u6B63\u672C\u3092\u5909\u66F4\u3057\u307E\u305B\u3093\u3002"));
-        if (!candidates.length) host.append(element("p", "\u627F\u8A8D\u53EF\u80FD\u306A\u5019\u88DC\u306F\u3042\u308A\u307E\u305B\u3093\u3002\u672A\u8A2D\u5B9A\u306E\u7D50\u679C\u3001\u591A\u91CD\u9069\u5408\u306E\u56DE\u6570\u30FB\u9806\u5E8F\u3001\u8A08\u7B97\u4E88\u7B97\u3082\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "muted"));
-        candidates.forEach((c) => {
-          const row = element("div", "", "candidate");
-          row.append(element("strong", `${c.before.length}\u898F\u5247 \u2192 1\u898F\u5247`), element("span", `${c.proof === "structural" ? "\u898F\u5247\u306E\u91CD\u306A\u308A\u3068\u9806\u5E8F\u304B\u3089\u7B49\u4FA1\u6027\u3092\u8A3C\u660E" : `${c.checked}\u7D44\u307F\u5408\u308F\u305B\u3067\u7B49\u4FA1\u6027\u78BA\u8A8D`} / OR\u6761\u4EF6 ${c.replacement.anyOf.length}\u4EF6`), button("\u5BFE\u8C61\u6761\u4EF6\u3092\u78BA\u8A8D", () => {
-            const m = modal("\u7D71\u5408\u3059\u308B\u6761\u4EF6\u3068\u7D50\u679C");
-            m.form.append(element("pre", JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button("\u9589\u3058\u308B", m.close));
-          }), button("\u627F\u8A8D\u3057\u3066\u307E\u3068\u3081\u308B", () => {
-            commit(applyCandidate(table, c), "\u627F\u8A8D\u3057\u305F\u5019\u88DC\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u4ED6\u306E\u5019\u88DC\u306F\u8868\u306E\u5909\u66F4\u3067\u5931\u52B9\u3057\u307E\u3059\u3002");
-            panel = "merge";
-            renderPanel();
+        const numbers = (ids) => ids.map((id2) => `#${table.rules.findIndex((r) => r.id === id2) + 1}`).join(" ");
+        const reapply = (next, note) => {
+          commit(next, note);
+          refreshMerge();
+          panel = "merge";
+          renderPanel();
+        };
+        if (compressed && compressed.steps > 0) {
+          const all = compressed, row = element("div", "", "candidate"), blocks = (t) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
+          row.append(element("strong", `\u3059\u3079\u3066\u7E70\u308A\u8FD4\u3057\u9069\u7528\uFF1A${table.rules.length}\u898F\u5247 \u2192 ${all.table.rules.length}\u898F\u5247`), element("span", `\u5019\u88DC\u306E\u53CD\u6620\u3068\u518D\u8A08\u7B97\u3092${all.steps}\u56DE\u7E70\u308A\u8FD4\u3057\u305F\u7D50\u679C\u3067\u3059\u3002OR\u30D6\u30ED\u30C3\u30AF\u306F${blocks(table)}\u4EF6 \u2192 ${blocks(all.table)}\u4EF6\u3002\u5404\u56DE\u3068\u3082\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059`), button("\u7D50\u679C\u306EJSON\u3092\u78BA\u8A8D", () => {
+            const m = modal("\u7E70\u308A\u8FD4\u3057\u9069\u7528\u5F8C\u306E\u8868");
+            m.form.append(element("pre", encode(all.table)), button("\u9589\u3058\u308B", m.close));
+          }), button("\u627F\u8A8D\u3057\u3066\u4E00\u62EC\u3067\u53CD\u6620", () => {
+            if (stable(table) !== all.base) throw new Error("\u8868\u304C\u5909\u66F4\u3055\u308C\u305F\u305F\u3081\u518D\u8A08\u7B97\u3057\u3066\u304F\u3060\u3055\u3044");
+            reapply(all.table, `${all.steps}\u56DE\u306E\u7D71\u5408\u30FB\u6574\u7406\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
           }, "primary"));
           host.append(row);
+        }
+        if (!candidates.length) host.append(element("p", "\u627F\u8A8D\u53EF\u80FD\u306A\u5019\u88DC\u306F\u3042\u308A\u307E\u305B\u3093\u3002", "muted"));
+        candidates.forEach((c) => {
+          const row = element("div", "", "candidate"), sources = c.before.map((id2) => table.rules.find((r) => r.id === id2)), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
+          const toAll = c.replacement.anyOf.some((clause2) => table.conditions.some((x) => !clause2.selections.some((s) => s.conditionId === x.id) && sources.some((r) => r.anyOf.some((o) => o.selections.some((s) => s.conditionId === x.id)))));
+          row.append(element("strong", c.before.length > 1 ? `${c.before.length}\u898F\u5247 \u2192 1\u898F\u5247` : `\u898F\u5247 ${numbers(c.before)} \u306E\u6761\u4EF6\u3092\u6574\u7406`), element("span", `\u5BFE\u8C61\uFF1A\u898F\u5247 ${numbers(c.before)} \uFF0F OR\u30D6\u30ED\u30C3\u30AF ${from}\u4EF6 \u2192 ${to}\u4EF6 \uFF0F ${c.proof === "structural" ? "\u898F\u5247\u306E\u91CD\u306A\u308A\u3068\u9806\u5E8F\u304B\u3089\u7B49\u4FA1\u6027\u3092\u8A3C\u660E" : `${c.checked}\u7D44\u307F\u5408\u308F\u305B\u3067\u7B49\u4FA1\u6027\u78BA\u8A8D`}${toAll ? " \uFF0F \u5168\u533A\u5206\u304C\u305D\u308D\u3063\u305F\u6761\u4EF6\u306F\u300C\u3059\u3079\u3066\u300D\u306B\u306A\u308A\u307E\u3059\uFF08\u3042\u3068\u3067\u8FFD\u52A0\u3057\u305F\u533A\u5206\u3082\u5BFE\u8C61\u306B\u306A\u308A\u307E\u3059\uFF09" : ""}`), button("\u5BFE\u8C61\u6761\u4EF6\u3092\u78BA\u8A8D", () => {
+            const m = modal("\u7D71\u5408\u3059\u308B\u6761\u4EF6\u3068\u7D50\u679C");
+            m.form.append(element("pre", JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button("\u9589\u3058\u308B", m.close));
+          }), button("\u627F\u8A8D\u3057\u3066\u307E\u3068\u3081\u308B", () => reapply(applyCandidate(table, c), "\u627F\u8A8D\u3057\u305F\u5019\u88DC\u3092\u53CD\u6620\u3057\u3001\u6B8B\u308A\u306E\u5019\u88DC\u3092\u518D\u8A08\u7B97\u3057\u307E\u3057\u305F\u3002"), "primary"));
+          host.append(row);
         });
+        if (blocked && (blocked.total || blocked.unset)) {
+          host.append(element("h3", "\u307E\u3068\u3081\u3089\u308C\u306A\u3044\u7406\u7531"));
+          if (blocked.unset) host.append(element("p", `\u672A\u8A2D\u5B9A\u306E\u51FA\u529B\u304C\u3042\u308B\u898F\u5247\u306F\u5BFE\u8C61\u5916\u3067\u3059\uFF08${blocked.unset}\u4EF6\uFF09\u3002`, "muted"));
+          blocked.blockers.forEach((b) => {
+            const row = element("div", "", "diagnostic");
+            row.append(element("strong", `\u898F\u5247 #${b.rules[0]} \u3068 #${b.rules[1]}`), element("span", b.kind === "overlap" ? "\u540C\u3058\u7D50\u679C\u3067\u3059\u304C\u3001\u540C\u3058\u5165\u529B\u306B\u4E21\u65B9\u304C\u9069\u5408\u3057\u307E\u3059\u3002\u307E\u3068\u3081\u308B\u3068\u9069\u7528\u56DE\u6570\u304C2\u56DE\u304B\u30891\u56DE\u306B\u5909\u308F\u308B\u305F\u3081\u3001\u307E\u3068\u3081\u307E\u305B\u3093" : `\u540C\u3058\u7D50\u679C\u3067\u3059\u304C\u3001\u9593\u306B\u3042\u308B\u898F\u5247 #${b.via} \u304C\u540C\u3058\u5165\u529B\u306B\u9069\u5408\u3057\u307E\u3059\u3002\u307E\u3068\u3081\u308B\u3068\u9069\u7528\u306E\u9806\u5E8F\u304C\u5909\u308F\u308B\u305F\u3081\u3001\u307E\u3068\u3081\u307E\u305B\u3093`));
+            host.append(row);
+          });
+          if (blocked.total > blocked.blockers.length) host.append(element("p", `\u307B\u304B${blocked.total - blocked.blockers.length}\u7D44\u3042\u308A\u307E\u3059\u3002`, "muted"));
+        }
       } else {
         const total = count(table), pre = element("pre");
         const effects = (ds) => ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}=${d.state === "unset" ? "\u672A\u8A2D\u5B9A" : JSON.stringify(d.value)}`).join(", ");
@@ -1336,7 +1422,7 @@
     }), button("\u307E\u3068\u3081\u308B", async () => {
       message("\u540C\u3058\u7D50\u679C\u306E\u5019\u88DC\u3068\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059\u2026");
       await new Promise((r) => setTimeout(r, 0));
-      candidates = proposeMerges(table);
+      refreshMerge();
       panel = "merge";
       renderPanel();
       message(`${candidates.length}\u4EF6\u306E\u627F\u8A8D\u53EF\u80FD\u306A\u7D71\u5408\u5019\u88DC\u304C\u3042\u308A\u307E\u3059`);
