@@ -265,3 +265,13 @@ test('a forged replacement that covers different inputs or other outputs is reje
   const other = clone(c); other.replacement.directives = [{ outputId: 'o', state: 'set', value: '9' }]; assert.equal(verifyStructural(t, other), false);
   const moved = clone(c); moved.anchor = 'zzz'; assert.equal(verifyStructural(t, moved), false); assert.throws(() => applyCandidate(t, moved), /証明できません/);
 });
+// TASK-005: a condition that lists every partition one by one is the same inputs as "all".
+test('TASK-005: a rule naming every partition of a condition is offered as "all", also inside a 1.0 table', () => {
+  const t = table([4, 2]); t.schemaVersion = '1.0';
+  t.rules = [rule('each', { 0: [0, 1, 2, 3], 1: [1] }), rule('other', { 0: [0], 1: [0] }, '2')]; assert.deepEqual(validate(t), []);
+  const [c] = proposeMerges(t); assert.deepEqual(c.before, ['each']); assert.deepEqual(c.replacement.anyOf, [{ selections: [{ conditionId: 'c1', partitionIds: ['c1p1'] }] }]);
+  const after = applyCandidate(t, c); assert.equal(after.schemaVersion, '1.1'); assert.equal(verifyEquivalent(t, after).equal, true); assert.equal(proposeMerges(after).length, 0);
+  const done = compressAll(t); assert.deepEqual(done.table.rules.map(r => r.anyOf[0].selections.length), [1, 2]);
+  // the filter-like check keeps such a rule for any chosen partition, and drops rules of other partitions
+  assert.deepEqual(inspect(t, { c0: 'c0p3' }).rules.map(x => x.ruleId), ['each']); assert.deepEqual(inspect(t, { c0: 'c0p0' }).rules.map(x => x.ruleId), ['each', 'other']);
+});

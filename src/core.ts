@@ -1,4 +1,4 @@
-// TASK-001..004 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..005 / REQ-001..013 / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -354,7 +354,9 @@ function directiveGroups(t: Table): number[][] {
 export function proposeStructural(t: Table): Candidate[] {
   assertValid(t); const result: Candidate[] = [], used = new Set<number>();
   for (const group of directiveGroups(t)) { if (group.length < 2) continue; result.push(buildCandidate(t, group.map(i => t.rules[i]), 'structural')); group.forEach(i => used.add(i)); }
-  t.rules.forEach((r, i) => { if (used.has(i) || r.anyOf.length < 2) return; if (simplifyClauses(t, r.anyOf).length < r.anyOf.length) result.push(buildCandidate(t, [r], 'structural')); });
+  // TASK-005: a rule is also tidied when a condition lists every partition one by one; it becomes "all".
+  const weight = (anyOf: Clause[]) => anyOf.reduce((n, c) => n + 1000 + c.selections.length, 0);
+  t.rules.forEach((r, i) => { if (used.has(i)) return; if (weight(simplifyClauses(t, r.anyOf)) < weight(r.anyOf)) result.push(buildCandidate(t, [r], 'structural')); });
   return result.sort((a, b) => b.before.length - a.before.length);
 }
 export function verifyStructural(t: Table, c: Candidate): boolean {
