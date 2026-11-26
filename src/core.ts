@@ -1,4 +1,4 @@
-// TASK-001..009 / REQ-001..013. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..012 / REQ-001..013. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -441,8 +441,8 @@ function partition(t: Table, region: Cube | null = null, budget = 200_000, workB
 // (values.length 1), that it is undecided (0) or contradictory (2+), with the inputs that produce it.
 // satisfied = some rule is satisfied for these inputs (false: the table is not complete there).
 export type Pattern = { size: bigint; satisfied: boolean; outputs: { values: Scalar[] }[]; chunks: Chunk[]; chunkCount: number };
-export function patterns(t: Table, chunkLimit = 6): Pattern[] | null {
-  const pieces = partition(t); if (!pieces) return null;
+export function patterns(t: Table, chunkLimit = 6, workBudget = 3_000_000): Pattern[] | null {
+  const pieces = partition(t, null, 200_000, workBudget); if (!pieces) return null;
   const scalar = t.outputs.map(() => new Map<string, Scalar>());
   for (const r of t.rules) t.outputs.forEach((_, o) => { const k = valueKey(t, r, o), d = r.directives[o]; if (k !== null && d.state === 'set' && !scalar[o].has(k)) scalar[o].set(k, d.value); });
   const groups = new Map<string, { sets: string[][]; cubes: Cube[] }>();
@@ -532,4 +532,34 @@ export function inspect(t: Table, picks: Record<string, string>): { total: bigin
   });
   return { total: cubeSize(region), exact: t.conditions.every(c => c.partitions.some(p => p.id === picks[c.id])), rules, uncovered, conflict: outputs.some(x => x.status === 'conflict'),
     determined: rules.length > 0 && outputs.length > 0 && outputs.every(x => x.status === 'determined' || x.status === 'none'), relevant: t.conditions.filter((_, k) => openConditions.has(k)).map(c => c.id), outputs };
+}
+// ---------------------------------------------------------------------------------------------
+// TASK-012 (INS-012) / JIS X 0125 Annex 1, 2 "separating a table": a table too large for one sheet is split into
+// several tables. An action depends only on the rules that specify it, and those rules only on the conditions they
+// mention, so the single-hit table of a set of actions can be derived from that part alone.
+export function separate(t: Table, outputs: number[]): Table {
+  const keep = new Set(outputs), rules = t.rules.filter(r => outputs.some(o => valueKey(t, r, o) !== null));
+  const used = new Set(rules.flatMap(r => r.anyOf.flatMap(c => c.selections.map(x => x.conditionId))));
+  return { ...clone(t), schemaVersion: '1.1', conditions: clone(t.conditions.filter(c => used.has(c.id))), outputs: clone(t.outputs.filter((_, i) => keep.has(i))),
+    rules: rules.map(r => ({ id: r.id, anyOf: clone(r.anyOf), directives: clone(r.directives.filter((_, i) => keep.has(i))) })) };
+}
+// Actions that some rule specifies together belong to one table; actions no rule specifies are left out.
+export function actionGroups(t: Table): number[][] {
+  const parent = t.outputs.map((_, i) => i), find = (i: number): number => parent[i] === i ? i : (parent[i] = find(parent[i])), specified = new Set<number>();
+  for (const r of t.rules) { const set = t.outputs.flatMap((_, o) => valueKey(t, r, o) !== null ? [o] : []); set.forEach(o => { specified.add(o); parent[find(o)] = find(set[0]); }); }
+  const groups = new Map<number, number[]>(); [...specified].sort((a, b) => a - b).forEach(o => { const k = find(o); groups.set(k, [...(groups.get(k) ?? []), o]); });
+  return [...groups.values()];
+}
+// The decision table(s) to show: one combined table when it stays within maxColumns rules, otherwise the tables
+// separated by related actions, and by single action where a group is still too large. found = null: not computable.
+export type DecisionPart = { outputs: number[]; table: Table; found: Pattern[] | null; columns: number };
+export function decisionTables(t: Table, maxColumns = 200): { combined: boolean; parts: DecisionPart[] } {
+  const size = (found: Pattern[] | null) => found ? found.reduce((n, x) => n + x.chunkCount, 0) : Infinity;
+  // Trying one table is only worth real work when the input space is small; on a huge space give up quickly and separate.
+  const whole = patterns(t, 1000, count(t) <= 100_000n ? 400_000 : 30_000), all = t.outputs.map((_, i) => i);
+  if (whole && size(whole) <= maxColumns) return { combined: true, parts: [{ outputs: all, table: t, found: whole, columns: size(whole) }] };
+  const parts: DecisionPart[] = [];
+  const add = (outputs: number[]) => { const table = separate(t, outputs), found = table.conditions.length ? patterns(table, 1000) : []; parts.push({ outputs, table, found, columns: size(found) }); return found !== null && size(found) <= maxColumns; };
+  for (const group of actionGroups(t)) { if (add(group) || group.length === 1) continue; parts.pop(); group.forEach(o => add([o])); }
+  return { combined: false, parts };
 }
