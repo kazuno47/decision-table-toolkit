@@ -387,10 +387,11 @@ export function verifyStructural(t: Table, c: Candidate): boolean {
   return true;
 }
 // TASK-003: apply candidates repeatedly until none is left. Each step is re-verified by applyCandidate.
-export function compressAll(t: Table, maxSteps = 500): { table: Table; steps: number } {
-  let table = t, steps = 0;
-  for (; steps < maxSteps; steps++) { const [next] = proposeStructural(table); if (!next) break; table = applyCandidate(table, next); }
-  return { table, steps };
+// DEF-011 (issue #13): the work is bounded by maxSteps; complete = false says candidates were still left when it stopped.
+export function compressAll(t: Table, maxSteps = 500): { table: Table; steps: number; complete: boolean } {
+  let table = t, steps = 0, complete = false;
+  for (; steps < maxSteps; steps++) { const [next] = proposeStructural(table); if (!next) { complete = true; break; } table = applyCandidate(table, next); }
+  return { table, steps, complete: complete || proposeStructural(table).length === 0 };
 }
 // TASK-004, TASK-007 / REQ-008: rule pairs (0-based) that can match the same input. They contradict when both set
 // some output to different values (outputs = those output indexes). same = pairs with an identical specification.
@@ -552,6 +553,12 @@ export function actionGroups(t: Table): number[][] {
 }
 // The decision table(s) to show: one combined table when it stays within maxColumns rules, otherwise the tables
 // separated by related actions, and by single action where a group is still too large. found = null: not computable.
+// DEF-010 (issue #12): actions specified only by rules without any condition entry. Every such rule is always satisfied,
+// so the table has one rule (column) and no condition row; different values for one action are a discrepancy as elsewhere.
+export function unconditional(t: Table): Pattern {
+  const outputs = t.outputs.map((_, o) => { const seen = new Map<string, Scalar>(); for (const r of t.rules) { const k = valueKey(t, r, o), d = r.directives[o]; if (k !== null && d.state === 'set' && !seen.has(k)) seen.set(k, d.value); } return { values: [...seen.keys()].sort().map(k => seen.get(k)!) }; });
+  return { size: 1n, satisfied: t.rules.length > 0, outputs, chunks: [{ selections: [], size: 1n }], chunkCount: 1 };
+}
 export type DecisionPart = { outputs: number[]; table: Table; found: Pattern[] | null; columns: number };
 export function decisionTables(t: Table, maxColumns = 200): { combined: boolean; parts: DecisionPart[] } {
   const size = (found: Pattern[] | null) => found ? found.reduce((n, x) => n + x.chunkCount, 0) : Infinity;
@@ -559,7 +566,7 @@ export function decisionTables(t: Table, maxColumns = 200): { combined: boolean;
   const whole = patterns(t, 1000, count(t) <= 100_000n ? 400_000 : 30_000), all = t.outputs.map((_, i) => i);
   if (whole && size(whole) <= maxColumns) return { combined: true, parts: [{ outputs: all, table: t, found: whole, columns: size(whole) }] };
   const parts: DecisionPart[] = [];
-  const add = (outputs: number[]) => { const table = separate(t, outputs), found = table.conditions.length ? patterns(table, 1000) : []; parts.push({ outputs, table, found, columns: size(found) }); return found !== null && size(found) <= maxColumns; };
+  const add = (outputs: number[]) => { const table = separate(t, outputs), found = table.conditions.length ? patterns(table, 1000) : [unconditional(table)]; parts.push({ outputs, table, found, columns: size(found) }); return found !== null && size(found) <= maxColumns; };
   for (const group of actionGroups(t)) { if (add(group) || group.length === 1) continue; parts.pop(); group.forEach(o => add([o])); }
   return { combined: false, parts };
 }

@@ -548,13 +548,16 @@
     return true;
   }
   function compressAll(t, maxSteps = 500) {
-    let table2 = t, steps = 0;
+    let table2 = t, steps = 0, complete = false;
     for (; steps < maxSteps; steps++) {
       const [next] = proposeStructural(table2);
-      if (!next) break;
+      if (!next) {
+        complete = true;
+        break;
+      }
       table2 = applyCandidate(table2, next);
     }
-    return { table: table2, steps };
+    return { table: table2, steps, complete: complete || proposeStructural(table2).length === 0 };
   }
   function contradictions(t, limit = 20, budget = 2e6) {
     const cubes = t.rules.map((r) => ruleCubes(t, r)), keys = t.rules.map((r) => t.outputs.map((_, o) => valueKey(t, r, o))), whole = t.rules.map((r) => mergeKey(t, r));
@@ -774,13 +777,24 @@
     });
     return [...groups.values()];
   }
+  function unconditional(t) {
+    const outputs = t.outputs.map((_, o) => {
+      const seen = /* @__PURE__ */ new Map();
+      for (const r of t.rules) {
+        const k = valueKey(t, r, o), d = r.directives[o];
+        if (k !== null && d.state === "set" && !seen.has(k)) seen.set(k, d.value);
+      }
+      return { values: [...seen.keys()].sort().map((k) => seen.get(k)) };
+    });
+    return { size: 1n, satisfied: t.rules.length > 0, outputs, chunks: [{ selections: [], size: 1n }], chunkCount: 1 };
+  }
   function decisionTables(t, maxColumns = 200) {
     const size = (found) => found ? found.reduce((n, x) => n + x.chunkCount, 0) : Infinity;
     const whole = patterns(t, 1e3, count(t) <= 100000n ? 4e5 : 3e4), all = t.outputs.map((_, i) => i);
     if (whole && size(whole) <= maxColumns) return { combined: true, parts: [{ outputs: all, table: t, found: whole, columns: size(whole) }] };
     const parts = [];
     const add = (outputs) => {
-      const table2 = separate(t, outputs), found = table2.conditions.length ? patterns(table2, 1e3) : [];
+      const table2 = separate(t, outputs), found = table2.conditions.length ? patterns(table2, 1e3) : [unconditional(table2)];
       parts.push({ outputs, table: table2, found, columns: size(found) });
       return found !== null && size(found) <= maxColumns;
     };
@@ -1541,10 +1555,8 @@
       host.append(element("p", `\u300C${names}\u300D\u306E\u6C7A\u5B9A\u8868\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u8868\u793A\u3067\u304D\u307E\u305B\u3093\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u898F\u5247\u3092\u7D50\u5408\u3057\u3066\u304B\u3089\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002`, "check-empty"));
       return;
     }
-    if (!sub.conditions.length) {
-      host.append(element("p", `\u300C${names}\u300D\u306F\u3001\u6761\u4EF6\u306B\u3088\u3089\u305A\u6307\u5B9A\u3055\u308C\u3066\u3044\u307E\u3059\uFF08\u6761\u4EF6\u6307\u5B9A\u306E\u306A\u3044\u898F\u5247\u304C\u3042\u308A\u307E\u3059\uFF09\u3002`, "muted"));
-      return;
-    }
+    const free = !sub.conditions.length;
+    if (free) host.append(element("p", `\u300C${names}\u300D\u306F\u3001\u6761\u4EF6\u306B\u3088\u3089\u305A\u6307\u5B9A\u3055\u308C\u3066\u3044\u307E\u3059\uFF08\u6761\u4EF6\u6307\u5B9A\u306E\u306A\u3044\u898F\u5247\u3060\u3051\u304C\u6307\u5B9A\u3057\u3066\u3044\u307E\u3059\uFF09\u3002\u6761\u4EF6\u306E\u884C\u306F\u306A\u304F\u3001\u898F\u5247\u306F1\u3064\u3067\u3059\u3002`, "muted"));
     const show = (v, at) => sub.outputs[at].kind === "action" ? v ? "X" : "\u2212" : v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(v);
     const columns = found.flatMap((x) => x.chunks.map((chunk) => ({ pattern: x, chunk }))), shown = columns.slice(0, 200);
     const gap = (col) => combined && !col.pattern.satisfied;
@@ -1586,15 +1598,17 @@
       }
       body.append(tr);
     });
-    const sizes = element("tr", "", sub.outputs.length ? "count" : "count divider");
-    sizes.append(element("th", "\u898F\u5247\u6570\uFF08\u7D44\u5408\u305B\u6570\uFF09"));
-    shown.forEach((col) => sizes.append(element("td", col.chunk.size.toLocaleString("ja-JP"), mark(col))));
-    body.append(sizes);
+    if (!free) {
+      const sizes = element("tr", "", sub.outputs.length ? "count" : "count divider");
+      sizes.append(element("th", "\u898F\u5247\u6570\uFF08\u7D44\u5408\u305B\u6570\uFF09"));
+      shown.forEach((col) => sizes.append(element("td", col.chunk.size.toLocaleString("ja-JP"), mark(col))));
+      body.append(sizes);
+    }
     grid.append(body);
     wrap.append(grid);
     host.append(wrap);
     const all = part.columns, sum = columns.reduce((n, c) => n + c.chunk.size, 0n);
-    host.append(element("p", `\u898F\u5247${all}\u500B\u3002\u898F\u5247\u6570\u306E\u691C\u67FB\uFF1A\u5404\u898F\u5247\u306E\u7D44\u5408\u305B\u6570\u306E\u5408\u8A08\u306F${sum.toLocaleString("ja-JP")}\u3067\u3001${combined ? "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B" : "\u3053\u306E\u8868\u306E\u6761\u4EF6\u306E\u5168\u7D44\u5408\u305B"}${count(sub).toLocaleString("ja-JP")}\u4EF6\u3068${sum === count(sub) ? "\u4E00\u81F4\u3057\u307E\u3059" : "\u4E00\u81F4\u3057\u307E\u305B\u3093"}\u3002${all > shown.length ? `\u5148\u982D${shown.length}\u898F\u5247\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\u3002` : ""}${combined && columns.some((c) => !c.pattern.satisfied) ? "\u300C*\u300D\u306E\u5217\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u306A\u3044\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u3059\u3002" : ""}`, "muted"));
+    if (!free) host.append(element("p", `\u898F\u5247${all}\u500B\u3002\u898F\u5247\u6570\u306E\u691C\u67FB\uFF1A\u5404\u898F\u5247\u306E\u7D44\u5408\u305B\u6570\u306E\u5408\u8A08\u306F${sum.toLocaleString("ja-JP")}\u3067\u3001${combined ? "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B" : "\u3053\u306E\u8868\u306E\u6761\u4EF6\u306E\u5168\u7D44\u5408\u305B"}${count(sub).toLocaleString("ja-JP")}\u4EF6\u3068${sum === count(sub) ? "\u4E00\u81F4\u3057\u307E\u3059" : "\u4E00\u81F4\u3057\u307E\u305B\u3093"}\u3002${all > shown.length ? `\u5148\u982D${shown.length}\u898F\u5247\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\u3002` : ""}${combined && columns.some((c) => !c.pattern.satisfied) ? "\u300C*\u300D\u306E\u5217\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u306A\u3044\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u3059\u3002" : ""}`, "muted"));
     if (found.some((x) => x.outputs.some((o) => o.values.length > 1))) host.append(element("p", "\u300C\u4E0D\u4E00\u81F4\u300D\u306E\u6B04\u306F\u3001\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u6642\u306B\u6E80\u8DB3\u3055\u308C\u308B\u7D44\u5408\u305B\u3067\u3059\u3002\u300C\u691C\u8A3C\u300D\u3067\u898F\u5247\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "check-empty"));
   }
   function renderPanel() {
@@ -1631,7 +1645,7 @@
         };
         if (compressed && compressed.steps > 0) {
           const all = compressed, row = element("div", "", "candidate"), blocks = (t) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
-          row.append(element("strong", `\u7E70\u308A\u8FD4\u3057\u7D50\u5408\uFF1A${table.rules.length}\u898F\u5247 \u2192 ${all.table.rules.length}\u898F\u5247`), element("span", `\u7D50\u5408\u3068\u518D\u8A08\u7B97\u3092${all.steps}\u56DE\u7E70\u308A\u8FD4\u3057\u305F\u7D50\u679C\u3067\u3059\u3002OR\u30D6\u30ED\u30C3\u30AF\u306F${blocks(table)}\u4EF6 \u2192 ${blocks(all.table)}\u4EF6\u3002\u5404\u56DE\u3068\u3082\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059`), button("\u7C21\u5358\u5316\u5F8C\u306EJSON\u3092\u78BA\u8A8D", () => {
+          row.append(element("strong", `\u7E70\u308A\u8FD4\u3057\u7D50\u5408\uFF1A${table.rules.length}\u898F\u5247 \u2192 ${all.table.rules.length}\u898F\u5247`), element("span", `\u7D50\u5408\u3068\u518D\u8A08\u7B97\u3092${all.steps}\u56DE\u7E70\u308A\u8FD4\u3057\u305F\u7D50\u679C\u3067\u3059\u3002OR\u30D6\u30ED\u30C3\u30AF\u306F${blocks(table)}\u4EF6 \u2192 ${blocks(all.table)}\u4EF6\u3002\u5404\u56DE\u3068\u3082\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059${all.complete ? "" : `\u30021\u56DE\u306E\u8A08\u7B97\u306E\u4E0A\u9650\uFF08${all.steps}\u56DE\uFF09\u3067\u6253\u3061\u5207\u3063\u305F\u305F\u3081\u3001\u307E\u3060\u7D50\u5408\u3067\u304D\u308B\u898F\u5247\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u53CD\u6620\u3059\u308B\u3068\u3001\u7D9A\u304D\u306E\u5019\u88DC\u3092\u8868\u793A\u3057\u307E\u3059`}`), button("\u7C21\u5358\u5316\u5F8C\u306EJSON\u3092\u78BA\u8A8D", () => {
             const m = modal("\u7E70\u308A\u8FD4\u3057\u9069\u7528\u5F8C\u306E\u8868");
             m.form.append(element("pre", encode(all.table)), button("\u9589\u3058\u308B", m.close));
           }), button("\u627F\u8A8D\u3057\u3066\u4E00\u62EC\u3067\u53CD\u6620", () => {

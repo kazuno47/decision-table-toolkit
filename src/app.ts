@@ -40,7 +40,7 @@ function ruleText(r: Pick<Rule, 'anyOf'>): string {
   }).join(' かつ ') : 'すべての組合せ（条件指定なし）').join(' ／ または ');
 }
 // TASK-003: result of applying every candidate repeatedly. Recomputed, never saved.
-let compressed: { table: Table; steps: number; base: string } | null = null;
+let compressed: { table: Table; steps: number; complete: boolean; base: string } | null = null;
 // INS-002 / CHG-004: partitions chosen in the "決定表の解釈" section; view state only, never saved.
 let checkPicks: Record<string, string> = {};
 let pending: Observation | null = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
@@ -323,7 +323,9 @@ function drawDecision(host: HTMLElement, part: DecisionPart, combined: boolean, 
   const sub = part.table, found = part.found, names = sub.outputs.map(o => o.name).join('・');
   if (!combined) host.append(element('h3', `決定表 ${order + 1}：${names}`));
   if (!found) { host.append(element('p', `「${names}」の決定表は、計算予算を超えたため表示できません。「簡単化」で規則を結合してから試してください。`, 'check-empty')); return; }
-  if (!sub.conditions.length) { host.append(element('p', `「${names}」は、条件によらず指定されています（条件指定のない規則があります）。`, 'muted')); return; }
+  // DEF-010: a table without conditions still shows what its one rule specifies.
+  const free = !sub.conditions.length;
+  if (free) host.append(element('p', `「${names}」は、条件によらず指定されています（条件指定のない規則だけが指定しています）。条件の行はなく、規則は1つです。`, 'muted'));
   const show = (v: Scalar, at: number) => sub.outputs[at].kind === 'action' ? (v ? 'X' : '−') : v === '' ? '（空文字）' : String(v);
   const columns = found.flatMap(x => x.chunks.map(chunk => ({ pattern: x, chunk }))), shown = columns.slice(0, 200);
   // In a separated table, a column where none of its rules is satisfied simply has "−" actions; only the combined table can show gaps.
@@ -351,10 +353,10 @@ function drawDecision(host: HTMLElement, part: DecisionPart, combined: boolean, 
     for (const col of shown) { const values = col.pattern.outputs[at].values; tr.append(element('td', gap(col) ? '' : values.length === 0 ? '−' : values.length > 1 ? `不一致（${values.map(v => show(v, at)).join('／')}）` : show(values[0], at), mark(col, values.length > 1 ? 'clash' : ''))); }
     body.append(tr);
   });
-  const sizes = element('tr', '', sub.outputs.length ? 'count' : 'count divider'); sizes.append(element('th', '規則数（組合せ数）')); shown.forEach(col => sizes.append(element('td', col.chunk.size.toLocaleString('ja-JP'), mark(col)))); body.append(sizes);
+  if (!free) { const sizes = element('tr', '', sub.outputs.length ? 'count' : 'count divider'); sizes.append(element('th', '規則数（組合せ数）')); shown.forEach(col => sizes.append(element('td', col.chunk.size.toLocaleString('ja-JP'), mark(col)))); body.append(sizes); }
   grid.append(body); wrap.append(grid); host.append(wrap);
   const all = part.columns, sum = columns.reduce((n, c) => n + c.chunk.size, 0n);
-  host.append(element('p', `規則${all}個。規則数の検査：各規則の組合せ数の合計は${sum.toLocaleString('ja-JP')}で、${combined ? '条件指定の全組合せ' : 'この表の条件の全組合せ'}${count(sub).toLocaleString('ja-JP')}件と${sum === count(sub) ? '一致します' : '一致しません'}。${all > shown.length ? `先頭${shown.length}規則を表示しています。` : ''}${combined && columns.some(c => !c.pattern.satisfied) ? '「*」の列は、満足される規則がない条件の組合せです。' : ''}`, 'muted'));
+  if (!free) host.append(element('p', `規則${all}個。規則数の検査：各規則の組合せ数の合計は${sum.toLocaleString('ja-JP')}で、${combined ? '条件指定の全組合せ' : 'この表の条件の全組合せ'}${count(sub).toLocaleString('ja-JP')}件と${sum === count(sub) ? '一致します' : '一致しません'}。${all > shown.length ? `先頭${shown.length}規則を表示しています。` : ''}${combined && columns.some(c => !c.pattern.satisfied) ? '「*」の列は、満足される規則がない条件の組合せです。' : ''}`, 'muted'));
   if (found.some(x => x.outputs.some(o => o.values.length > 1))) host.append(element('p', '「不一致」の欄は、同じ動作に異なる値を指定する規則が同時に満足される組合せです。「検証」で規則を確認してください。', 'check-empty'));
 }
 function renderPanel() {
@@ -373,7 +375,7 @@ function renderPanel() {
     if (compressed && compressed.steps > 0) {
       // "部分的に圧縮を繰り返す": every step is one proven candidate; the user approves the end result once.
       const all = compressed, row = element('div', '', 'candidate'), blocks = (t: Table) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
-      row.append(element('strong', `繰り返し結合：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `結合と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています`), button('簡単化後のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の結合を反映しました。`); }, 'primary'));
+      row.append(element('strong', `繰り返し結合：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `結合と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています${all.complete ? '' : `。1回の計算の上限（${all.steps}回）で打ち切ったため、まだ結合できる規則が残っています。反映すると、続きの候補を表示します`}`), button('簡単化後のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の結合を反映しました。`); }, 'primary'));
       host.append(row);
     }
     if (!candidates.length) host.append(element('p', '承認可能な結合候補はありません。', 'muted'));
