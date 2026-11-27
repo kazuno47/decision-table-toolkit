@@ -22,8 +22,10 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: The released HTML is exactly what the sources build
+      - name: The released HTML and engine are exactly what the sources build
         run: |
           set -euo pipefail
           version=$(node -p "require('./package.json').version")
           cmp dist/decision-table-toolkit.html "releases/decision-table-toolkit-v${version}.html"
+          cmp dist/decision-table-engine.js "releases/decision-table-engine-v${version}.js"
+          cmp dist/decision-table-engine.d.ts "releases/decision-table-engine-v${version}.d.ts"

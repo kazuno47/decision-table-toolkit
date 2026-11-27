@@ -13,9 +13,9 @@
 
 どちらの場合も、作成した表や読み込んだJSONはブラウザの中だけで扱い、どこにも送信しません。HTMLは外部への通信を禁止する設定（Content-Security-Policy の `connect-src 'none'`）を含み、外部のスクリプトや画像も読み込みません。Web版は、このリポジトリの `releases/` にあるHTMLをそのまま配信しています（配信のためのビルドは行いません）。
 
-[ビルド済みHTML（v0.2.4）](releases/decision-table-toolkit-v0.2.4.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・簡単化・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
+[ビルド済みHTML（v0.3.0）](releases/decision-table-toolkit-v0.3.0.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・簡単化・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
 
-以前の[v0.2.3](releases/decision-table-toolkit-v0.2.3.html)、[v0.2.2](releases/decision-table-toolkit-v0.2.2.html)、[v0.2.1](releases/decision-table-toolkit-v0.2.1.html)、[v0.2.0](releases/decision-table-toolkit-v0.2.0.html)と初版の[v0.1.0](releases/decision-table-toolkit-v0.1.0.html)も残しています。版によって表の解釈が異なります（「版による違い」を参照）。v0.1.0はスキーマ1.1のJSONを読み込めません。
+以前の[v0.2.4](releases/decision-table-toolkit-v0.2.4.html)、[v0.2.3](releases/decision-table-toolkit-v0.2.3.html)、[v0.2.2](releases/decision-table-toolkit-v0.2.2.html)、[v0.2.1](releases/decision-table-toolkit-v0.2.1.html)、[v0.2.0](releases/decision-table-toolkit-v0.2.0.html)と初版の[v0.1.0](releases/decision-table-toolkit-v0.1.0.html)も残しています。版によって表の解釈が異なります（「版による違い」を参照）。v0.1.0はスキーマ1.1のJSONを読み込めません。
 
 1. 「＋ 条件」で条件と、条件のとり得る値を定義します（Boolean / Enum / Number / String / Date。数値と日付は範囲で定義します）。
 2. 「＋ 動作」で動作を定義します。動作指定の形式は、X／−で指定する制限指定か、語句・値で指定する拡張指定です。
@@ -26,7 +26,7 @@
 7. 「簡単化」で、動作指定がすべて同じ規則を結合し、すべての値がそろった条件を条件指定から外します。条件のどの組合せについても動作が変わらないと確認できた候補だけを表示し、承認したものだけ反映します。「繰り返し結合」で、候補がなくなるまで繰り返した結果を一度に承認できます。
 8. JSONで保存・再読込できます。外部AIが編集したJSONも同じ形式検証を通ります。
 
-実業務処理や条件判定コードは実行しません。
+業務処理は実行しません。決定表の内容を他のソフトウェアから使う方法は「他のソフトウェアから使う」を参照してください。
 
 ## JISとの関係
 
@@ -46,7 +46,7 @@ JIS X 0125 は単適合決定表（条件の組合せのどの一つも、ただ
 | v0.2.0 | 規則の動作指定全体が同じでなければ不一致とする |
 | v0.2.1 | 動作ごとに合わせる。制限指定はどれかが「X」なら実行、拡張指定は値が異なれば不一致 |
 
-v0.2.2では、規則の記述を「関係する条件だけを書く」表示に改め、決定表（単適合）を独立した1つの表にして、規則番号から「決定表の解釈」へ値を反映できるようにしました。v0.2.3では、規則の記述を表ではなくリストにしました。規則は「条件 → 動作」の形で1行ずつ並び、指定した条件と動作だけを表示します。v0.2.4では、1つの表に書き切れない大きな決定表を、動作ごとの複数の決定表に分離して表示するようにしました。表の解釈はv0.2.1と同じです。
+v0.2.2では、規則の記述を「関係する条件だけを書く」表示に改め、決定表（単適合）を独立した1つの表にして、規則番号から「決定表の解釈」へ値を反映できるようにしました。v0.2.3では、規則の記述を表ではなくリストにしました。規則は「条件 → 動作」の形で1行ずつ並び、指定した条件と動作だけを表示します。v0.2.4では、1つの表に書き切れない大きな決定表を、動作ごとの複数の決定表に分離して表示するようにしました。表の解釈はv0.2.1と同じです。 v0.3.0では、表の解釈は変えずに、他のソフトウェアから使う判定エンジンを追加しました。
 
 v0.2.1では画面の用語を規格に合わせました。以前の版との対応は次のとおりです。
 
@@ -82,9 +82,56 @@ Chromeのファイル選択で連携したJSONは、前景で約1秒ごとに再
 
 APIや権限が使えない環境では明示読込・ダウンロード方式となり、継続確認はできません。ダウンロードの開始は実ファイルの保存完了とは区別します。編集中データはメモリ上にあるため、ページを閉じる前に保存してください。
 
+## 他のソフトウェアから使う（判定エンジン）
+
+このツールで作った決定表のJSONを、別のソフトウェアから読み込んで解釈するための部品です。画面の「決定表の解釈」と同じ処理を、依存のない1つのESモジュールにまとめています。ブラウザでもNode.jsでも動きます。外部への通信はせず、動作の実行もしません。返すのは「どの動作が実行されるか」だけです。
+
+- [decision-table-engine-v0.3.0.js](releases/decision-table-engine-v0.3.0.js)（本体）
+- [decision-table-engine-v0.3.0.d.ts](releases/decision-table-engine-v0.3.0.d.ts)（TypeScriptの型定義）
+
+2つのファイルを自分のプロジェクトにコピーして使います。版ごとにファイル名が変わるので、取り込んだ版が勝手に変わることはありません。
+
+```js
+import { load, conditions, classify, evaluate } from './decision-table-engine-v0.3.0.js';
+
+const table = load(jsonText);            // 読み込みと検証（画面と同じ検証。不正なら例外）
+conditions(table);                       // 入力画面を作るための条件と値の一覧
+
+// 条件の値を、定義された値のIDまたはラベルで渡す（条件はIDまたは名前で指定）
+let result = evaluate(table, { 金額: '3億以上' });
+result.decided;                          // false: まだ決まらない動作がある
+result.needed;                           // ['pii'] のように、あと必要な条件のID
+result.actions;                          // 動作ごとの状態・実行の有無・値
+
+// 生の値を、定義された値へ当てはめてから解釈する
+result = evaluate(table, classify(table, { 金額: 350000000, 個人情報: true }));
+result.actions.map(a => [a.name, a.executed, a.value]);
+// [['承認者', true, '役員'], ['セキュリティ部門のチェック', true, true]]
+```
+
+| 関数 | 内容 |
+|------|------|
+| `load(source)` | JSON文字列またはオブジェクトを検証して表を返します |
+| `conditions(table)` / `actions(table)` | 条件（ID・名前・型・値）と動作（ID・名前・種別）の一覧です |
+| `classify(table, values)` | 生の値（真偽・文字列・数値・日付 `YYYY-MM-DD`・値なしの `null`）を、定義された値のIDに当てはめます。どの値にも当てはまらなければ例外です。桁の多い数値は文字列で渡してください |
+| `evaluate(table, picks)` | 条件の値から、動作ごとの結果を返します。条件は一部だけでも構いません |
+
+`evaluate` が返す動作ごとの `status` は次の4つです。
+
+| status | 意味 | executed | value |
+|--------|------|----------|-------|
+| `determined` | 実行する。残りの条件が何であっても同じ | `true` | 制限指定は `true`、拡張指定はその値 |
+| `none` | 実行しない（決定表の「−」）。この範囲に、この動作を指定する規則がない | `false` | `null` |
+| `open` | まだ決まらない。`needed` の条件を与えると決まる | `null` | `null` |
+| `conflict` | 動作指定の不一致。同じ動作に異なる値を指定する規則が同時に満足される | `null` | `null` |
+
+表にない名前のキーは無視し、`ignored` で返します。存在しない値や、同じ名前の条件が複数ある場合の名前指定は例外にします。条件の組合せの数が非常に多い表で条件を一部しか与えない場合、計算の打ち切りにより、決まっている動作が `open` と返ることがあります（誤って `determined` を返すことはありません）。
+
+複数の決定表の関係（順番や選択）や、入力の保存・引き継ぎは扱いません。それらは利用する側で持ってください。公開する関数の形は版によって変わることがあります。
+
 ## 開発・検証
 
-プルリクエストとmainへのpushごとに、GitHub Actionsで型検査・テスト・ビルドを実行し、ビルド結果が `releases/` の最新版のHTMLと1バイトも違わないことを確認します（[CI](.github/workflows/ci.yml)）。mainへのマージ後、`package.json` の版に対応する `releases/` のHTMLをGitHub Pagesへ配信します（[Pages](.github/workflows/pages.yml)）。
+プルリクエストとmainへのpushごとに、GitHub Actionsで型検査・テスト・ビルドを実行し、ビルド結果が `releases/` の最新版のHTML・判定エンジンと1バイトも違わないことを確認します（[CI](.github/workflows/ci.yml)）。mainへのマージ後、`package.json` の版に対応する `releases/` のHTMLをGitHub Pagesへ配信します（[Pages](.github/workflows/pages.yml)）。
 
 動作確認環境: Node.js 26.5.0 / npm 11.17.0 / TypeScript 5.9.3、macOS上のChrome。テストはNodeのTypeScript直接実行機能を使用します。
 
