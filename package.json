@@ -2,6 +2,7 @@
   "name": "decision-table-toolkit",
   "version": "0.3.1",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",

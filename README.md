@@ -157,3 +157,9 @@ npm run build:offline
 型検査と79テストは成功しています。対象を絞る場合は `node --test tests/core.test.ts`、`node --test tests/files.test.ts`、`node --test tests/app.test.ts`、`node --test tests/rules.test.ts` を利用します。`npm test` には単一HTMLの構文・資産同梱検査も含まれます。
 
 公開版にはアプリ・テスト・サンプル・交換形式・ビルド済みHTMLを含みます。開発用の内部資料は含みません。v0.2.0以降のHTMLは通常ビルド（esbuild）で生成しています。v0.1.0は検証用ビルドで生成したものです。v0.2.0以降は起動と画面操作をlocalhost経由で確認しており、`file://` で開いてのファイル保存・再読込・外部変更の確認はまだ行っていません。
+
+## ライセンス
+
+[MIT License](LICENSE) です。利用・改変・再配布ができます。再配布するときは、著作権表示とライセンスの文面を残してください。
+
+判定エンジン（`decision-table-engine-v*.js`）を自分のプロジェクトにコピーして使う場合も同じです。ファイルと一緒に [LICENSE](LICENSE) を置いてください。
