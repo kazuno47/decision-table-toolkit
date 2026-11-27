@@ -15,16 +15,11 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Two jobs: the site is uploaded by one job and deployed by the next. Deploying in the same job right after the upload
+# failed twice with "No artifacts named github-pages were found" (the artifact was not listed yet).
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - name: Assemble the site from the released HTML
@@ -37,9 +32,19 @@ jobs:
           cp "$release" _site/index.html
           cp releases/*.html _site/releases/
           touch _site/.nojekyll
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
       - id: deployment
         uses: actions/deploy-pages@v4
