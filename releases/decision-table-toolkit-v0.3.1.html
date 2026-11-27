@@ -1,0 +1,1843 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>Decision Table Toolkit</title><style>:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#1d303e;background:#f3f5f4;font-synthesis:none;line-height:1.6;font-size:14px}*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer;border:1px solid #d8dfdc;border-radius:6px;padding:9px 14px;background:#fff;color:#283f48;transition:background .15s,box-shadow .15s}button:hover{background:#edf4ef;border-color:#8cae9b}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #7ab79a;outline-offset:2px}button:disabled{cursor:default;opacity:.35}.primary{background:#24664a;color:white;border-color:#24664a}.primary:hover{background:#174d36;color:white}.tiny{padding:3px 7px;font-size:12px}.muted{color:#708079}.rail{position:fixed;inset:0 auto 0 0;width:74px;background:#18372c;display:flex;align-items:center;flex-direction:column;padding:28px 0;color:#d3e5d8}.brand-mark{font:700 27px Georgia,serif;letter-spacing:-3px}.brand-mark span{font-size:23px;margin-left:3px;color:#9ccbb3}.rail-line{height:44px;width:1px;background:#628475;margin:27px 0}.vertical{writing-mode:vertical-rl;font-size:10px;letter-spacing:3px;opacity:.65}.rail-version{margin-top:auto;font-size:10px;opacity:.55}main{margin-left:74px;padding:44px 44px 26px;max-width:1740px}header{display:flex;justify-content:space-between;gap:25px;margin-bottom:30px}.eyebrow{color:#4d7e65;font-weight:700;letter-spacing:2.8px;font-size:11px;margin:0 0 11px}h1{font-size:30px;line-height:1.5;letter-spacing:-.6px;margin:0;font-weight:700}h1 span{color:#799185;margin-left:10px}.intro{font-size:13px;color:#758079;margin:9px 0 0}.header-meta{font-size:10px;letter-spacing:1.3px;margin-top:7px;text-align:right;color:#40624f;white-space:nowrap}.header-meta small{display:block;color:#84918a;letter-spacing:0;margin-top:2px}.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3d9164;margin-right:5px}nav{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}nav .sample-button{margin-left:auto;background:transparent;border-color:transparent;color:#47755d}.workspace{background:white;border:1px solid #dce3df;border-radius:10px;overflow:hidden;box-shadow:0 5px 22px #1d443408}.workspace-top{display:flex;justify-content:space-between;padding:25px 26px;gap:24px;align-items:center}.title-label{display:block;font-size:9px;letter-spacing:2px;color:#91a197;font-weight:700}#title{border:0;padding:3px 0;font-size:22px;font-weight:600;min-width:200px;max-width:100%;color:#263d32;background:transparent}.stats{display:flex;gap:26px}.stats div{display:flex;flex-direction:column;align-items:flex-end;min-width:70px}.stats strong{font-size:24px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.5}.stats span{font-size:10px;color:#84938a}.toolbar{padding:13px 24px;background:#f7f9f7;border-block:1px solid #e4eae5;display:flex;align-items:center;justify-content:space-between;gap:14px}#edit-actions{display:flex;gap:7px;flex-wrap:wrap}#edit-actions button{font-size:12px;padding:7px 11px}#table-state{font-size:10px;color:#8c8652;white-space:nowrap}.notice{font-size:10px;color:#829087;padding:11px 25px;border-bottom:1px solid #eef1ef}#definition-list{padding:12px 24px 4px;display:flex;gap:6px;flex-wrap:wrap}#definition-list:empty{padding:0}.definition-chip{display:flex;background:#edf4ef;border-radius:5px;align-items:center;overflow:hidden}.definition-chip button{background:transparent;border:0;font-size:11px;padding:5px 9px}.definition-chip .tiny{color:#84998a}.output-chip{background:#f8f1e3}#table-wrap{width:100%;overflow:auto;min-height:310px}.empty-state{padding:55px 20px;text-align:center;color:#788b7e;min-height:350px}.empty-icon{font-size:39px;line-height:1;color:#96b5a0;margin-bottom:14px}.empty-state h2{font-size:17px;color:#4c6654;font-weight:500}.empty-state p{white-space:pre-line;font-size:12px;margin-bottom:22px}.empty-state button{font-size:12px}.decision-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;white-space:nowrap}.decision-table th{background:#f7f9f7;border-bottom:1px solid #dde6df;color:#68816e;text-align:left;font-size:11px;font-weight:500;padding:14px 18px;position:sticky;top:0}.decision-table .output-heading{background:#f7f4eb;color:#8c8059}.decision-table td{padding:14px 18px;border-bottom:1px solid #edf1ee;max-width:300px}.decision-table tbody tr:last-child td{border-bottom:0}.decision-table tr:hover td{background:#fbfdfb}.decision-table td:first-child{width:65px;color:#718077}.decision-table td small{display:block;font-size:8px;letter-spacing:.7px;color:#a3afa5}.decision-table .output-cell{background:#fffefa}.cell-button{background:transparent;border:0;text-align:left;padding:0;color:#3d5946;white-space:normal;max-width:230px}.cell-button:hover{background:none;text-decoration:underline}.value-editor{display:flex;align-items:center;gap:4px}.value-editor input,.value-editor select{padding:6px 8px;border:1px solid #e0e5dd;border-radius:4px;width:140px;background:#fff;color:#405345;font-size:12px}.value-editor input::placeholder{color:#acb6ab}.row-actions{white-space:nowrap}.row-actions button{margin:0 2px;border-color:transparent;background:transparent}#pagination{display:flex;justify-content:center;align-items:center;gap:18px;padding:12px;font-size:11px}#pagination:empty{padding:0}footer{display:flex;gap:20px;justify-content:space-between;padding:15px 0;font-size:11px;color:#6c8172}#status{max-width:65%;white-space:pre-line}#file-state{text-align:right;max-width:45%;font-size:10px;color:#809487}.side-panel{margin-top:20px;padding:24px;background:white;border:1px solid #dae3dc;border-radius:9px}.panel-heading{display:flex;justify-content:space-between;align-items:center}.panel-heading h2{font-size:17px;margin:0}.side-panel>p{font-size:12px;color:#77887b}.candidate{display:flex;align-items:center;gap:18px;padding:16px 0;border-top:1px solid #e9eee9}.candidate span{font-size:11px;color:#7d8d7f;flex:1}.candidate strong{font-size:14px;color:#2b6948}.candidate button{font-size:11px}.diagnostic{display:flex;gap:12px;padding:10px;border-top:1px solid #edf0ed;font-size:12px}.diagnostic strong{font-size:10px;overflow-wrap:anywhere;max-width:180px;color:#8d7664}.diagnostic.error{background:#fff0eb}.diagnostic.warning{background:#fffaf0}.help{font-size:11px;color:#758579;margin-top:25px;max-width:950px}.help summary{cursor:pointer;color:#4b6e57}.help ol{padding-left:20px}.help p{line-height:1.9}#help-actions{display:flex;gap:8px;flex-wrap:wrap}#help-actions button{font-size:10px;background:transparent}#external-actions:not(:empty){padding:16px;background:#fff5de;border:1px solid #e9d6a9;border-radius:6px}#external-actions p{margin-top:0;font-size:12px}#external-actions button{margin-right:8px}dialog{border:1px solid #cbd8ce;border-radius:11px;box-shadow:0 20px 90px #102e3040;padding:0;color:#304c3b;max-width:min(880px,90vw);width:700px}dialog::backdrop{background:#19352866;backdrop-filter:blur(2px)}.modal-content{padding:25px;max-height:85vh;overflow:auto}.modal-content h2{font-size:20px;margin:0 0 20px}.modal-content p{font-size:12px;color:#7c8b80}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:15px;font-size:12px;color:#5c7464}.field input:not([type=checkbox]),.field textarea,.field select{width:100%;border:1px solid #d3ded4;border-radius:5px;background:#fff;padding:9px 11px;color:#304d3a}.field input[type=checkbox]{align-self:flex-start}.field textarea{min-height:100px;resize:vertical}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}.modal-actions button{font-size:12px}.range-row,.clause{padding:14px;border:1px solid #dfe7df;border-radius:5px;margin:12px 0;display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}.range-row .field:first-child{grid-column:1/-1}.clause button,.range-row>button{justify-self:start;align-self:end}pre{font:11px/1.7 ui-monospace,SFMono-Regular,monospace;overflow:auto;background:#f5f7f4;border:1px solid #e0e6dd;border-radius:6px;padding:15px;max-height:360px;white-space:pre}button:active{transform:translateY(1px)}[hidden]{display:none!important}@media(max-width:1050px){main{padding:30px 23px}.stats{gap:13px}.toolbar{align-items:flex-start;flex-direction:column}.header-meta{display:none}h1{font-size:26px}.candidate{flex-wrap:wrap}footer{flex-direction:column;gap:8px}#status,#file-state{max-width:100%;text-align:left}}@media(max-width:650px){.rail{width:46px}.brand-mark{font-size:21px}main{margin-left:46px;padding:22px 14px}.vertical{font-size:8px}h1{font-size:21px}h1 span{display:block;margin:0}.workspace-top{align-items:flex-start;flex-direction:column;padding:20px}.stats{width:100%;justify-content:space-between}.stats div{align-items:flex-start}nav .sample-button{margin-left:0}.toolbar{padding:14px}.notice{padding:12px 15px}.range-row,.clause{grid-template-columns:1fr}.candidate{gap:10px}.candidate span{flex-basis:100%}}
+.condition-pick{display:flex;flex-direction:column;gap:6px;font-size:12px}.condition-pick .field{flex-direction:row;align-items:center;margin-bottom:0}.condition-pick select:disabled{opacity:.45}.lookup{display:flex;flex-wrap:wrap;gap:8px 14px;margin:8px 0}.lookup .field{margin-bottom:0}.side-panel h3{font-size:13px;margin:18px 0 6px}.check-panel{margin-top:20px;padding:24px;background:white;border:1px solid #dae3dc;border-radius:9px}.check-panel>p{font-size:12px;margin:8px 0}.check-summary{color:#2b6948}.check-result{display:flex;align-items:baseline;gap:18px;padding:12px 0;border-top:1px solid #e9eee9}.check-result strong{flex:1;font-size:14px;color:#1f3b2d;overflow-wrap:anywhere}.check-result small{font-size:11px;color:#7d8d7f;text-align:right}.check-empty{color:#9a5b2e}.check-why{font-size:11px;color:#7d8d7f;margin:0 0 6px 0;overflow-wrap:anywhere}.check-candidates{margin-top:10px;font-size:12px;color:#5c7464}.check-candidates summary{cursor:pointer;padding:6px 0}.check-candidates .check-result strong{font-size:12px;font-weight:600}.check-result.open strong,.check-result.none strong{color:#8d7664;font-weight:500}.check-result.conflict strong{color:#b3261e}.jis-wrap{overflow:auto;max-width:100%;margin:12px 0}.jis-table{border-collapse:collapse;font-size:12px}.jis-table th,.jis-table td{border:1px solid #cfd8d2;padding:6px 10px;text-align:center;white-space:nowrap}.jis-table thead th{background:#f4f7f4}.jis-table th:first-child{text-align:left;background:#f4f7f4;position:sticky;left:0;border-right:3px double #2b6948}.jis-table tr.divider th,.jis-table tr.divider td{border-top:3px double #2b6948}.jis-table .gap{background:#fff0eb}.jis-table .clash{color:#b3261e}.jis-table tr.count th,.jis-table tr.count td{color:#7d8d7f;font-size:11px}.jis-table .picked{background:#e6f1ea}.jis-table th.picked{box-shadow:inset 0 3px 0 #2b6948}.column-button{min-width:34px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer}.rule-conditions .cell-button{text-align:left;white-space:normal;line-height:1.5}.rule-list{display:flex;flex-direction:column}.rule-item{display:flex;align-items:center;gap:12px;padding:8px 20px;border-top:1px solid #edf0ed}.rule-no{min-width:36px;color:#7d8d7f;font-size:12px}.rule-text{flex:1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;text-align:left;background:none;border:0;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;line-height:1.6;box-shadow:none}.rule-text:hover{background:#f1f6f2}.rule-arrow{color:#2b6948;font-weight:700}.rule-then{font-weight:600;color:#1f3b2d}.rule-controls{display:flex;gap:4px}.modal-content h3{font-size:13px;margin:18px 0 4px}</style></head>
+<body><div id="app"></div><script>"use strict";
+(() => {
+  // src/schema.ts
+  var text = (maxLength = 1024) => ({ type: "string", maxLength });
+  var id = { type: "string", minLength: 1, maxLength: 128 };
+  var array = (items, minItems = 0) => ({ type: "array", items, minItems, maxItems: 1e4 });
+  var object = (properties, required = Object.keys(properties)) => ({ type: "object", properties, required, additionalProperties: false });
+  var scalar = { oneOf: [{ type: "boolean" }, text()] };
+  var nullable = { oneOf: [text(128), { type: "null" }] };
+  var range = object({ lower: nullable, upper: nullable, lowerInclusive: { type: "boolean" }, upperInclusive: { type: "boolean" } });
+  var partition = { oneOf: [
+    object({ id, label: text(), kind: { const: "values" }, values: array(scalar, 1) }),
+    object({ id, label: text(), kind: { const: "range" }, range }),
+    object({ id, label: text(), kind: { const: "missing" } })
+  ] };
+  var condition = object({ id, name: text(), type: { enum: ["boolean", "enum", "number", "string", "date"] }, partitions: array(partition, 1) });
+  var resultTypes = ["boolean", "number", "string", "date"];
+  var output = { oneOf: [
+    object({ id, name: text(), kind: { const: "action" } }),
+    object({ id, name: text(), kind: { const: "result" }, type: { enum: resultTypes } }),
+    object({ id, name: text(), kind: { const: "result" }, type: { const: "enum" }, values: array(text(), 1) })
+  ] };
+  var directive = { oneOf: [object({ outputId: id, state: { const: "unset" } }), object({ outputId: id, state: { const: "set" }, value: scalar })] };
+  var selection = object({ conditionId: id, partitionIds: array(id, 1) });
+  var clause = object({ selections: array(selection) });
+  var rule = object({ id, anyOf: array(clause, 1), directives: array(directive) });
+  var documentSchema = {
+    $schema: "http://json-schema.org/draft-07/schema#",
+    title: "Decision Table Toolkit 1.0 / 1.1 (schemaVersion 1.0 additionally requires every condition exactly once in each clause; the application enforces this)",
+    ...object({ schemaVersion: { enum: ["1.0", "1.1"] }, id, title: text(256), conditions: array(condition), outputs: array(output), rules: array(rule) })
+  };
+  function checkShape(value, schema = documentSchema, path = "$", depth = 0) {
+    if (depth > 24) return [`${path}: \u5165\u308C\u5B50\u304C\u6DF1\u3059\u304E\u307E\u3059`];
+    if (schema.oneOf) return schema.oneOf.filter((s) => checkShape(value, s, path, depth + 1).length === 0).length === 1 ? [] : [`${path}: \u30C7\u30FC\u30BF\u5F62\u5F0F\u304C\u4E00\u81F4\u3057\u306A\u3044\u304B\u3001\u672A\u77E5\u30D5\u30A3\u30FC\u30EB\u30C9\u304C\u3042\u308A\u307E\u3059`];
+    if ("const" in schema && value !== schema.const) return [`${path}: \u672A\u5BFE\u5FDC\u306E\u5024 ${String(value)}`];
+    if (schema.enum && !schema.enum.includes(value)) return [`${path}: \u672A\u5BFE\u5FDC\u306E\u5024 ${String(value)}`];
+    const type = value === null ? "null" : Array.isArray(value) ? "array" : typeof value;
+    if (schema.type && type !== schema.type) return [`${path}: ${schema.type} \u304C\u5FC5\u8981\u3067\u3059`];
+    if (type === "string") {
+      const s = value;
+      if (s.length < (schema.minLength ?? 0) || s.length > (schema.maxLength ?? 1e5)) return [`${path}: \u6587\u5B57\u6570\u304C\u7BC4\u56F2\u5916\u3067\u3059`];
+    }
+    if (schema.type === "array") {
+      const a = value;
+      if (a.length < (schema.minItems ?? 0) || a.length > (schema.maxItems ?? 1e4)) return [`${path}: \u8981\u7D20\u6570\u304C\u7BC4\u56F2\u5916\u3067\u3059`];
+      return a.flatMap((v, i) => checkShape(v, schema.items, `${path}[${i}]`, depth + 1));
+    }
+    if (schema.type === "object") {
+      const o = value, props = schema.properties ?? {};
+      const errors = (schema.required ?? []).filter((k) => !Object.hasOwn(o, k)).map((k) => `${path}.${k}: \u5FC5\u9808\u3067\u3059`);
+      for (const k of Object.keys(o)) {
+        if (!Object.hasOwn(props, k)) errors.push(`${path}.${k}: \u672A\u77E5\u306E\u30D5\u30A3\u30FC\u30EB\u30C9\u3067\u3059`);
+        else errors.push(...checkShape(o[k], props[k], `${path}.${k}`, depth + 1));
+      }
+      return errors;
+    }
+    return [];
+  }
+
+  // src/core.ts
+  var LIMIT = 1e4;
+  var uid = (prefix = "id") => `${prefix}-${globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+  var clone = (v) => structuredClone(v);
+  function stable(v) {
+    if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
+    if (v !== null && typeof v === "object") return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;
+    return JSON.stringify(v);
+  }
+  var emptyTable = () => ({ schemaVersion: "1.1", id: uid("table"), title: "\u65B0\u3057\u3044\u6C7A\u5B9A\u8868", conditions: [], outputs: [], rules: [] });
+  function decimal(s) {
+    if (!/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(s) || s.length > 128) throw new Error(`\u6570\u5024\u306E\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059: ${s}`);
+    const [whole, fraction = ""] = s.split(".");
+    return [BigInt(whole + fraction), fraction.length];
+  }
+  function compareDecimal(a, b) {
+    const [x, xs] = decimal(a), [y, ys] = decimal(b), scale = Math.max(xs, ys);
+    const left = x * 10n ** BigInt(scale - xs), right = y * 10n ** BigInt(scale - ys);
+    return left < right ? -1 : left > right ? 1 : 0;
+  }
+  function day(s) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) throw new Error(`\u65E5\u4ED8\u306F YYYY-MM-DD: ${s}`);
+    const [y, m, d] = s.split("-").map(Number), leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
+    const months = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (y < 1 || y > 9999 || m < 1 || m > 12 || d < 1 || d > months[m - 1]) throw new Error(`\u5B9F\u5728\u3057\u306A\u3044\u65E5\u4ED8\u3067\u3059: ${s}`);
+    const prev = y - 1;
+    return prev * 365 + Math.floor(prev / 4) - Math.floor(prev / 100) + Math.floor(prev / 400) + months.slice(0, m - 1).reduce((a, b) => a + b, 0) + d;
+  }
+  function validValue(type, value, choices) {
+    if (type === "boolean") return typeof value === "boolean";
+    if (typeof value !== "string") return false;
+    if (type === "enum") return !choices || choices.includes(value);
+    try {
+      if (type === "number") decimal(value);
+      if (type === "date") day(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function interval(type, r) {
+    if (type === "date") return { low: r.lower === null ? day("0001-01-01") : day(r.lower) + (r.lowerInclusive ? 0 : 1), high: r.upper === null ? day("9999-12-31") : day(r.upper) - (r.upperInclusive ? 0 : 1), li: true, hi: true };
+    if (r.lower !== null) decimal(r.lower);
+    if (r.upper !== null) decimal(r.upper);
+    return { low: r.lower, high: r.upper, li: r.lowerInclusive, hi: r.upperInclusive };
+  }
+  var cmp = (a, b) => typeof a === "number" ? Math.sign(a - b) : compareDecimal(a, b);
+  function rangeEmpty(type, r) {
+    const i = interval(type, r);
+    if (i.low === null || i.high === null) return false;
+    const c = cmp(i.low, i.high);
+    return c > 0 || c === 0 && !(i.li && i.hi);
+  }
+  function partitionsOverlap(type, a, b) {
+    if (a.kind === "missing" || b.kind === "missing") return a.kind === b.kind;
+    if (a.kind === "values" && b.kind === "values") return a.values.some((x2) => b.values.includes(x2));
+    if (a.kind !== "range" || b.kind !== "range") return false;
+    const x = interval(type, a.range), y = interval(type, b.range);
+    if (x.high !== null && y.low !== null) {
+      const c = cmp(x.high, y.low);
+      if (c < 0 || c === 0 && !(x.hi && y.li)) return false;
+    }
+    if (y.high !== null && x.low !== null) {
+      const c = cmp(y.high, x.low);
+      if (c < 0 || c === 0 && !(y.hi && x.li)) return false;
+    }
+    return true;
+  }
+  function validate(table2) {
+    const shape = checkShape(table2);
+    if (shape.length) return shape.map((message2) => ({ level: "error", target: "$", message: message2 }));
+    const ds = [], error = (target, message2) => ds.push({ level: "error", target, message: message2 });
+    const unique = (ids, target) => {
+      if (new Set(ids).size !== ids.length) error(target, "ID/\u5019\u88DC\u306E\u91CD\u8907\u304C\u3042\u308A\u307E\u3059");
+    };
+    unique(table2.conditions.map((c) => c.id), "conditions");
+    unique(table2.outputs.map((o) => o.id), "outputs");
+    unique(table2.rules.map((r) => r.id), "rules");
+    for (const c of table2.conditions) {
+      unique(c.partitions.map((p) => p.id), c.id);
+      for (const p of c.partitions) {
+        try {
+          if (p.kind === "values") {
+            if (["number", "date"].includes(c.type)) error(c.id, "\u6570\u5024\u30FB\u65E5\u4ED8\u306E\u5024\u306F\u7BC4\u56F2\u3067\u5B9A\u7FA9\u3057\u3066\u304F\u3060\u3055\u3044");
+            unique(p.values.map(stable), p.id);
+            if (p.values.some((v) => !validValue(c.type, v))) error(p.id, "\u6761\u4EF6\u306E\u578B\u3068\u5024\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093");
+          }
+          if (p.kind === "range") {
+            if (!["number", "date"].includes(c.type)) error(p.id, "\u3053\u306E\u578B\u3067\u306F\u7BC4\u56F2\u3092\u6307\u5B9A\u3067\u304D\u307E\u305B\u3093");
+            else if (rangeEmpty(c.type, p.range)) error(p.id, "\u9006\u8EE2\u3057\u305F\u7BC4\u56F2\u307E\u305F\u306F\u7A7A\u306E\u7BC4\u56F2\u3067\u3059");
+          }
+        } catch (e) {
+          error(p.id, String(e.message));
+        }
+      }
+      for (let i = 0; i < c.partitions.length; i++) for (let j = i + 1; j < c.partitions.length; j++) {
+        try {
+          if (partitionsOverlap(c.type, c.partitions[i], c.partitions[j])) error(c.id, `\u6761\u4EF6\u306E\u5024\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059: ${c.partitions[i].label} / ${c.partitions[j].label}`);
+        } catch {
+        }
+      }
+    }
+    for (const o of table2.outputs) if (o.kind === "result" && o.type === "enum") unique(o.values ?? [], o.id);
+    if (table2.rules.length && !table2.conditions.length) error("conditions", "\u898F\u5247\u306B\u306F\u6761\u4EF6\u5B9A\u7FA9\u304C\u5FC5\u8981\u3067\u3059");
+    for (const r of table2.rules) {
+      for (const clause2 of r.anyOf) {
+        unique(clause2.selections.map((s) => s.conditionId), r.id);
+        if (table2.schemaVersion === "1.0" && clause2.selections.length !== table2.conditions.length) error(r.id, "\u5404\u6761\u4EF6\u30921\u56DE\u305A\u3064\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u6761\u4EF6\u306E\u7701\u7565\u306F\u30B9\u30AD\u30FC\u30DE1.1\u306E\u307F\uFF09");
+        for (const s of clause2.selections) {
+          const c = table2.conditions.find((c2) => c2.id === s.conditionId);
+          unique(s.partitionIds, r.id);
+          if (!c || s.partitionIds.some((id2) => !c.partitions.some((p) => p.id === id2))) error(r.id, "\u672A\u77E5\u306E\u6761\u4EF6\u30FB\u5024\u3078\u306E\u53C2\u7167\u3067\u3059");
+        }
+      }
+      if (r.directives.length !== table2.outputs.length) error(r.id, "\u3059\u3079\u3066\u306E\u52D5\u4F5C\u306B\u3064\u3044\u3066\u52D5\u4F5C\u6307\u5B9A\u304C\u5FC5\u8981\u3067\u3059");
+      r.directives.forEach((d, i) => {
+        const o = table2.outputs[i];
+        if (!o || d.outputId !== o.id) error(r.id, "\u52D5\u4F5C\u306E\u53C2\u7167\u307E\u305F\u306F\u9806\u5E8F\u304C\u4E0D\u6B63\u3067\u3059");
+        else if (d.state === "set" && !validValue(o.kind === "action" ? "boolean" : o.type, d.value, o.kind === "result" ? o.values : void 0)) error(r.id, `\u52D5\u4F5C\u300C${o.name}\u300D\u306E\u578B\u307E\u305F\u306F\u5024\u304C\u4E0D\u6B63\u3067\u3059`);
+      });
+    }
+    return ds;
+  }
+  function assertValid(t) {
+    const errors = validate(t);
+    if (errors.length) throw new Error(errors.slice(0, 8).map((e) => `${e.target}: ${e.message}`).join("\n"));
+  }
+  function decode(text2) {
+    if (new TextEncoder().encode(text2).byteLength > 10 * 1024 * 1024) throw new Error("JSON\u306F10MiB\u4EE5\u4E0B\u306B\u3057\u3066\u304F\u3060\u3055\u3044");
+    const t = JSON.parse(text2);
+    assertValid(t);
+    return t;
+  }
+  function encode(t) {
+    assertValid(t);
+    return JSON.stringify(JSON.parse(stable(t)), null, 2) + "\n";
+  }
+  function count(t) {
+    return t.conditions.length ? t.conditions.reduce((n, c) => n * BigInt(c.partitions.length), 1n) : 0n;
+  }
+  function atoms(t, limit = LIMIT) {
+    if (count(t) > BigInt(limit)) throw new Error(`\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${count(t)}\u4EF6\u306F\u8A08\u7B97\u4E88\u7B97${limit}\u4EF6\u3092\u8D85\u3048\u308B\u305F\u3081\u5217\u6319\u3067\u304D\u307E\u305B\u3093\u3002\u898F\u5247\u30921\u884C\u305A\u3064\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u691C\u8A3C\u30FB\u7C21\u5358\u5316\u30FB\u89E3\u91C8\u306F\u5217\u6319\u306A\u3057\u3067\u5229\u7528\u3067\u304D\u307E\u3059\uFF09`);
+    if (!t.conditions.length) return [];
+    let cells = [{}];
+    for (const c of t.conditions) cells = cells.flatMap((a) => c.partitions.map((p) => ({ ...a, [c.id]: p.id })));
+    return cells;
+  }
+  function matches(rule2, atom) {
+    return rule2.anyOf.some((c) => c.selections.every((s) => s.partitionIds.includes(atom[s.conditionId])));
+  }
+  function trace(table2, atom) {
+    return table2.rules.filter((r) => matches(r, atom)).map((r) => r.directives);
+  }
+  function normalizedDirectives(t, ds) {
+    return ds.map((d, i) => {
+      const o = t.outputs[i];
+      if (o?.kind === "action" && d.state === "set" && d.value !== true) return { outputId: d.outputId, state: "unset" };
+      if (d.state === "set" && o?.kind === "result" && o.type === "number" && typeof d.value === "string") {
+        let [value, scale] = decimal(d.value);
+        while (scale > 0 && value % 10n === 0n) {
+          value /= 10n;
+          scale--;
+        }
+        return { ...d, value: `${value}:${scale}` };
+      }
+      return d;
+    });
+  }
+  function valueKey(t, r, o) {
+    const d = normalizedDirectives(t, r.directives)[o];
+    return !d || d.state !== "set" ? null : stable(d.value);
+  }
+  function resultOf(t, atom) {
+    const sets = t.outputs.map(() => /* @__PURE__ */ new Set());
+    for (const r of t.rules) if (matches(r, atom)) t.outputs.forEach((_, o) => {
+      const k = valueKey(t, r, o);
+      if (k !== null) sets[o].add(k);
+    });
+    return sets.map((x) => [...x].sort());
+  }
+  function traceKey(t, atom) {
+    return stable(resultOf(t, atom));
+  }
+  function distinctOutcomes(t, list) {
+    const seen = /* @__PURE__ */ new Set();
+    return list.filter((ds) => {
+      const k = stable(normalizedDirectives(t, ds));
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }
+  function generate(t) {
+    assertValid(t);
+    const cells = atoms(t);
+    if (!cells.length) throw new Error("\u6761\u4EF6\u3092\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044");
+    return { ...clone(t), rules: cells.map((a) => ({ id: uid("r"), anyOf: [{ selections: t.conditions.map((c) => ({ conditionId: c.id, partitionIds: [a[c.id]] })) }], directives: t.outputs.map((o) => ({ outputId: o.id, state: "unset" })) })) };
+  }
+  function verifyEquivalent(a, b, budget = 2e6) {
+    assertValid(a);
+    assertValid(b);
+    if (stable(a.conditions) !== stable(b.conditions) || stable(a.outputs) !== stable(b.outputs)) return { equal: false, checked: 0, reason: "\u5B9A\u7FA9\u304C\u7570\u306A\u308A\u307E\u3059" };
+    const cells = atoms(a);
+    const weight = (t) => t.rules.reduce((n, r) => n + r.anyOf.reduce((n2, c) => n2 + c.selections.reduce((n3, s) => n3 + s.partitionIds.length, 0), 0), 0);
+    if (cells.length * (weight(a) + weight(b) + 1) > budget) return { equal: false, checked: 0, reason: "\u8A3C\u660E\u306E\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059" };
+    for (let i = 0; i < cells.length; i++) if (traceKey(a, cells[i]) !== traceKey(b, cells[i])) return { equal: false, checked: i + 1, reason: "\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306B\u5BFE\u3059\u308B\u52D5\u4F5C\u304C\u7570\u306A\u308A\u307E\u3059" };
+    return { equal: true, checked: cells.length };
+  }
+  function replaceCandidate(t, c) {
+    const at = t.rules.findIndex((r) => r.id === (c.anchor ?? c.before[0]));
+    const rules = t.rules.flatMap((r, i) => i === at ? [clone(c.replacement)] : c.before.includes(r.id) ? [] : [clone(r)]);
+    const omits = c.replacement.anyOf.some((clause2) => clause2.selections.length < t.conditions.length);
+    return { ...clone(t), schemaVersion: omits ? "1.1" : t.schemaVersion, rules };
+  }
+  function proposeMerges(t) {
+    assertValid(t);
+    const proposed = proposeStructural(t);
+    if (count(t) > BigInt(LIMIT)) return proposed;
+    const result = [];
+    let remainingBudget = 5e6;
+    for (const c of proposed) {
+      const b = replaceCandidate(t, c), cost = Number(count(t)) * (t.rules.length + b.rules.length + 1);
+      if (cost > remainingBudget) {
+        result.push(c);
+        continue;
+      }
+      remainingBudget -= cost;
+      const check = verifyEquivalent(t, b, Math.min(2e6, remainingBudget + cost));
+      if (check.equal) result.push({ ...c, proof: "enumeration", checked: check.checked });
+      else if (check.checked === 0 && check.reason === "\u8A3C\u660E\u306E\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059") result.push(c);
+    }
+    return result;
+  }
+  function applyCandidate(t, c) {
+    if (stable(t) !== c.base) throw new Error("\u8868\u304C\u5909\u66F4\u3055\u308C\u305F\u305F\u3081\u5019\u88DC\u306F\u5931\u52B9\u3057\u307E\u3057\u305F\u3002\u518D\u8A08\u7B97\u3057\u3066\u304F\u3060\u3055\u3044");
+    if (!verifyStructural(t, c)) throw new Error("\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093: \u898F\u5247\u306E\u91CD\u306A\u308A\u3068\u9806\u5E8F\u304B\u3089\u8A3C\u660E\u3067\u304D\u307E\u305B\u3093");
+    const b = replaceCandidate(t, c);
+    if (c.proof === "enumeration") {
+      const proof = verifyEquivalent(t, b);
+      if (!proof.equal) throw new Error(`\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093: ${proof.reason}`);
+    }
+    assertValid(b);
+    return b;
+  }
+  function diagnose(t) {
+    const result = validate(t);
+    if (result.length) return result;
+    for (const r of t.rules) if (t.outputs.length && idle(t, r)) result.push({ level: "warning", target: r.id, message: "\u3053\u306E\u898F\u5247\u306F\u52D5\u4F5C\u3092\u4F55\u3082\u6307\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF08\u52D5\u4F5C\u6307\u5B9A\u304C\u3059\u3079\u3066\u300C\u2212\u300D\u3067\u3059\uFF09" });
+    try {
+      const total = count(t);
+      if (total > 0n) {
+        const cov = coverage(t);
+        if (!cov.complete) result.push({ level: "warning", target: "rules", message: "\u5B8C\u5099\u6027\u306F\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u308B\u3068\u306F\u5224\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF09" });
+        else if (cov.uncovered) {
+          result.push({ level: "warning", target: "rules", message: `\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF1A\u6761\u4EF6\u6307\u5B9A\u306E${cov.uncovered}\u7D44\u5408\u305B\u3092\u6E80\u8DB3\u3059\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5B9A\u7FA9\u3057\u305F\u5024\u306E\u7BC4\u56F2\u5185\uFF09` });
+          cov.chunks.slice(0, 20).forEach((chunk) => result.push({ level: "warning", target: "\u5B8C\u5099\u6027", message: `${describeChunk(t, chunk)}\uFF08${chunk.size}\u7D44\u5408\u305B\uFF09` }));
+          if (cov.chunks.length > 20) result.push({ level: "warning", target: "\u5B8C\u5099\u6027", message: `\u307B\u304B${cov.chunks.length - 20}\u500B\u306E\u304B\u305F\u307E\u308A\u304C\u3042\u308A\u307E\u3059\u3002\u898F\u5247\u3092\u8FFD\u52A0\u3057\u3066\u518D\u691C\u8A3C\u3057\u3066\u304F\u3060\u3055\u3044` });
+        }
+        const clash = contradictions(t);
+        if (clash.pairs) {
+          result.push({ level: "error", target: "rules", message: `${clash.pairs}\u7D44${clash.complete ? "" : "\u4EE5\u4E0A"}\u306E\u898F\u5247\u3067\u52D5\u4F5C\u6307\u5B9A\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002\u540C\u3058\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3001\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3057\u3066\u3044\u308B\u305F\u3081\u3001\u5358\u9069\u5408\u6C7A\u5B9A\u8868\u306B\u306A\u308A\u307E\u305B\u3093` });
+          clash.examples.forEach((e) => result.push({ level: "error", target: "\u4E0D\u4E00\u81F4", message: `\u898F\u5247 #${e.rules[0] + 1} \u3068 #${e.rules[1] + 1}\uFF1A${describeChunk(t, e.chunk)}\uFF08${e.chunk.size}\u7D44\u5408\u305B${e.more ? "\u307B\u304B" : ""}\uFF09\u3067\u52D5\u4F5C\u300C${e.outputs.map((o) => t.outputs[o].name).join("\u300D\u300C")}\u300D\u306E\u6307\u5B9A\u304C\u7570\u306A\u308A\u307E\u3059` }));
+          if (clash.pairs > clash.examples.length) result.push({ level: "error", target: "\u4E0D\u4E00\u81F4", message: `\u307B\u304B${clash.pairs - clash.examples.length}\u7D44\u3042\u308A\u307E\u3059\u3002\u898F\u5247\u3092\u76F4\u3057\u3066\u518D\u691C\u8A3C\u3057\u3066\u304F\u3060\u3055\u3044` });
+        }
+        if (clash.same) result.push({ level: "info", target: "rules", message: `${clash.same}\u7D44${clash.complete ? "" : "\u4EE5\u4E0A"}\u306E\u898F\u5247\u304C\u540C\u3058\u6307\u5B9A\u3067\u91CD\u306A\u3063\u3066\u3044\u307E\u3059\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u7D50\u5408\u3067\u304D\u307E\u3059` });
+        if (!clash.complete) result.push({ level: "warning", target: "rules", message: "\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\u306E\u78BA\u8A8D\u306F\u8A08\u7B97\u4E88\u7B97\u3067\u6253\u3061\u5207\u308A\u307E\u3057\u305F\uFF08\u6B8B\u308A\u306F\u5224\u5B9A\u3067\u304D\u3066\u3044\u307E\u305B\u3093\uFF09" });
+      }
+      const keys = /* @__PURE__ */ new Set();
+      for (const r of t.rules) {
+        const k = stable({ anyOf: r.anyOf, directives: r.directives });
+        if (keys.has(k)) result.push({ level: "warning", target: r.id, message: "\u540C\u3058\u6761\u4EF6\u6307\u5B9A\u3068\u52D5\u4F5C\u6307\u5B9A\u306E\u898F\u5247\u304C\u91CD\u8907\u3057\u3066\u3044\u307E\u3059\u3002\u300C\u7C21\u5358\u5316\u300D\u30671\u3064\u306B\u7D50\u5408\u3067\u304D\u307E\u3059" });
+        keys.add(k);
+      }
+    } catch (e) {
+      result.push({ level: "warning", target: "rules", message: e.message });
+    }
+    return result;
+  }
+  function regeneratePreserving(old, next) {
+    assertValid(old);
+    assertValid(next);
+    const fresh = generate({ ...next, rules: [] });
+    const common = old.conditions.filter((c) => next.conditions.some((n) => n.id === c.id));
+    const changed = common.some((c) => stable({ type: c.type, partitions: c.partitions }) !== stable({ type: next.conditions.find((n) => n.id === c.id).type, partitions: next.conditions.find((n) => n.id === c.id).partitions }));
+    if (changed) return { table: fresh, affected: fresh.rules.length };
+    const shared = common.map((c) => c.id);
+    const key = (a) => stable(shared.map((id2) => a[id2]));
+    const buckets = /* @__PURE__ */ new Map();
+    for (const a of atoms(old)) {
+      const k = key(a), value = distinctOutcomes(old, trace(old, a));
+      if (!buckets.has(k)) buckets.set(k, clone(value));
+      else if (stable(buckets.get(k)) !== stable(value)) buckets.set(k, null);
+    }
+    let affected = 0;
+    const rules = [];
+    for (const base of fresh.rules) {
+      const a = Object.fromEntries(base.anyOf[0].selections.map((s) => [s.conditionId, s.partitionIds[0]]));
+      const values = buckets.get(key(a));
+      if (!values || !values.length) {
+        rules.push(base);
+        affected++;
+        continue;
+      }
+      for (const ds of values) rules.push({ ...clone(base), id: uid("r"), directives: next.outputs.map((o) => {
+        const d = ds.find((d2) => d2.outputId === o.id);
+        const previous = old.outputs.find((x) => x.id === o.id);
+        const compatible = previous && stable({ ...previous, name: "" }) === stable({ ...o, name: "" });
+        return d && compatible ? clone(d) : { outputId: o.id, state: "unset" };
+      }) });
+    }
+    const result = { ...fresh, rules };
+    assertValid(result);
+    return { table: result, affected };
+  }
+  function expandRows(t, displayLimit = 1e3) {
+    assertValid(t);
+    const cells = atomsHead(t, displayLimit);
+    const weight = t.rules.reduce((n, r) => n + r.anyOf.reduce((n2, c) => n2 + c.selections.reduce((n3, s) => n3 + s.partitionIds.length, 0), 0), 0);
+    if (Math.min(cells.length, displayLimit) * weight > 2e6) throw new Error("\u5168\u7D44\u5408\u305B\u306E\u8868\u793A\u306F\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u307E\u3059\u3002\u898F\u5247\u3092\u7C21\u5358\u5316\u3057\u3066\u304F\u3060\u3055\u3044");
+    return cells.slice(0, displayLimit).map((atom) => ({ atom, matches: t.rules.filter((r) => matches(r, atom)).map((r) => ({ ruleId: r.id, directives: clone(r.directives) })) }));
+  }
+  var fullMask = (c) => (1n << BigInt(c.partitions.length)) - 1n;
+  function bits(m) {
+    let n = 0;
+    for (; m; m >>= 1n) if (m & 1n) n++;
+    return n;
+  }
+  var cubeSize = (c) => c.reduce((n, m) => n * BigInt(bits(m)), 1n);
+  var cubesDisjoint = (a, b) => a.some((m, i) => (m & b[i]) === 0n);
+  function clauseCube(t, clause2) {
+    return t.conditions.map((c) => {
+      const s = clause2.selections.find((s2) => s2.conditionId === c.id);
+      if (!s) return fullMask(c);
+      let m = 0n;
+      for (const id2 of s.partitionIds) {
+        const i = c.partitions.findIndex((p) => p.id === id2);
+        if (i >= 0) m |= 1n << BigInt(i);
+      }
+      return m;
+    });
+  }
+  var ruleCubes = (t, r) => r.anyOf.map((c) => clauseCube(t, c));
+  var rulesDisjoint = (a, b) => a.every((x) => b.every((y) => cubesDisjoint(x, y)));
+  function subtractCube(a, b) {
+    if (cubesDisjoint(a, b)) return [a];
+    const out = [], cur = a.slice();
+    for (let i = 0; i < a.length; i++) {
+      const rest = cur[i] & ~b[i];
+      if (rest) {
+        const p = cur.slice();
+        p[i] = rest;
+        out.push(p);
+      }
+      cur[i] &= b[i];
+    }
+    return out;
+  }
+  function compactCubes(cubes, passes = 8) {
+    let list = cubes;
+    for (let pass = 0; pass < passes; pass++) {
+      let changed = false;
+      for (let d = 0; d < (list[0]?.length ?? 0); d++) {
+        const groups = /* @__PURE__ */ new Map();
+        for (const c of list) {
+          const key = c.map((m, i) => i === d ? "" : m.toString(36)).join(","), g = groups.get(key);
+          if (g) {
+            g[d] |= c[d];
+            changed = true;
+          } else groups.set(key, c.slice());
+        }
+        list = [...groups.values()];
+      }
+      if (!changed) break;
+    }
+    return list;
+  }
+  function cubeChunk(t, c) {
+    return { size: cubeSize(c), selections: t.conditions.flatMap((cond, i) => c[i] === fullMask(cond) ? [] : [{ conditionId: cond.id, partitionIds: cond.partitions.filter((_, j) => c[i] >> BigInt(j) & 1n).map((p) => p.id) }]) };
+  }
+  function coverage(t, budget = 2e5, workBudget = 2e6, only) {
+    if (!t.conditions.length) return { complete: true, uncovered: 0n, chunks: [] };
+    const unknown = { complete: false, uncovered: 0n, chunks: [] };
+    let rest = [t.conditions.map(fullMask)], work = 0, compactAt = 4096;
+    for (const r of t.rules) if (!only || only(r)) for (const clause2 of r.anyOf) {
+      if (!rest.length) break;
+      const b = clauseCube(t, clause2), next = [];
+      for (const a of rest) for (const piece of subtractCube(a, b)) next.push(piece);
+      work += rest.length;
+      if (work > workBudget) return unknown;
+      if (next.length > compactAt) {
+        work += next.length * t.conditions.length;
+        rest = compactCubes(next, 2);
+        compactAt = Math.max(4096, rest.length * 2);
+      } else rest = next;
+      if (rest.length > budget || work > workBudget) return unknown;
+    }
+    const uncovered = rest.reduce((n, c) => n + cubeSize(c), 0n);
+    const chunks = compactCubes(rest, rest.length > 2e4 ? 1 : 8).map((c) => cubeChunk(t, c));
+    chunks.sort((x, y) => x.size < y.size ? 1 : x.size > y.size ? -1 : 0);
+    return { complete: true, uncovered, chunks };
+  }
+  function describeChunk(t, chunk) {
+    if (!chunk.selections.length) return "\u3059\u3079\u3066\u306E\u7D44\u5408\u305B";
+    return chunk.selections.map((s) => {
+      const c = t.conditions.find((c2) => c2.id === s.conditionId);
+      return `${c.name}=${s.partitionIds.map((id2) => c.partitions.find((p) => p.id === id2).label).join("\u30FB")}`;
+    }).join(" / ") + (chunk.selections.length < t.conditions.length ? " / \u4ED6\u306E\u6761\u4EF6\u306F\u2212" : "");
+  }
+  var cubeInside = (a, b) => a.every((m, i) => (m & ~b[i]) === 0n);
+  function cubeClause(t, cube) {
+    return { selections: t.conditions.flatMap((c, i) => cube[i] === fullMask(c) ? [] : [{ conditionId: c.id, partitionIds: c.partitions.filter((_, j) => cube[i] >> BigInt(j) & 1n).map((p) => p.id) }]) };
+  }
+  function simplifyClauses(t, anyOf) {
+    let cubes = anyOf.map((c) => clauseCube(t, c));
+    for (let round = 0; round < 8; round++) {
+      const kept = cubes.filter((a, i) => !cubes.some((b, j) => j !== i && cubeInside(a, b) && (!cubeInside(b, a) || j < i)));
+      const next = compactCubes(kept);
+      if (next.length === cubes.length) {
+        cubes = next;
+        break;
+      }
+      cubes = next;
+    }
+    return cubes.map((c) => cubeClause(t, c));
+  }
+  function sameCover(a, b, budget = 5e5) {
+    let work = 0;
+    const inside = (xs, ys) => xs.every((x) => {
+      let rest = [x];
+      for (const y of ys) {
+        work += rest.length;
+        if (work > budget) return false;
+        rest = rest.flatMap((r) => subtractCube(r, y));
+        if (!rest.length) return true;
+      }
+      return rest.length === 0;
+    });
+    return inside(a, b) && inside(b, a);
+  }
+  function buildCandidate(t, rules, proof, anchor = rules[0]) {
+    return { id: uid("candidate"), base: stable(t), before: rules.map((r) => r.id), replacement: { id: anchor.id, anyOf: simplifyClauses(t, rules.flatMap((r) => r.anyOf)), directives: clone(anchor.directives) }, checked: 0, proof, anchor: anchor.id };
+  }
+  var idle = (t, r) => normalizedDirectives(t, r.directives).every((d) => d.state === "unset");
+  var mergeKey = (t, r) => !r.directives.length || idle(t, r) ? null : stable(normalizedDirectives(t, r.directives));
+  function directiveGroups(t) {
+    const groups = /* @__PURE__ */ new Map();
+    t.rules.forEach((r, i) => {
+      const k = mergeKey(t, r);
+      if (k !== null) groups.set(k, [...groups.get(k) ?? [], i]);
+    });
+    return [...groups.values()];
+  }
+  function proposeStructural(t) {
+    assertValid(t);
+    const result = [], used = /* @__PURE__ */ new Set();
+    for (const group of directiveGroups(t)) {
+      if (group.length < 2) continue;
+      result.push(buildCandidate(t, group.map((i) => t.rules[i]), "structural"));
+      group.forEach((i) => used.add(i));
+    }
+    const weight = (anyOf) => anyOf.reduce((n, c) => n + 1e3 + c.selections.length, 0);
+    t.rules.forEach((r, i) => {
+      if (used.has(i)) return;
+      if (weight(simplifyClauses(t, r.anyOf)) < weight(r.anyOf)) result.push(buildCandidate(t, [r], "structural"));
+    });
+    return result.sort((a, b) => b.before.length - a.before.length);
+  }
+  function verifyStructural(t, c) {
+    const idx = c.before.map((id2) => t.rules.findIndex((r) => r.id === id2));
+    if (!idx.length || idx.some((i) => i < 0) || idx.some((v, i) => i > 0 && v <= idx[i - 1])) return false;
+    const anchor = t.rules.findIndex((r) => r.id === (c.anchor ?? c.before[0]));
+    if (!idx.includes(anchor) || c.replacement.id !== t.rules[anchor].id) return false;
+    const rules = idx.map((i) => t.rules[i]);
+    if (stable(c.replacement.directives) !== stable(t.rules[anchor].directives)) return false;
+    if (rules.length > 1) {
+      const key = mergeKey(t, rules[0]);
+      if (key === null || rules.some((r) => mergeKey(t, r) !== key)) return false;
+    }
+    try {
+      assertValid(replaceCandidate(t, c));
+    } catch {
+      return false;
+    }
+    if (!c.replacement.anyOf.length || !sameCover(rules.flatMap((r) => ruleCubes(t, r)), ruleCubes(t, c.replacement))) return false;
+    return true;
+  }
+  function compressAll(t, maxSteps = 500) {
+    let table2 = t, steps = 0, complete = false;
+    for (; steps < maxSteps; steps++) {
+      const [next] = proposeStructural(table2);
+      if (!next) {
+        complete = true;
+        break;
+      }
+      table2 = applyCandidate(table2, next);
+    }
+    return { table: table2, steps, complete: complete || proposeStructural(table2).length === 0 };
+  }
+  function contradictions(t, limit = 20, budget = 2e6) {
+    const cubes = t.rules.map((r) => ruleCubes(t, r)), keys = t.rules.map((r) => t.outputs.map((_, o) => valueKey(t, r, o))), whole = t.rules.map((r) => mergeKey(t, r));
+    const examples = [];
+    let pairs = 0, same = 0, work = 0;
+    for (let i = 0; i < cubes.length; i++) for (let j = i + 1; j < cubes.length; j++) {
+      work += cubes[i].length * cubes[j].length;
+      if (work > budget) return { pairs, same, examples, complete: false };
+      let first = null, regions = 0;
+      for (const x of cubes[i]) for (const y of cubes[j]) if (!cubesDisjoint(x, y)) {
+        regions++;
+        first ??= x.map((m, k) => m & y[k]);
+      }
+      if (!first) continue;
+      const outputs = t.outputs.flatMap((_, o) => keys[i][o] !== null && keys[j][o] !== null && keys[i][o] !== keys[j][o] ? [o] : []);
+      if (outputs.length) {
+        pairs++;
+        if (examples.length < limit) examples.push({ rules: [i, j], outputs, chunk: cubeChunk(t, first), more: regions > 1 });
+      } else if (whole[i] !== null && whole[i] === whole[j]) same++;
+    }
+    return { pairs, same, examples, complete: true };
+  }
+  function partition2(t, region = null, budget = 2e5, workBudget = 3e6) {
+    if (!t.conditions.length) return [];
+    let pieces = [{ cube: region ?? t.conditions.map(fullMask), sets: [...t.outputs.map(() => []), []] }], work = 0, compactAt = 4096;
+    const regroup = (list) => {
+      const groups = /* @__PURE__ */ new Map();
+      for (const x of list) {
+        const k = stable(x.sets), g = groups.get(k);
+        if (g) g.cubes.push(x.cube);
+        else groups.set(k, { sets: x.sets, cubes: [x.cube] });
+      }
+      return [...groups.values()].flatMap((g) => compactCubes(g.cubes, 2).map((cube) => ({ cube, sets: g.sets })));
+    };
+    for (const r of t.rules) {
+      const keys = t.outputs.map((_, o) => valueKey(t, r, o));
+      let outside = pieces;
+      const inside = [];
+      for (const c of ruleCubes(t, r)) {
+        const next = [];
+        for (const x of outside) {
+          work++;
+          if (cubesDisjoint(x.cube, c)) {
+            next.push(x);
+            continue;
+          }
+          inside.push({ cube: x.cube.map((m, k) => m & c[k]), sets: x.sets });
+          for (const q of subtractCube(x.cube, c)) next.push({ cube: q, sets: x.sets });
+        }
+        outside = next;
+        if (work > workBudget) return null;
+      }
+      for (const x of inside) x.sets = x.sets.map((set, o) => o === t.outputs.length ? ["1"] : keys[o] === null || set.includes(keys[o]) ? set : [...set, keys[o]].sort());
+      pieces = outside.concat(inside);
+      if (pieces.length > compactAt) {
+        work += pieces.length * t.conditions.length;
+        pieces = regroup(pieces);
+        compactAt = Math.max(4096, pieces.length * 2);
+      }
+      if (pieces.length > budget || work > workBudget) return null;
+    }
+    return pieces;
+  }
+  function patterns(t, chunkLimit = 6, workBudget = 3e6) {
+    const pieces = partition2(t, null, 2e5, workBudget);
+    if (!pieces) return null;
+    const scalar2 = t.outputs.map(() => /* @__PURE__ */ new Map());
+    for (const r of t.rules) t.outputs.forEach((_, o) => {
+      const k = valueKey(t, r, o), d = r.directives[o];
+      if (k !== null && d.state === "set" && !scalar2[o].has(k)) scalar2[o].set(k, d.value);
+    });
+    const groups = /* @__PURE__ */ new Map();
+    for (const x of pieces) {
+      const k = stable(x.sets), g = groups.get(k);
+      if (g) g.cubes.push(x.cube);
+      else groups.set(k, { sets: x.sets, cubes: [x.cube] });
+    }
+    const result = [...groups.values()].map((g) => {
+      const cubes = compactCubes(g.cubes, g.cubes.length > 2e4 ? 1 : 8), chunks = cubes.map((c) => cubeChunk(t, c)).sort((a, b) => a.size < b.size ? 1 : a.size > b.size ? -1 : 0);
+      return { size: chunks.reduce((n, c) => n + c.size, 0n), satisfied: g.sets[t.outputs.length].length > 0, outputs: g.sets.slice(0, t.outputs.length).map((set, o) => ({ values: set.map((k) => scalar2[o].get(k)) })), chunks: chunks.slice(0, chunkLimit), chunkCount: chunks.length };
+    });
+    return result.sort((a, b) => a.size < b.size ? 1 : a.size > b.size ? -1 : 0);
+  }
+  function atomsHead(t, n) {
+    const total = count(t);
+    if (total === 0n || n <= 0) return [];
+    const size = total < BigInt(n) ? Number(total) : n, idx = t.conditions.map(() => 0), out = [];
+    for (let k = 0; k < size; k++) {
+      out.push(Object.fromEntries(t.conditions.map((c, i) => [c.id, c.partitions[idx[i]].id])));
+      for (let i = idx.length - 1; i >= 0; i--) {
+        if (++idx[i] < t.conditions[i].partitions.length) break;
+        idx[i] = 0;
+      }
+    }
+    return out;
+  }
+  function migrateRules(old, next) {
+    let dropped = 0, widened = 0, narrowed = 0, omitted = false;
+    const rules = [];
+    for (const r of old.rules) {
+      let wide = false, narrow = false;
+      const anyOf = [];
+      for (const clause2 of r.anyOf) {
+        const selections = [];
+        let empty = false;
+        for (const s of clause2.selections) {
+          const c = next.conditions.find((c2) => c2.id === s.conditionId);
+          if (!c) {
+            wide = true;
+            continue;
+          }
+          const ids = s.partitionIds.filter((id2) => c.partitions.some((p) => p.id === id2));
+          if (ids.length !== s.partitionIds.length) narrow = true;
+          if (!ids.length) {
+            empty = true;
+            break;
+          }
+          selections.push({ conditionId: s.conditionId, partitionIds: ids });
+        }
+        if (empty) continue;
+        if (selections.length < next.conditions.length) omitted = true;
+        anyOf.push({ selections });
+      }
+      if (!anyOf.length) {
+        dropped++;
+        continue;
+      }
+      if (wide) widened++;
+      else if (narrow) narrowed++;
+      rules.push({ ...clone(r), anyOf });
+    }
+    const table2 = { ...clone(next), schemaVersion: omitted || old.schemaVersion === "1.1" || next.schemaVersion === "1.1" ? "1.1" : "1.0", rules };
+    assertValid(table2);
+    return { table: table2, dropped, widened, narrowed };
+  }
+  function inspect(t, picks) {
+    assertValid(t);
+    if (!t.conditions.length) return { total: 0n, exact: false, rules: [], uncovered: 0n, conflict: false, determined: false, relevant: [], outputs: [] };
+    const region = t.conditions.map((c) => {
+      const i = c.partitions.findIndex((p) => p.id === picks[c.id]);
+      return i < 0 ? fullMask(c) : 1n << BigInt(i);
+    });
+    const rules = [], inRange = [];
+    const minus = (cubes) => {
+      let left = [region], work = 0;
+      for (const c of cubes) {
+        work += left.length;
+        left = left.flatMap((a) => subtractCube(a, c));
+        if (left.length > 5e4 || work > 1e6) return null;
+        if (!left.length) break;
+      }
+      return left;
+    };
+    for (let index = 0; index < t.rules.length; index++) {
+      const r = t.rules[index], cubes = ruleCubes(t, r).filter((c) => !cubesDisjoint(c, region)).map((c) => c.map((m, k) => m & region[k]));
+      if (!cubes.length) continue;
+      const left = minus(cubes);
+      rules.push({ index, ruleId: r.id, directives: clone(r.directives), always: left !== null && left.length === 0 });
+      inRange.push({ index, cubes, keys: t.outputs.map((_, o) => valueKey(t, r, o)) });
+    }
+    const none = minus(inRange.flatMap((x) => x.cubes)), uncovered = none ? none.reduce((n, c) => n + cubeSize(c), 0n) : null;
+    const openConditions = /* @__PURE__ */ new Set();
+    const outputs = t.outputs.map((o, at) => {
+      const setters = inRange.filter((x) => x.keys[at] !== null), groups = /* @__PURE__ */ new Map();
+      for (const x of setters) {
+        const g = groups.get(x.keys[at]) ?? { directive: clone(t.rules[x.index].directives[at]), rules: [] };
+        g.rules.push(x.index);
+        groups.set(x.keys[at], g);
+      }
+      const candidates2 = [...groups.values()], all = setters.map((x) => x.index);
+      if (!setters.length) return { outputId: o.id, status: "none", rules: all, candidates: candidates2 };
+      let clash = false;
+      for (let i = 0; i < setters.length && !clash; i++) for (let j = i + 1; j < setters.length && !clash; j++) if (setters[i].keys[at] !== setters[j].keys[at] && !rulesDisjoint(setters[i].cubes, setters[j].cubes)) clash = true;
+      if (clash) return { outputId: o.id, status: "conflict", rules: all, candidates: candidates2 };
+      const left = candidates2.length === 1 ? minus(setters.flatMap((x) => x.cubes)) : null;
+      if (candidates2.length === 1 && left !== null && left.length === 0) return { outputId: o.id, status: "determined", directive: candidates2[0].directive, rules: all, candidates: candidates2 };
+      t.conditions.forEach((c, k) => {
+        if (!c.partitions.some((p) => p.id === picks[c.id]) && setters.some((x) => x.cubes.some((cube) => cube[k] !== fullMask(c)))) openConditions.add(k);
+      });
+      return { outputId: o.id, status: "open", rules: all, candidates: candidates2 };
+    });
+    return {
+      total: cubeSize(region),
+      exact: t.conditions.every((c) => c.partitions.some((p) => p.id === picks[c.id])),
+      rules,
+      uncovered,
+      conflict: outputs.some((x) => x.status === "conflict"),
+      determined: rules.length > 0 && outputs.length > 0 && outputs.every((x) => x.status === "determined" || x.status === "none"),
+      relevant: t.conditions.filter((_, k) => openConditions.has(k)).map((c) => c.id),
+      outputs
+    };
+  }
+  function separate(t, outputs) {
+    const keep = new Set(outputs), rules = t.rules.filter((r) => outputs.some((o) => valueKey(t, r, o) !== null));
+    const used = new Set(rules.flatMap((r) => r.anyOf.flatMap((c) => c.selections.map((x) => x.conditionId))));
+    return {
+      ...clone(t),
+      schemaVersion: "1.1",
+      conditions: clone(t.conditions.filter((c) => used.has(c.id))),
+      outputs: clone(t.outputs.filter((_, i) => keep.has(i))),
+      rules: rules.map((r) => ({ id: r.id, anyOf: clone(r.anyOf), directives: clone(r.directives.filter((_, i) => keep.has(i))) }))
+    };
+  }
+  function actionGroups(t) {
+    const parent = t.outputs.map((_, i) => i), find = (i) => parent[i] === i ? i : parent[i] = find(parent[i]), specified = /* @__PURE__ */ new Set();
+    for (const r of t.rules) {
+      const set = t.outputs.flatMap((_, o) => valueKey(t, r, o) !== null ? [o] : []);
+      set.forEach((o) => {
+        specified.add(o);
+        parent[find(o)] = find(set[0]);
+      });
+    }
+    const groups = /* @__PURE__ */ new Map();
+    [...specified].sort((a, b) => a - b).forEach((o) => {
+      const k = find(o);
+      groups.set(k, [...groups.get(k) ?? [], o]);
+    });
+    return [...groups.values()];
+  }
+  function unconditional(t) {
+    const outputs = t.outputs.map((_, o) => {
+      const seen = /* @__PURE__ */ new Map();
+      for (const r of t.rules) {
+        const k = valueKey(t, r, o), d = r.directives[o];
+        if (k !== null && d.state === "set" && !seen.has(k)) seen.set(k, d.value);
+      }
+      return { values: [...seen.keys()].sort().map((k) => seen.get(k)) };
+    });
+    return { size: 1n, satisfied: t.rules.length > 0, outputs, chunks: [{ selections: [], size: 1n }], chunkCount: 1 };
+  }
+  function decisionTables(t, maxColumns = 200) {
+    const size = (found) => found ? found.reduce((n, x) => n + x.chunkCount, 0) : Infinity;
+    const whole = patterns(t, 1e3, count(t) <= 100000n ? 4e5 : 3e4), all = t.outputs.map((_, i) => i);
+    if (whole && size(whole) <= maxColumns) return { combined: true, parts: [{ outputs: all, table: t, found: whole, columns: size(whole) }] };
+    const parts = [];
+    const add = (outputs) => {
+      const table2 = separate(t, outputs), found = table2.conditions.length ? patterns(table2, 1e3) : [unconditional(table2)];
+      parts.push({ outputs, table: table2, found, columns: size(found) });
+      return found !== null && size(found) <= maxColumns;
+    };
+    for (const group of actionGroups(t)) {
+      if (add(group) || group.length === 1) continue;
+      parts.pop();
+      group.forEach((o) => add([o]));
+    }
+    return { combined: false, parts };
+  }
+  function choiceLines(c) {
+    return c.partitions.flatMap((p) => p.kind !== "values" ? [] : [p.values.length === 1 ? typeof p.values[0] === "string" ? JSON.stringify(p.values[0]) : String(p.values[0]) : JSON.stringify(p.values)]).join("\n");
+  }
+  function parseChoiceLines(text2) {
+    return text2.split(/\r?\n/).filter((s) => s.length > 0).map((s) => {
+      let v = s;
+      if (s.startsWith('"')) {
+        v = JSON.parse(s);
+        if (typeof v !== "string") throw new Error("\u6587\u5B57\u5217\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044");
+      } else if (s.startsWith("[")) {
+        try {
+          const list = JSON.parse(s);
+          if (Array.isArray(list) && list.length > 0 && list.every((x) => typeof x === "string")) v = list;
+        } catch {
+        }
+      }
+      const values = Array.isArray(v) ? v : [v];
+      return { label: values.map((x) => x === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : x).join("\u30FB"), values };
+    });
+  }
+  function retainPartitions(original, partitions) {
+    const content = (p) => stable({ ...p, id: "", label: "" }), used = /* @__PURE__ */ new Set();
+    return partitions.map((p) => {
+      const prior = original.partitions.find((old) => !used.has(old.id) && content(old) === content(p));
+      if (!prior) return p;
+      used.add(prior.id);
+      return { ...p, id: prior.id, label: p.kind === "range" ? p.label : prior.label };
+    });
+  }
+  function carryDirective(before, after, d) {
+    const unset = { outputId: after.id, state: "unset" };
+    if (!before || !d || d.state !== "set" || before.kind !== after.kind) return unset;
+    if (after.kind === "action") return typeof d.value === "boolean" ? { outputId: after.id, state: "set", value: d.value } : unset;
+    if (before.kind !== "result" || before.type !== after.type || !validValue(after.type, d.value, after.values)) return unset;
+    return { outputId: after.id, state: "set", value: d.value };
+  }
+
+  // src/files.ts
+  var FileCoordinator = class _FileCoordinator {
+    handle;
+    baseRaw;
+    baseModel;
+    checkedAt = 0;
+    constructor(handle, raw) {
+      this.handle = handle;
+      this.baseRaw = raw;
+      this.baseModel = stable(decode(raw));
+    }
+    static async connect(handle) {
+      const raw = await (await handle.getFile()).text(), table2 = decode(raw);
+      return { session: new _FileCoordinator(handle, raw), table: table2 };
+    }
+    async check(local) {
+      const raw = await (await this.handle.getFile()).text();
+      this.checkedAt = Date.now();
+      const dirty2 = stable(local) !== this.baseModel;
+      if (raw === this.baseRaw) return { kind: dirty2 ? "local" : "same", raw };
+      const external = decode(raw);
+      return { kind: dirty2 ? "conflict" : "external", raw, external };
+    }
+    async accept(expectedRaw) {
+      const raw = await (await this.handle.getFile()).text();
+      if (raw !== expectedRaw) throw new Error("\u78BA\u8A8D\u5F8C\u306B\u5916\u90E8\u30D5\u30A1\u30A4\u30EB\u304C\u518D\u5909\u66F4\u3055\u308C\u307E\u3057\u305F\u3002\u3082\u3046\u4E00\u5EA6\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+      const table2 = decode(raw);
+      this.baseRaw = raw;
+      this.baseModel = stable(table2);
+      this.checkedAt = Date.now();
+      return table2;
+    }
+    async save(local) {
+      const snapshot = clone(local), text2 = encode(snapshot);
+      await writeVerified(this.handle, this.baseRaw, text2);
+      this.baseRaw = text2;
+      this.baseModel = stable(snapshot);
+      this.checkedAt = Date.now();
+    }
+  };
+  async function writeVerified(handle, expectedRaw, text2) {
+    if (await (await handle.getFile()).text() !== expectedRaw) throw new Error("\u4FDD\u5B58\u76F4\u524D\u306B\u5916\u90E8\u5909\u66F4\u3092\u691C\u51FA\u3057\u307E\u3057\u305F\u3002\u4E0A\u66F8\u304D\u3092\u4E2D\u6B62\u3057\u307E\u3057\u305F");
+    const writer = await handle.createWritable({ mode: "exclusive" });
+    try {
+      if (await (await handle.getFile()).text() !== expectedRaw) throw new Error("\u66F8\u8FBC\u958B\u59CB\u6642\u306B\u5916\u90E8\u5909\u66F4\u3092\u691C\u51FA\u3057\u307E\u3057\u305F");
+      await writer.write(text2);
+      await writer.close();
+    } catch (e) {
+      try {
+        await writer.abort?.();
+      } catch {
+      }
+      throw e;
+    }
+    if (await (await handle.getFile()).text() !== text2) throw new Error("\u4FDD\u5B58\u5F8C\u306E\u518D\u8AAD\u8FBC\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002\u5916\u90E8\u540C\u6642\u7DE8\u96C6\u306E\u53EF\u80FD\u6027\u304C\u3042\u308A\u307E\u3059\u3002\u7DE8\u96C6\u4E2D\u30C7\u30FC\u30BF\u306F\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059");
+  }
+
+  // src/app.ts
+  var picker = window;
+  var workspaceRevision = 0;
+  var fileBusy = false;
+  function captureWorkspace() {
+    const revision = workspaceRevision, linked = session, model = stable(table);
+    return () => {
+      if (workspaceRevision !== revision || session !== linked || stable(table) !== model) throw new Error("\u51E6\u7406\u4E2D\u306B\u8868\u3084\u9023\u643A\u5148\u304C\u5909\u66F4\u3055\u308C\u305F\u305F\u3081\u3001\u53E4\u3044\u7D50\u679C\u306E\u9069\u7528\u3092\u4E2D\u6B62\u3057\u307E\u3057\u305F\u3002\u73FE\u5728\u306E\u7DE8\u96C6\u5185\u5BB9\u306F\u4FDD\u6301\u3055\u308C\u3066\u3044\u307E\u3059\u3002");
+    };
+  }
+  async function fileTask(operation) {
+    if (fileBusy) throw new Error("\u5225\u306E\u30D5\u30A1\u30A4\u30EB\u64CD\u4F5C\u304C\u51E6\u7406\u4E2D\u3067\u3059");
+    fileBusy = true;
+    const surfaces = Array.from(document.querySelectorAll("main, dialog")).map((node) => ({ node, inert: node.inert }));
+    surfaces.forEach(({ node }) => {
+      node.inert = true;
+    });
+    try {
+      return await operation();
+    } finally {
+      surfaces.forEach(({ node, inert }) => {
+        node.inert = inert;
+      });
+      fileBusy = false;
+    }
+  }
+  var table = emptyTable();
+  var saved = stable(table);
+  var session = null;
+  var candidates = [];
+  var panel = "none";
+  var page = 0;
+  var polling = false;
+  var pollErrors = 0;
+  var externalUIKey = "";
+  var decisionCache = null;
+  var decisionAuto = true;
+  var pickedColumn = "";
+  function singleHit(force = false) {
+    const key = stable(table);
+    if (decisionCache?.key === key) return decisionCache;
+    if (!decisionAuto && !force) return null;
+    const started = Date.now();
+    let found = { combined: true, parts: [] };
+    try {
+      found = decisionTables(table);
+    } catch {
+    }
+    decisionAuto = Date.now() - started < 700;
+    let cov = { complete: false, uncovered: 0n };
+    try {
+      cov = coverage(table, 2e5, 25e4);
+    } catch {
+    }
+    decisionCache = { key, ...found, cov };
+    return decisionCache;
+  }
+  function ruleText(r) {
+    const order = (id2) => table.conditions.findIndex((c) => c.id === id2);
+    return r.anyOf.map((clause2) => clause2.selections.length ? [...clause2.selections].sort((a, b) => order(a.conditionId) - order(b.conditionId)).map((sel) => {
+      const c = table.conditions.find((x) => x.id === sel.conditionId);
+      return `${c.name}\uFF1D${sel.partitionIds.length === c.partitions.length && sel.partitionIds.length > 1 ? `\u5168${sel.partitionIds.length}\u5024` : sel.partitionIds.map((id2) => c.partitions.find((x) => x.id === id2).label).join("\u30FB")}`;
+    }).join(" \u304B\u3064 ") : "\u3059\u3079\u3066\u306E\u7D44\u5408\u305B\uFF08\u6761\u4EF6\u6307\u5B9A\u306A\u3057\uFF09").join(" \uFF0F \u307E\u305F\u306F ");
+  }
+  var compressed = null;
+  var checkPicks = {};
+  var pending = null;
+  var fileMessage = "\u30D5\u30A1\u30A4\u30EB\u672A\u9023\u643A";
+  var status = "\u65B0\u3057\u3044\u8868\u3092\u4F5C\u6210\u3059\u308B\u304B\u3001\u30B5\u30F3\u30D7\u30EB\u3092\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002";
+  var root = document.getElementById("app");
+  root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>\u2234</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.3.1</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>\u6761\u4EF6\u3092\u6574\u7406\u3002<span>\u5224\u65AD\u3092\u660E\u78BA\u306B\u3002</span></h1><p class="intro">\u6761\u4EF6\u3068\u52D5\u4F5C\u3092\u3072\u3068\u3064\u306E\u8868\u306B\u3002\u30AA\u30D5\u30E9\u30A4\u30F3\u3067\u7DE8\u96C6\u30FB\u691C\u8A3C\u30FB\u5171\u6709\u3067\u304D\u307E\u3059\u3002</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0\u30FB1.1</small></div></header><nav id="file-actions" aria-label="\u30D5\u30A1\u30A4\u30EB\u64CD\u4F5C"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">\u898F\u5247\u306E\u8A18\u8FF0 \uFF0F \u8868\u898B\u51FA\u3057</label><input id="title" aria-label="\u8868\u898B\u51FA\u3057" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">\u3053\u306E\u8868\u306F\u3001\u8907\u6570\u306E\u898F\u5247\u304C\u540C\u3058\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u66F8\u304D\u65B9\uFF08\u591A\u91CD\u9069\u5408\uFF09\u304C\u3067\u304D\u307E\u3059\u3002\u898F\u5247\u306B\u306F\u3001\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3068\u3001\u5B9F\u884C\u3059\u308B\u52D5\u4F5C\uFF08\u300CX\u300D\u307E\u305F\u306F\u5024\uFF09\u3060\u3051\u3092\u66F8\u304D\u307E\u3059\u3002\u6E80\u8DB3\u3055\u308C\u305F\u898F\u5247\u306E\u52D5\u4F5C\u6307\u5B9A\u3092\u52D5\u4F5C\u3054\u3068\u306B\u5408\u308F\u305B\u3066\u89E3\u91C8\u3057\u307E\u3059\u3002JIS X 0125 \u304C\u5B9A\u3081\u308B\u6C7A\u5B9A\u8868\u306F\u5358\u9069\u5408\uFF08\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3054\u3068\u306B\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C1\u3064\uFF09\u3067\u3001\u3053\u306E\u4E0B\u306F\u898F\u5247\u30921\u884C\u305A\u3064\u4E26\u3079\u305F\u30EA\u30B9\u30C8\u3067\u3001\u898F\u5247\u306B\u306F\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3068\u5B9F\u884C\u3059\u308B\u52D5\u4F5C\u3060\u3051\u3092\u66F8\u304D\u307E\u3059\u3002\u898F\u683C\u306E\u5F62\u306E\u6C7A\u5B9A\u8868\u306F\u3001\u305D\u306E\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\uFF08\u5358\u9069\u5408\uFF09\u300D\u306B\u5225\u8868\u3068\u3057\u3066\u8868\u793A\u3057\u307E\u3059\u3002\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u6642\u306B\u6E80\u8DB3\u3055\u308C\u308B\u5834\u5408\u306F\u300C\u691C\u8A3C\u300D\u3067\u6307\u6458\u3057\u307E\u3059\u3002\u898F\u5247\u306E\u9806\u756A\u306F\u610F\u5473\u3092\u3082\u3061\u307E\u305B\u3093\u3002\u696D\u52D9\u51E6\u7406\u306F\u5B9F\u884C\u3057\u307E\u305B\u3093\u3002JIS\u5B8C\u5168\u6E96\u62E0\u3092\u4FDD\u8A3C\u3057\u307E\u305B\u3093\u3002</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="side-panel" class="side-panel" hidden></section><section id="decision" class="check-panel" hidden></section><section id="check" class="check-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>\u4F7F\u3044\u65B9\u3068\u4FDD\u5B58\u30FB\u30D5\u30A1\u30A4\u30EB\u9023\u643A\u306B\u3064\u3044\u3066</summary><ol><li>\u6761\u4EF6\u3068\u3001\u6761\u4EF6\u306E\u3068\u308A\u5F97\u308B\u5024\u3092\u5B9A\u7FA9\u3057\u307E\u3059\u3002\u52D5\u4F5C\u3092\u5B9A\u7FA9\u3057\u307E\u3059\uFF08X\uFF0F\u2212\u3067\u6307\u5B9A\u3059\u308B\u5236\u9650\u6307\u5B9A\u3001\u307E\u305F\u306F\u8A9E\u53E5\u30FB\u5024\u3067\u6307\u5B9A\u3059\u308B\u62E1\u5F35\u6307\u5B9A\uFF09\u3002</li><li>\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\u6761\u4EF6\u6307\u5B9A\u306F\u3001\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3060\u3051\u5024\u3092\u9078\u3073\u307E\u3059\u3002\u52D5\u4F5C\u6307\u5B9A\u306F\u3001\u305D\u306E\u898F\u5247\u3067\u5B9F\u884C\u3059\u308B\u52D5\u4F5C\u306B\u3060\u3051\u300CX\u300D\u307E\u305F\u306F\u5024\u3092\u5165\u308C\u307E\u3059\u3002\u66F8\u304B\u306A\u304B\u3063\u305F\u6761\u4EF6\u3068\u52D5\u4F5C\u306F\u3001\u6C7A\u5B9A\u8868\u3067\u306F\u300C\u2212\u300D\u306B\u306A\u308A\u307E\u3059\u3002\u6761\u4EF6\u306E\u5024\u304C\u5C11\u306A\u3044\u8868\u306F\u3001\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210\u3059\u308B\u3053\u3068\u3082\u3067\u304D\u307E\u3059\u3002</li><li>\u300C\u691C\u8A3C\u300D\u3067\u3001\u5B8C\u5099\u6027\uFF08\u6761\u4EF6\u6307\u5B9A\u306E\u3059\u3079\u3066\u306E\u7D44\u5408\u305B\u306B\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308B\u304B\uFF09\u3068\u3001\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002</li><li>\u8868\u306E\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u3067\u6761\u4EF6\u306E\u5024\u3092\u9078\u3076\u3068\u3001\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002\u305D\u306E\u4E0A\u306E\u300C\u6C7A\u5B9A\u8868\uFF08\u5358\u9069\u5408\uFF09\u300D\u306F\u3001\u898F\u5247\u306E\u8A18\u8FF0\u304B\u3089\u6C42\u3081\u305F\u5358\u9069\u5408\u6C7A\u5B9A\u8868\u3067\u3059\uFF08\u6761\u4EF6\u30FB\u52D5\u4F5C\u304C\u884C\u3001\u898F\u5247\u304C\u5217\uFF09\u3002\u898F\u5247\u756A\u53F7\u3092\u62BC\u3059\u3068\u3001\u305D\u306E\u6761\u4EF6\u6307\u5B9A\u304C\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u5165\u308A\u307E\u3059\u3002</li><li>\u300C\u7C21\u5358\u5316\u300D\u3067\u3001\u52D5\u4F5C\u6307\u5B9A\u304C\u540C\u3058\u898F\u5247\u3092\u7D50\u5408\u3057\u3001\u3059\u3079\u3066\u306E\u5024\u304C\u305D\u308D\u3063\u305F\u6761\u4EF6\u3092\u6761\u4EF6\u6307\u5B9A\u304B\u3089\u5916\u3057\u3066\u6574\u7406\u3057\u307E\u3059\u3002\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3060\u3051\u3092\u8868\u793A\u3057\u3001\u627F\u8A8D\u3057\u3066\u53CD\u6620\u3057\u307E\u3059\u3002</li><li>JSON\u3067\u4FDD\u5B58\u30FB\u5171\u6709\u3057\u307E\u3059\u3002Chrome\u3067\u9078\u629E\u3057\u305F\u30D5\u30A1\u30A4\u30EB\u306F1\u79D2\u3092\u76EE\u5B89\u306B\u518D\u78BA\u8A8D\u3057\u307E\u3059\u3002</li></ol><p>\u5916\u90E8\u30C4\u30FC\u30EB\u3068\u540C\u3058\u30D5\u30A1\u30A4\u30EB\u3078\u540C\u6642\u306B\u4FDD\u5B58\u3057\u306A\u3044\u3067\u304F\u3060\u3055\u3044\u3002\u30D6\u30E9\u30A6\u30B6\u3060\u3051\u3067OS\u5168\u4F53\u306E\u6392\u4ED6\u306F\u4FDD\u8A3C\u3067\u304D\u307E\u305B\u3093\u3002\u4FDD\u5B58\u524D\u306B\u4ED6\u30C4\u30FC\u30EB\u306E\u7DE8\u96C6\u3092\u505C\u6B62\u3059\u308B\u304B\u3001\u5225\u540D\u3078\u66F8\u304D\u51FA\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30D0\u30C3\u30AF\u30B0\u30E9\u30A6\u30F3\u30C9\u4E2D\u306F\u691C\u77E5\u304C\u9045\u308C\u307E\u3059\u3002\u6A29\u9650\u3084API\u306B\u3088\u3063\u3066\u5229\u7528\u3067\u304D\u306A\u3044\u6A5F\u80FD\u304C\u3042\u308A\u307E\u3059\u3002\u30D5\u30A1\u30A4\u30EB\u9078\u629E\u30FB\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3060\u3051\u306E\u5229\u7528\u3067\u306F\u7D99\u7D9A\u78BA\u8A8D\u306F\u3067\u304D\u307E\u305B\u3093\u3002\u672A\u4FDD\u5B58\u5185\u5BB9\u306F\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u5931\u308F\u308C\u307E\u3059\u3002</p><div id="help-actions"></div></details></main>`;
+  var $ = (id2) => document.getElementById(id2);
+  function element(tag, text2 = "", cls = "") {
+    const e = document.createElement(tag);
+    e.textContent = text2;
+    if (cls) e.className = cls;
+    return e;
+  }
+  function button(text2, action, cls = "") {
+    const b = element("button", text2, cls);
+    b.type = "button";
+    b.addEventListener("click", () => void run(action));
+    return b;
+  }
+  function message(s) {
+    status = s;
+    $("status").textContent = s;
+  }
+  async function run(action) {
+    try {
+      await action();
+    } catch (e) {
+      if (e.name !== "AbortError") message(`\u78BA\u8A8D\u304C\u5FC5\u8981\u3067\u3059\uFF1A${e.message}`);
+    }
+  }
+  var dirty = () => stable(table) !== (session?.baseModel ?? saved);
+  function commit(next, note = "\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F") {
+    assertValid(next);
+    workspaceRevision++;
+    table = next;
+    candidates = [];
+    compressed = null;
+    pending = null;
+    page = Math.min(page, Math.max(0, Math.ceil(table.rules.length / 40) - 1));
+    message(note);
+    render();
+  }
+  function download(text2, filename, mime = "application/json") {
+    const url = URL.createObjectURL(new Blob([text2], { type: mime })), a = element("a");
+    a.href = url;
+    a.download = filename;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3e4);
+  }
+  function clearWorkspace() {
+    if (dirty() && !confirm("\u672A\u4FDD\u5B58\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002\u73FE\u5728\u306E\u8868\u3092\u9589\u3058\u307E\u3059\u304B\uFF1F")) return;
+    session = null;
+    pending = null;
+    saved = stable(emptyTable());
+    table = emptyTable();
+    saved = stable(table);
+    fileMessage = "\u30D5\u30A1\u30A4\u30EB\u672A\u9023\u643A";
+    panel = "none";
+    page = 0;
+    commit(table, "\u65B0\u3057\u3044\u8868\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F");
+  }
+  function demo() {
+    const t = emptyTable();
+    t.title = "\u914D\u9001\u30EB\u30FC\u30EB";
+    t.conditions = [
+      { id: "member", name: "\u4F1A\u54E1\u533A\u5206", type: "enum", partitions: ["\u4E00\u822C", "\u512A\u826F"].map((v, i) => ({ id: `member-${i}`, label: v, kind: "values", values: [v] })) },
+      { id: "region", name: "\u914D\u9001\u5148", type: "enum", partitions: ["\u672C\u5DDE", "\u5317\u6D77\u9053", "\u6C96\u7E04"].map((v, i) => ({ id: `region-${i}`, label: v, kind: "values", values: [v] })) }
+    ];
+    t.outputs = [{ id: "fee", name: "\u9001\u6599\uFF08\u5186\uFF09", kind: "result", type: "number" }, { id: "notify", name: "\u767A\u9001\u901A\u77E5", kind: "action" }];
+    const result = generate(t);
+    result.rules.forEach((r) => {
+      const member = r.anyOf[0].selections[0].partitionIds[0];
+      r.directives = [{ outputId: "fee", state: "set", value: member === "member-1" ? "0" : "500" }, { outputId: "notify", state: "set", value: true }];
+    });
+    return result;
+  }
+  function loadDemo() {
+    if (dirty() && !confirm("\u73FE\u5728\u306E\u5909\u66F4\u3092\u7834\u68C4\u3057\u3066\u30B5\u30F3\u30D7\u30EB\u3092\u958B\u304D\u307E\u3059\u304B\uFF1F")) return;
+    session = null;
+    fileMessage = "\u30D5\u30A1\u30A4\u30EB\u672A\u9023\u643A";
+    page = 0;
+    commit(demo(), "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B6\u4EF6\u3092\u898F\u5247\u306B\u3057\u305F\u30B5\u30F3\u30D7\u30EB\u3067\u3059\u3002\u300C\u7C21\u5358\u5316\u300D\u3092\u8A66\u305B\u307E\u3059\u3002");
+  }
+  function modal(title) {
+    const d = element("dialog");
+    const form = element("div", "", "modal-content");
+    form.append(element("h2", title));
+    d.append(form);
+    document.body.append(d);
+    d.addEventListener("close", () => d.remove());
+    d.showModal();
+    return { dialog: d, form, close: () => d.close() };
+  }
+  function field(label, control, target) {
+    const wrap = element("label", "", "field");
+    wrap.append(element("span", label), control);
+    target.append(wrap);
+    return wrap;
+  }
+  function input(value = "", type = "text") {
+    const i = element("input");
+    i.type = type;
+    i.value = value;
+    return i;
+  }
+  function select(values, value) {
+    const s = element("select");
+    for (const [v, label] of values) {
+      const o = element("option", label);
+      o.value = v;
+      s.append(o);
+    }
+    if (value !== void 0) s.value = value;
+    return s;
+  }
+  var types = [["boolean", "Boolean / \u771F\u507D"], ["enum", "Enum / \u5206\u985E"], ["number", "Number / \u6570\u5024"], ["string", "String / \u6587\u5B57\u5217"], ["date", "Date / \u65E5\u4ED8"]];
+  function applyDefinitions(next, close) {
+    assertValid({ ...next, rules: [] });
+    if (!table.rules.length) {
+      commit({ ...next, rules: [] });
+      close();
+      return;
+    }
+    const migrated = migrateRules(table, { ...next, rules: [] }), affected = migrated.dropped + migrated.widened + migrated.narrowed;
+    if (!affected) {
+      commit(migrated.table, "\u6761\u4EF6\u306E\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u898F\u5247\u306F\u3059\u3079\u3066\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002\u300C\u691C\u8A3C\u300D\u3067\u5B8C\u5099\u6027\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      close();
+      return;
+    }
+    const m = modal("\u6761\u4EF6\u5909\u66F4\u306E\u5F71\u97FF\u3092\u78BA\u8A8D");
+    m.form.append(element("p", `\u898F\u5247${table.rules.length}\u4EF6\u306E\u3046\u3061\u3001\u305D\u306E\u307E\u307E\u4FDD\u6301\u3067\u304D\u306A\u3044\u3082\u306E\u304C\u3042\u308A\u307E\u3059\u3002\u524A\u9664\u3055\u308C\u308B\u898F\u5247\uFF1A${migrated.dropped}\u4EF6\uFF0F\u6761\u4EF6\u6307\u5B9A\u306E\u3042\u3063\u305F\u6761\u4EF6\u304C\u306A\u304F\u306A\u308A\u5BFE\u8C61\u304C\u5E83\u304C\u308B\u898F\u5247\uFF1A${migrated.widened}\u4EF6\uFF0F\u6761\u4EF6\u6307\u5B9A\u306E\u5024\u306E\u4E00\u90E8\u304C\u306A\u304F\u306A\u308B\u898F\u5247\uFF1A${migrated.narrowed}\u4EF6\u3002\u5909\u66F4\u524D\u306E\u8868\u306F\u9078\u629E\u304C\u5B8C\u4E86\u3059\u308B\u307E\u3067\u4FDD\u6301\u3057\u307E\u3059\u3002`));
+    const actions = element("div", "", "modal-actions");
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u898F\u5247\u3092\u4FDD\u6301\u3057\u3066\u53CD\u6620", () => {
+      commit(migrated.table, "\u6761\u4EF6\u306E\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002\u300C\u691C\u8A3C\u300D\u3067\u5B8C\u5099\u6027\u3068\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      m.close();
+      close();
+    }, "primary"));
+    if (count(next) <= BigInt(LIMIT)) actions.append(button("\u5909\u66F4\u524DJSON\u3092\u66F8\u51FA\u5F8C\u3001\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3059", () => {
+      download(encode(table), "decision-table-before-change.json");
+      commit(generate({ ...next, rules: [] }), "\u5909\u66F4\u524DJSON\u306E\u66F8\u51FA\u3092\u958B\u59CB\u3057\u3001\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3057\u307E\u3057\u305F\u3002\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u5B8C\u4E86\u306F\u30D6\u30E9\u30A6\u30B6\u3067\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+      m.close();
+      close();
+    }));
+    m.form.append(actions);
+  }
+  function regenerateDialog() {
+    const migrated = regeneratePreserving(table, { ...clone(table), rules: [] }), m = modal("\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3059");
+    m.form.append(element("p", `\u73FE\u5728\u306E\u898F\u5247${table.rules.length}\u4EF6\u3092\u3001\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${count(table)}\u4EF6\u305D\u308C\u305E\u308C\u306E\u898F\u5247\u306B\u4F5C\u308A\u76F4\u3057\u307E\u3059\u3002\u52D5\u4F5C\u6307\u5B9A\u3092\u5F15\u304D\u7D99\u3052\u306A\u3044\u7D44\u5408\u305B\uFF1A${migrated.affected}\u4EF6\u3002\u6761\u4EF6\u3092\u7701\u3044\u305F\u898F\u5247\u3084OR\u3067\u7D50\u5408\u3057\u305F\u898F\u5247\u306E\u5F62\u306F\u5931\u308F\u308C\u307E\u3059\u3002`));
+    const actions = element("div", "", "modal-actions");
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u4F5C\u308A\u76F4\u3059", () => {
+      commit(migrated.table, "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u308A\u76F4\u3057\u307E\u3057\u305F\u3002");
+      m.close();
+    }, "primary"));
+    m.form.append(actions);
+  }
+  function conditionDialog(original) {
+    const m = modal(original ? "\u6761\u4EF6\u3092\u7DE8\u96C6" : "\u6761\u4EF6\u3092\u8FFD\u52A0"), name = input(original?.name ?? ""), type = select(types, original?.type ?? "boolean"), defs = element("div");
+    name.placeholder = "\u4F8B\uFF1A\u4F1A\u54E1\u533A\u5206\u3001\u5E74\u9F62\u3001\u7533\u8FBC\u65E5";
+    field("\u6761\u4EF6\u540D", name, m.form);
+    field("\u578B", type, m.form);
+    m.form.append(defs);
+    let choices = element("textarea"), rows = element("div");
+    const missing = input("", "checkbox");
+    missing.checked = original?.partitions.some((p) => p.kind === "missing") ?? false;
+    const rangeRows = [];
+    function addRange(p) {
+      const wrap = element("div", "", "range-row"), low = input(p?.range.lower ?? ""), high = input(p?.range.upper ?? ""), li = input("", "checkbox"), hi = input("", "checkbox"), label = input(p?.label ?? "");
+      li.checked = p?.range.lowerInclusive ?? true;
+      hi.checked = p?.range.upperInclusive ?? false;
+      low.placeholder = type.value === "date" ? "2026-01-01" : "0";
+      high.placeholder = type.value === "date" ? "2027-01-01" : "18";
+      label.placeholder = "\u8868\u793A\u540D";
+      const row = { low, high, li, hi, label };
+      rangeRows.push(row);
+      field("\u5024\u306E\u540D\u524D", label, wrap);
+      field("\u4E0B\u9650\uFF08\u7A7A\u6B04\uFF1D\u306A\u3057\uFF09", low, wrap);
+      field("\u4E0B\u9650\u3092\u542B\u3080", li, wrap);
+      field("\u4E0A\u9650\uFF08\u7A7A\u6B04\uFF1D\u306A\u3057\uFF09", high, wrap);
+      field("\u4E0A\u9650\u3092\u542B\u3080", hi, wrap);
+      wrap.append(button("\u5024\u3092\u524A\u9664", () => {
+        rangeRows.splice(rangeRows.indexOf(row), 1);
+        wrap.remove();
+      }));
+      rows.append(wrap);
+    }
+    function redraw() {
+      defs.replaceChildren();
+      rangeRows.length = 0;
+      if (type.value === "boolean") defs.append(element("p", "true / false \u306E2\u3064\u306E\u5024\u3092\u5B9A\u7FA9\u3057\u307E\u3059\u3002"));
+      else if (type.value === "enum" || type.value === "string") {
+        choices = element("textarea");
+        choices.rows = 5;
+        choices.placeholder = "\u512A\u826F\n\u4E00\u822C\n\u65B0\u898F";
+        choices.value = original ? choiceLines(original) : "";
+        field('\u5019\u88DC\u5024\uFF081\u884C1\u5024\u3002\u7A7A\u6587\u5B57\u306F ""\u3001\u7A7A\u767D\u3092\u4FDD\u3064\u5024\u306F\u5F15\u7528\u7B26\u3067\u6307\u5B9A\u3002\u8907\u6570\u306E\u5019\u88DC\u30921\u3064\u306E\u5024\u306B\u307E\u3068\u3081\u308B\u5834\u5408\u306F ["A","B"] \u3068\u66F8\u304F\uFF09', choices, defs);
+      } else {
+        rows = element("div");
+        defs.append(element("p", "\u6570\u5024\u306F10\u9032\u6570\u3001\u65E5\u4ED8\u306FYYYY-MM-DD\u3067\u6307\u5B9A\u3002\u533A\u9593\u306E\u91CD\u8907\u30FB\u9006\u8EE2\u30FB\u7A7A\u533A\u9593\u306F\u62D2\u5426\u3057\u307E\u3059\u3002"), rows, button("\uFF0B \u7BC4\u56F2\u3092\u8FFD\u52A0", () => addRange()));
+        const existing = original?.type === type.value ? original.partitions.filter((p) => p.kind === "range") : [];
+        if (existing.length) existing.forEach((p) => addRange(p));
+        else addRange();
+      }
+      field("\u672A\u5B9A\u7FA9\u3092\u6761\u4EF6\u306E\u5024\u3068\u3057\u3066\u8FFD\u52A0", missing, defs);
+    }
+    type.onchange = redraw;
+    redraw();
+    const actions = element("div", "", "modal-actions");
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u5B9A\u7FA9\u3092\u53CD\u6620", () => {
+      if (!name.value.trim()) throw new Error("\u6761\u4EF6\u540D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      let partitions;
+      if (type.value === "boolean") partitions = [true, false].map((v) => ({ id: uid("p"), label: String(v), kind: "values", values: [v] }));
+      else if (type.value === "enum" || type.value === "string") partitions = parseChoiceLines(choices.value).map((x) => ({ id: uid("p"), label: x.label, kind: "values", values: x.values }));
+      else partitions = rangeRows.map((r) => ({ id: uid("p"), label: r.label.value || `${r.li.checked ? "[" : "("}${r.low.value || "\u2212\u221E"}, ${r.high.value || "\u221E"}${r.hi.checked ? "]" : ")"}`, kind: "range", range: { lower: r.low.value || null, upper: r.high.value || null, lowerInclusive: r.li.checked, upperInclusive: r.hi.checked } }));
+      if (missing.checked) partitions.push({ id: uid("p"), label: "\u672A\u5B9A\u7FA9", kind: "missing" });
+      if (original) partitions = retainPartitions(original, partitions);
+      const c = { id: original?.id ?? uid("c"), name: name.value, type: type.value, partitions }, next = clone(table);
+      if (original) next.conditions[next.conditions.findIndex((c2) => c2.id === original.id)] = c;
+      else next.conditions.push(c);
+      applyDefinitions(next, m.close);
+    }, "primary"));
+    m.form.append(actions);
+  }
+  function outputDialog(original) {
+    const m = modal(original ? "\u52D5\u4F5C\u3092\u7DE8\u96C6" : "\u52D5\u4F5C\u3092\u8FFD\u52A0"), name = input(original?.name ?? ""), kind = select([["result", "\u62E1\u5F35\u6307\u5B9A\uFF08\u8A9E\u53E5\u30FB\u5024\u3067\u6307\u5B9A\u3059\u308B\uFF09"], ["action", "\u5236\u9650\u6307\u5B9A\uFF08X\uFF0F\u2212\uFF1A\u5B9F\u884C\u3059\u308B\u30FB\u3057\u306A\u3044\uFF09"]], original?.kind ?? "result"), type = select(types, original?.kind === "result" ? original.type : "boolean"), choices = element("textarea");
+    choices.value = original?.kind === "result" ? (original.values ?? []).join("\n") : "";
+    choices.placeholder = "1\u884C\u306B1\u5019\u88DC";
+    field("\u540D\u524D", name, m.form);
+    field("\u52D5\u4F5C\u6307\u5B9A\u306E\u5F62\u5F0F", kind, m.form);
+    const typeField = field("\u5024\u306E\u578B", type, m.form), enumField = field("Enum\u306E\u5019\u88DC\u5024", choices, m.form);
+    function redraw() {
+      typeField.hidden = kind.value === "action";
+      enumField.hidden = kind.value === "action" || type.value !== "enum";
+    }
+    kind.onchange = type.onchange = redraw;
+    redraw();
+    const actions = element("div", "", "modal-actions");
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u5B9A\u7FA9\u3092\u53CD\u6620", () => {
+      if (!name.value.trim()) throw new Error("\u540D\u524D\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044");
+      const o = kind.value === "action" ? { id: original?.id ?? uid("o"), name: name.value, kind: "action" } : { id: original?.id ?? uid("o"), name: name.value, kind: "result", type: type.value, ...type.value === "enum" ? { values: choices.value.split(/\r?\n/).filter(Boolean) } : {} };
+      const next = clone(table);
+      if (original) next.outputs[next.outputs.findIndex((x) => x.id === original.id)] = o;
+      else next.outputs.push(o);
+      let lost = 0;
+      next.rules.forEach((r) => {
+        r.directives = next.outputs.map((output2) => {
+          const d = r.directives.find((d2) => d2.outputId === output2.id), kept = carryDirective(table.outputs.find((x) => x.id === output2.id), output2, d);
+          if (d?.state === "set" && kept.state === "unset") lost++;
+          return kept;
+        });
+      });
+      assertValid(next);
+      if (lost && !confirm(`\u5F62\u5F0F\u30FB\u578B\u30FB\u5019\u88DC\u306E\u5909\u66F4\u306B\u3088\u308A\u3001\u52D5\u4F5C\u6307\u5B9A${lost}\u4EF6\u304C\u4FDD\u6301\u3067\u304D\u305A\u7A7A\u6B04\u306B\u623B\u308A\u307E\u3059\u3002\u5909\u66F4\u3092\u53CD\u6620\u3057\u307E\u3059\u304B\uFF1F`)) return;
+      commit(next);
+      m.close();
+    }, "primary"));
+    m.form.append(actions);
+  }
+  function actionText(r) {
+    const parts = table.outputs.flatMap((o, i) => {
+      const d = r.directives[i];
+      if (!d || d.state !== "set") return [];
+      if (o.kind === "action") return d.value === true ? [`${o.name}\uFF1DX`] : [];
+      return [`${o.name}\uFF1D${d.value === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(d.value)}`];
+    });
+    return parts.length ? parts.join("\u3001") : "\uFF08\u52D5\u4F5C\u6307\u5B9A\u306A\u3057\uFF09";
+  }
+  function ruleDialog(id2) {
+    const original = id2 ? table.rules.find((r) => r.id === id2) : null, m = modal(original ? `\u898F\u5247 #${table.rules.indexOf(original) + 1} \u3092\u7DE8\u96C6` : "\u898F\u5247\u3092\u8FFD\u52A0"), list = element("div");
+    m.form.append(element("h3", "\u6761\u4EF6\u6307\u5B9A"), element("p", "\u3053\u306E\u898F\u5247\u306B\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3060\u3051\u3001\u5024\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u300C\u6307\u5B9A\u3057\u306A\u3044\u300D\u306E\u6761\u4EF6\u306F\u3001\u3053\u306E\u898F\u5247\u306B\u306F\u7121\u95A2\u4FC2\u3067\u3059\u3002\u30D6\u30ED\u30C3\u30AF\u5185\u306E\u6761\u4EF6\u6307\u5B9A\u306FAND\u3001\u30D6\u30ED\u30C3\u30AF\u540C\u58EB\u306FOR\u3067\u3059\u3002", "muted"), list);
+    const clauses = [];
+    function add(c) {
+      const block = element("div", "", "clause"), rows = [];
+      list.append(block);
+      for (const condition2 of table.conditions) {
+        const chosen = c?.selections.find((x) => x.conditionId === condition2.id)?.partitionIds, all = input("", "checkbox"), line = element("div", "", "condition-pick");
+        const pick = select(condition2.partitions.map((p) => [p.id, p.label]));
+        pick.multiple = true;
+        pick.size = Math.min(4, condition2.partitions.length);
+        Array.from(pick.options).forEach((o) => {
+          o.selected = chosen ? chosen.includes(o.value) : false;
+        });
+        all.checked = !chosen;
+        pick.disabled = all.checked;
+        all.onchange = () => {
+          pick.disabled = all.checked;
+        };
+        pick.setAttribute("aria-label", `${condition2.name}\u306E\u5024`);
+        line.append(element("strong", condition2.name));
+        field("\u6307\u5B9A\u3057\u306A\u3044", all, line);
+        line.append(pick);
+        block.append(line);
+        rows.push({ all, pick });
+      }
+      const entry = { rows, element: block };
+      clauses.push(entry);
+      block.append(button("\u3053\u306EOR\u30D6\u30ED\u30C3\u30AF\u3092\u524A\u9664", () => {
+        clauses.splice(clauses.indexOf(entry), 1);
+        block.remove();
+      }));
+    }
+    (original?.anyOf ?? [{ selections: [] }]).forEach(add);
+    m.form.append(button("\uFF0B OR\u30D6\u30ED\u30C3\u30AF", () => add()));
+    const actionsBox = element("div", "", "clause");
+    m.form.append(element("h3", "\u52D5\u4F5C\u6307\u5B9A"), element("p", "\u3053\u306E\u898F\u5247\u3067\u5B9F\u884C\u3059\u308B\u52D5\u4F5C\u306B\u3060\u3051\u300CX\u300D\u307E\u305F\u306F\u5024\u3092\u5165\u308C\u3066\u304F\u3060\u3055\u3044\u3002\u7A7A\u6B04\u306E\u52D5\u4F5C\u306F\u3001\u3053\u306E\u898F\u5247\u3067\u306F\u6307\u5B9A\u3057\u307E\u305B\u3093\u3002", "muted"), actionsBox);
+    const editors = table.outputs.map((o, at) => {
+      const d = original?.directives[at] ?? { outputId: o.id, state: "unset" }, unset = () => ({ outputId: o.id, state: "unset" });
+      if (o.kind === "action") {
+        const sel = select([["unset", ""], ["true", "X"]], d.state === "set" && d.value === true ? "true" : "unset");
+        field(o.name, sel, actionsBox);
+        return () => sel.value === "true" ? { outputId: o.id, state: "set", value: true } : unset();
+      }
+      if (o.type === "boolean") {
+        const sel = select([["unset", ""], ["true", "true"], ["false", "false"]], d.state === "unset" ? "unset" : String(d.value));
+        field(o.name, sel, actionsBox);
+        return () => sel.value === "unset" ? unset() : { outputId: o.id, state: "set", value: sel.value === "true" };
+      }
+      if (o.type === "enum") {
+        const sel = select([["unset", ""], ...(o.values ?? []).map((v, i) => [String(i), v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : v])], d.state === "unset" ? "unset" : String((o.values ?? []).indexOf(d.value)));
+        field(o.name, sel, actionsBox);
+        return () => sel.value === "unset" ? unset() : { outputId: o.id, state: "set", value: o.values[Number(sel.value)] };
+      }
+      const text2 = input(d.state === "set" ? String(d.value) : ""), empty = input("", "checkbox");
+      empty.checked = d.state === "set" && d.value === "";
+      field(o.name, text2, actionsBox);
+      if (o.type === "string") field(`${o.name}\uFF1A\u7A7A\u6587\u5B57\u3092\u5024\u3068\u3057\u3066\u6307\u5B9A\u3059\u308B`, empty, actionsBox);
+      return () => text2.value !== "" ? { outputId: o.id, state: "set", value: text2.value } : o.type === "string" && empty.checked ? { outputId: o.id, state: "set", value: "" } : unset();
+    });
+    if (!table.outputs.length) actionsBox.append(element("p", "\u52D5\u4F5C\u304C\u307E\u3060\u5B9A\u7FA9\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002\u300C\uFF0B \u52D5\u4F5C\u300D\u3067\u8FFD\u52A0\u3067\u304D\u307E\u3059\u3002", "muted"));
+    const actions = element("div", "", "modal-actions");
+    actions.append(button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button(original ? "\u898F\u5247\u3092\u53CD\u6620" : "\u898F\u5247\u3092\u8FFD\u52A0", () => {
+      if (!clauses.length) throw new Error("\u6761\u4EF6\u30D6\u30ED\u30C3\u30AF\u30921\u3064\u4EE5\u4E0A\u6B8B\u3057\u3066\u304F\u3060\u3055\u3044");
+      let omitted = false;
+      const anyOf = clauses.map((c) => ({ selections: table.conditions.flatMap((x, i) => {
+        if (c.rows[i].all.checked) {
+          omitted = true;
+          return [];
+        }
+        const ids = Array.from(c.rows[i].pick.selectedOptions).map((o) => o.value);
+        if (!ids.length) throw new Error(`\u300C${x.name}\u300D\u306E\u5024\u30921\u3064\u4EE5\u4E0A\u9078\u3076\u304B\u3001\u300C\u6307\u5B9A\u3057\u306A\u3044\u300D\u306B\u3057\u3066\u304F\u3060\u3055\u3044`);
+        return [{ conditionId: x.id, partitionIds: ids }];
+      }) }));
+      const directives = editors.map((read) => read()), next = clone(table);
+      if (original) {
+        const r = next.rules.find((x) => x.id === original.id);
+        r.anyOf = anyOf;
+        r.directives = directives;
+      } else {
+        next.rules.push({ id: uid("r"), anyOf, directives });
+        page = Math.floor((next.rules.length - 1) / 40);
+      }
+      if (omitted) next.schemaVersion = "1.1";
+      commit(next, original ? "\u898F\u5247\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002" : `\u898F\u5247\u3092\u8FFD\u52A0\u3057\u307E\u3057\u305F\u3002${omitted && table.schemaVersion === "1.0" ? "\u3053\u306E\u8868\u306F\u30B9\u30AD\u30FC\u30DE1.1\u3068\u3057\u3066\u4FDD\u5B58\u3055\u308C\u307E\u3059\uFF081.0\u306E\u307F\u5BFE\u5FDC\u306E\u65E7\u7248\u3067\u306F\u8AAD\u307F\u8FBC\u3081\u307E\u305B\u3093\uFF09\u3002" : ""}`);
+      m.close();
+    }, "primary"));
+    m.form.append(actions);
+  }
+  async function openFile() {
+    const ensureCurrent = captureWorkspace();
+    if (dirty() && !confirm("\u672A\u4FDD\u5B58\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002\u5225\u306EJSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3059\u304B\uFF1F\uFF08\u73FE\u5728\u306E\u5185\u5BB9\u306F\u4FDD\u5B58\u3055\u308C\u307E\u305B\u3093\uFF09")) return;
+    if (picker.showOpenFilePicker) {
+      const [handle] = await picker.showOpenFilePicker({ types: [{ description: "\u6C7A\u5B9A\u8868 JSON", accept: { "application/json": [".json"] } }] });
+      ensureCurrent();
+      const connection = await FileCoordinator.connect(handle);
+      ensureCurrent();
+      session = connection.session;
+      table = connection.table;
+      saved = stable(table);
+      pending = null;
+      pollErrors = 0;
+      fileMessage = `\u9023\u643A\u4E2D\uFF1A${handle.name}`;
+      page = 0;
+      commit(table, "JSON\u3092\u691C\u8A3C\u3057\u3066\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002\u9078\u629E\u3057\u305F\u30D5\u30A1\u30A4\u30EB\u3092\u7D99\u7D9A\u78BA\u8A8D\u3057\u307E\u3059\u3002");
+    } else {
+      const i = input("", "file");
+      i.accept = ".json,application/json";
+      i.onchange = () => void run(() => fileTask(async () => {
+        const f = i.files?.[0];
+        if (!f) return;
+        ensureCurrent();
+        const next = decode(await f.text());
+        ensureCurrent();
+        session = null;
+        table = next;
+        saved = stable(table);
+        fileMessage = "\u660E\u793A\u8AAD\u8FBC\u306E\u307F\u30FB\u7D99\u7D9A\u78BA\u8A8D\u306A\u3057";
+        commit(next, "JSON\u3092\u8AAD\u307F\u8FBC\u307F\u307E\u3057\u305F\u3002\u3053\u306E\u74B0\u5883\u306E\u30D5\u30A1\u30A4\u30EB\u9078\u629E\u65B9\u5F0F\u3067\u306F\u7D99\u7D9A\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002");
+      }));
+      i.click();
+    }
+  }
+  async function saveAs() {
+    const ensureCurrent = captureWorkspace();
+    const text2 = encode(table), snapshot = clone(table);
+    if (!picker.showSaveFilePicker) {
+      download(text2, "decision-table.json");
+      message("JSON\u306E\u66F8\u51FA\u3092\u958B\u59CB\u3057\u307E\u3057\u305F\u3002\u30D6\u30E9\u30A6\u30B6\u3067\u4FDD\u5B58\u5B8C\u4E86\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u5143\u30D5\u30A1\u30A4\u30EB\u306E\u4FDD\u5B58\u5B8C\u4E86\u306F\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093\u3002");
+      return;
+    }
+    const h = await picker.showSaveFilePicker({ suggestedName: "decision-table.json", types: [{ description: "\u6C7A\u5B9A\u8868 JSON", accept: { "application/json": [".json"] } }] });
+    ensureCurrent();
+    if (session && h.isSameEntry && await h.isSameEntry(session.handle)) {
+      await save();
+      return;
+    }
+    const before = await (await h.getFile()).text();
+    ensureCurrent();
+    if (before && !confirm("\u65E2\u5B58\u306E\u30D5\u30A1\u30A4\u30EB\u3067\u3059\u3002\u5916\u90E8\u30C4\u30FC\u30EB\u306E\u7DE8\u96C6\u3092\u505C\u6B62\u3057\u3001\u4E0A\u66F8\u304D\u3057\u3066\u3088\u3044\u3053\u3068\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002")) return;
+    await writeVerified(h, before, text2);
+    ensureCurrent();
+    session = new FileCoordinator(h, text2);
+    saved = stable(snapshot);
+    pending = null;
+    pollErrors = 0;
+    fileMessage = `\u9023\u643A\u4E2D\uFF1A${h.name}`;
+    render();
+    message("JSON\u3092\u4FDD\u5B58\u3057\u3001\u518D\u8AAD\u8FBC\u3067\u4E00\u81F4\u3092\u78BA\u8A8D\u3057\u307E\u3057\u305F\u3002");
+  }
+  async function save() {
+    const ensureCurrent = captureWorkspace();
+    if (!session) return saveAs();
+    if (!confirm("\u540C\u3058\u30D5\u30A1\u30A4\u30EB\u3092\u7DE8\u96C6\u3057\u3066\u3044\u308B\u5916\u90E8\u30C4\u30FC\u30EB\u3092\u505C\u6B62\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30D6\u30E9\u30A6\u30B6\u3060\u3051\u3067\u5916\u90E8\u540C\u6642\u66F8\u8FBC\u306E\u6392\u4ED6\u306F\u4FDD\u8A3C\u3067\u304D\u307E\u305B\u3093\u3002\u505C\u6B62\u3092\u78BA\u8A8D\u3057\u3066\u4FDD\u5B58\u3057\u307E\u3059\u304B\uFF1F")) return;
+    await session.save(table);
+    ensureCurrent();
+    pending = null;
+    render();
+    message("\u4FDD\u5B58\u5F8C\u306E\u518D\u8AAD\u8FBC\u304C\u4E00\u81F4\u3057\u307E\u3057\u305F\u3002");
+  }
+  async function poll(force = false) {
+    if (!session || polling || pollErrors >= 3 && !force) return;
+    if (document.hidden && !force) {
+      fileMessage = "\u691C\u77E5\u4F11\u6B62\u4E2D\uFF08\u5FA9\u5E30\u5F8C\u306B\u518D\u78BA\u8A8D\uFF09";
+      updateStatus();
+      return;
+    }
+    polling = true;
+    const activeSession = session;
+    try {
+      const observation = await activeSession.check(table);
+      if (session !== activeSession) return;
+      if (observation.kind === "external" || observation.kind === "conflict") observation.kind = stable(table) === activeSession.baseModel ? "external" : "conflict";
+      pending = observation.kind === "external" || observation.kind === "conflict" ? observation : null;
+      pollErrors = 0;
+      fileMessage = pending ? pending.kind === "conflict" ? "\u7AF6\u5408\uFF1A\u30D6\u30E9\u30A6\u30B6\u3068\u5916\u90E8\u30D5\u30A1\u30A4\u30EB\u306E\u53CC\u65B9\u304C\u5909\u66F4\u3055\u308C\u3066\u3044\u307E\u3059" : "\u5916\u90E8\u5909\u66F4\uFF1A\u53D6\u8FBC\u78BA\u8A8D\u304C\u5FC5\u8981\u3067\u3059" : `\u9023\u643A\u4E2D\uFF1A${session.handle.name} / \u6700\u7D42\u78BA\u8A8D ${new Date(session.checkedAt).toLocaleTimeString()}`;
+    } catch (e) {
+      if (session !== activeSession) return;
+      pollErrors++;
+      fileMessage = `\u9023\u643A${pollErrors >= 3 ? "\u505C\u6B62" : "\u78BA\u8A8D\u5931\u6557"}\uFF1A${e.message}\u3002\u6A29\u9650\u30FB\u30D5\u30A1\u30A4\u30EB\u9078\u629E\u30FB\u5916\u90E8\u30C4\u30FC\u30EB\u306E\u72B6\u614B\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044`;
+    } finally {
+      polling = false;
+      updateStatus();
+    }
+  }
+  function updateStatus() {
+    $("table-state").textContent = dirty() ? "\u25CF \u672A\u4FDD\u5B58\u306E\u5909\u66F4" : "\u2713 \u5909\u66F4\u306A\u3057";
+    $("file-state").textContent = fileMessage;
+    $("status").textContent = status;
+    const key = stable({ raw: pending?.raw ?? "", kind: pending?.kind ?? "", dirty: dirty(), file: session?.handle.name ?? "" });
+    if (key === externalUIKey) return;
+    externalUIKey = key;
+    const actions = $("external-actions");
+    actions.replaceChildren();
+    if (pending && session) {
+      const observation = pending, linkedSession = session;
+      actions.append(element("p", pending.kind === "conflict" ? "\u4E21\u65B9\u306E\u5909\u66F4\u3092\u4FDD\u6301\u3057\u3066\u3044\u307E\u3059\u3002\u73FE\u5728\u306E\u5185\u5BB9\u3092\u5225\u540D\u4FDD\u5B58\u3059\u308B\u304B\u3001\u5916\u90E8\u7248\u3092\u78BA\u8A8D\u3057\u3066\u53D6\u308A\u8FBC\u3093\u3067\u304F\u3060\u3055\u3044\u3002" : "\u5916\u90E8JSON\u304C\u5909\u66F4\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u81EA\u52D5\u7F6E\u63DB\u306F\u3057\u3066\u3044\u307E\u305B\u3093\u3002"));
+      actions.append(button("\u5916\u90E8\u7248\u3092\u78BA\u8A8D\u3057\u3066\u53D6\u308A\u8FBC\u3080", async () => {
+        const m = modal("\u5916\u90E8\u7248\u3092\u78BA\u8A8D"), pre = element("pre", JSON.stringify(observation.external, null, 2));
+        m.form.append(element("p", dirty() ? "\u53D6\u308A\u8FBC\u3080\u3068\u73FE\u5728\u306E\u672A\u4FDD\u5B58\u5185\u5BB9\u3092\u7F6E\u304D\u63DB\u3048\u307E\u3059\u3002\u5FC5\u8981\u306A\u3089\u5148\u306B\u5225\u540D\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : "\u3053\u306E\u691C\u8A3C\u6E08\u307F\u5916\u90E8\u7248\u3092\u53D6\u308A\u8FBC\u307F\u307E\u3059\u3002"), pre, button("\u30AD\u30E3\u30F3\u30BB\u30EB", m.close), button("\u3053\u306E\u5916\u90E8\u7248\u3067\u7F6E\u63DB", () => fileTask(async () => {
+          const ensureCurrent = captureWorkspace();
+          if (session !== linkedSession) throw new Error("\u9023\u643A\u5148\u304C\u5909\u66F4\u3055\u308C\u307E\u3057\u305F");
+          const next = await linkedSession.accept(observation.raw);
+          ensureCurrent();
+          if (session !== linkedSession) throw new Error("\u9023\u643A\u5148\u304C\u5909\u66F4\u3055\u308C\u307E\u3057\u305F");
+          pending = null;
+          commit(next, "\u5916\u90E8\u7248\u3092\u518D\u78BA\u8A8D\u3057\u3066\u53D6\u308A\u8FBC\u307F\u307E\u3057\u305F");
+          m.close();
+        }), "primary"));
+      }), button("\u73FE\u5728\u306E\u5185\u5BB9\u3092\u5225\u540D\u4FDD\u5B58", () => fileTask(saveAs)));
+    }
+  }
+  function renderCheck() {
+    const host = $("check");
+    host.replaceChildren();
+    host.hidden = !table.rules.length || !table.conditions.length;
+    if (host.hidden) return;
+    for (const id2 of Object.keys(checkPicks)) if (!table.conditions.some((c) => c.id === id2 && c.partitions.some((p) => p.id === checkPicks[id2]))) delete checkPicks[id2];
+    const head = element("div", "", "panel-heading");
+    head.append(element("h2", "\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8"), button("\u6307\u5B9A\u3092\u89E3\u9664", () => {
+      checkPicks = {};
+      pickedColumn = "";
+      renderDecision();
+      renderCheck();
+    }));
+    host.append(head);
+    host.append(element("p", "\u6761\u4EF6\u306E\u5024\u3092\u9078\u3076\u3068\u3001\u305D\u306E\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u3068\u3001\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u52D5\u4F5C\u304C\u6C7A\u307E\u308B\u307E\u3067\u6761\u4EF6\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002\u7121\u95A2\u4FC2\u306A\u6761\u4EF6\uFF08\u2212\uFF09\u306F\u9078\u3070\u306A\u304F\u3066\u3082\u6C7A\u307E\u308A\u307E\u3059\u3002\u8868\u306F\u5909\u66F4\u3057\u307E\u305B\u3093\u3002", "muted"));
+    let needed = [];
+    try {
+      needed = inspect(table, checkPicks).relevant;
+    } catch {
+    }
+    const filters = element("div", "", "lookup");
+    for (const c of table.conditions) {
+      const s = select([["", "\u6307\u5B9A\u306A\u3057"], ...c.partitions.map((p) => [p.id, p.label])], checkPicks[c.id] ?? "");
+      s.setAttribute("aria-label", `${c.name}\uFF08\u89E3\u91C8\u3059\u308B\u5024\uFF09`);
+      s.onchange = () => {
+        if (s.value) checkPicks[c.id] = s.value;
+        else delete checkPicks[c.id];
+        pickedColumn = "";
+        renderDecision();
+        renderCheck();
+      };
+      field(needed.includes(c.id) ? `${c.name}\uFF08\u9078\u3076\u3068\u7D5E\u308A\u8FBC\u3081\u307E\u3059\uFF09` : c.name, s, filters);
+    }
+    host.append(filters);
+    try {
+      const found = inspect(table, checkPicks), chosen = Object.keys(checkPicks).length;
+      const value = (d) => {
+        const o = table.outputs.find((o2) => o2.id === d.outputId);
+        if (o?.kind === "action") return d.state === "set" && d.value === true ? "X\uFF08\u5B9F\u884C\u3059\u308B\uFF09" : "\u2212\uFF08\u5B9F\u884C\u3057\u306A\u3044\uFF09";
+        if (d.state === "unset") return "\u2212";
+        return d.value === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(d.value);
+      };
+      const outcome = (ds) => ds.length ? ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}\uFF1A${value(d)}`).join(" \uFF0F ") : "\uFF08\u52D5\u4F5C\u304C\u672A\u5B9A\u7FA9\uFF09";
+      const numbers = (list) => `\u898F\u5247 ${list.slice(0, 12).map((i) => `#${i + 1}`).join(" ")}${list.length > 12 ? ` \u307B\u304B${list.length - 12}\u4EF6` : ""}`;
+      const why = (index) => `\u898F\u5247 #${index + 1}\uFF1A${ruleText(table.rules[index])}`;
+      const scope = `${chosen ? `${chosen}\u6761\u4EF6\u3092\u6307\u5B9A` : "\u6761\u4EF6\u306F\u672A\u6307\u5B9A"}\uFF08\u5BFE\u8C61\u306F${found.total.toLocaleString("ja-JP")}\u7D44\u5408\u305B\uFF09`;
+      const names = table.conditions.filter((c) => found.relevant.includes(c.id)).map((c) => c.name), open = found.outputs.some((o) => o.status === "open");
+      const headline = !found.rules.length ? "\u3053\u306E\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306F\u3042\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002" : found.determined ? `\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u304C\u6C7A\u307E\u308A\u307E\u3057\u305F\u3002${found.exact ? "" : "\u9078\u3093\u3067\u3044\u306A\u3044\u6761\u4EF6\u304C\u4F55\u3067\u3042\u3063\u3066\u3082\u3001\u3053\u306E\u52D5\u4F5C\u3067\u3059\u3002"}` : found.conflict ? "\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u6E80\u8DB3\u3055\u308C\u3066\u304A\u308A\u3001\u6C7A\u307E\u3089\u306A\u3044\u52D5\u4F5C\u304C\u3042\u308A\u307E\u3059\uFF08\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\uFF09\u3002\u898F\u5247\u3092\u76F4\u3057\u3066\u304F\u3060\u3055\u3044\u3002" : open ? `\u307E\u3060\u6C7A\u307E\u3063\u3066\u3044\u306A\u3044\u52D5\u4F5C\u304C\u3042\u308A\u307E\u3059\u3002${names.length ? `\u6B21\u306E\u6761\u4EF6\u3092\u9078\u3076\u3068\u7D5E\u308A\u8FBC\u3081\u307E\u3059\uFF1A${names.join("\u3001")}` : ""}` : "\u5B9F\u884C\u3055\u308C\u308B\u52D5\u4F5C\u304C\u6C7A\u307E\u308A\u307E\u3057\u305F\u3002";
+      host.append(element("p", `${scope}\uFF1A${headline}`, found.rules.length && !found.conflict ? "check-summary" : "check-empty"));
+      if (found.rules.length) for (const o of found.outputs) {
+        const name = table.outputs.find((x) => x.id === o.outputId).name, row = element("div", "", `check-result ${o.status}`);
+        if (o.status === "determined") {
+          row.append(element("strong", `${name}\uFF1A${value(o.directive)}`), element("small", numbers(o.rules)));
+          host.append(row);
+          o.rules.slice(0, 2).forEach((i) => host.append(element("p", why(i), "check-why")));
+          if (o.rules.length > 2) host.append(element("p", `\u307B\u304B${o.rules.length - 2}\u4EF6\u306E\u898F\u5247\u3082\u540C\u3058\u5024\u3092\u6307\u5B9A\u3057\u3066\u3044\u307E\u3059\u3002`, "check-why"));
+        } else if (o.status === "conflict") {
+          row.append(element("strong", `${name}\uFF1A\u6C7A\u307E\u308A\u307E\u305B\u3093\uFF08\u52D5\u4F5C\u6307\u5B9A\u306E\u4E0D\u4E00\u81F4\uFF09`), element("small", o.candidates.map((c) => `${value(c.directive)}\uFF1D${numbers(c.rules)}`).join(" \uFF0F ")));
+          host.append(row);
+        } else if (o.status === "open") {
+          row.append(element("strong", `${name}\uFF1A\u307E\u3060\u6C7A\u307E\u308A\u307E\u305B\u3093`), element("small", `\u3042\u308A\u5F97\u308B\u5024\uFF1A${o.candidates.map((c) => value(c.directive)).join(" \uFF0F ")}`));
+          host.append(row);
+        } else {
+          row.append(element("strong", `${name}\uFF1A\u2212`), element("small", "\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306F\u3001\u3053\u306E\u52D5\u4F5C\u3092\u6307\u5B9A\u3057\u3066\u3044\u307E\u305B\u3093\uFF08\u5B9F\u884C\u3057\u306A\u3044\uFF09"));
+          host.append(row);
+        }
+      }
+      if (found.rules.length && !found.exact && found.uncovered !== null && found.uncovered > 0n) host.append(element("p", `\u3053\u306E\u7BC4\u56F2\u306E\u3046\u3061${found.uncovered.toLocaleString("ja-JP")}\u7D44\u5408\u305B\u306B\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002`, "check-empty"));
+    } catch (e) {
+      host.append(element("p", `\u89E3\u91C8\u3092\u8868\u793A\u3067\u304D\u307E\u305B\u3093\uFF1A${e.message}`, "muted"));
+    }
+  }
+  function refreshMerge() {
+    candidates = proposeMerges(table);
+    const all = compressAll(table);
+    compressed = { ...all, base: stable(table) };
+  }
+  function renderDecision(force = false) {
+    const host = $("decision");
+    host.replaceChildren();
+    host.hidden = !table.rules.length || !table.conditions.length;
+    if (host.hidden) return;
+    const heading = element("div", "", "panel-heading");
+    heading.append(element("h2", "\u6C7A\u5B9A\u8868\uFF08\u5358\u9069\u5408\uFF09"));
+    host.append(heading);
+    const hit = singleHit(force);
+    if (!hit) {
+      host.append(element("p", "\u8868\u304C\u5927\u304D\u3044\u305F\u3081\u3001\u6C7A\u5B9A\u8868\u306F\u81EA\u52D5\u3067\u306F\u66F4\u65B0\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u898F\u5247\u306E\u8A18\u8FF0\u3092\u5909\u3048\u305F\u3089\u66F4\u65B0\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "muted"), button("\u6C7A\u5B9A\u8868\u3092\u66F4\u65B0", () => {
+        renderDecision(true);
+        render();
+      }, "primary"));
+      return;
+    }
+    if (!hit.parts.length) {
+      host.append(element("p", "\u52D5\u4F5C\u3092\u6307\u5B9A\u3057\u3066\u3044\u308B\u898F\u5247\u304C\u306A\u3044\u305F\u3081\u3001\u6C7A\u5B9A\u8868\u306F\u3042\u308A\u307E\u305B\u3093\u3002", "muted"));
+      return;
+    }
+    const cov = hit.cov, total = count(table);
+    if (hit.combined) host.append(element("p", "\u4E0A\u306E\u898F\u5247\u306E\u8A18\u8FF0\u304B\u3089\u6C42\u3081\u305F\u6C7A\u5B9A\u8868\u3067\u3059\u3002\u6761\u4EF6\u3068\u52D5\u4F5C\u3092\u884C\u3001\u898F\u5247\u3092\u5217\u306B\u66F8\u3044\u3066\u3044\u307E\u3059\u3002\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306E\u3069\u306E1\u3064\u3082\u3001\u305F\u30601\u3064\u306E\u898F\u5247\uFF08\u5217\uFF09\u3067\u3060\u3051\u6E80\u8DB3\u3055\u308C\u307E\u3059\u3002\u898F\u5247\u756A\u53F7\u3092\u62BC\u3059\u3068\u3001\u305D\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3059\u3002", "muted"));
+    else host.append(element("p", `\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u304C${total.toLocaleString("ja-JP")}\u4EF6\u3042\u308A\u30011\u3064\u306E\u6C7A\u5B9A\u8868\u306B\u306F\u66F8\u304D\u5207\u308C\u306A\u3044\u305F\u3081\u3001\u4E92\u3044\u306B\u95A2\u4FC2\u3057\u306A\u3044\u52D5\u4F5C\u3054\u3068\u306B${hit.parts.length}\u500B\u306E\u6C7A\u5B9A\u8868\u306B\u5206\u96E2\u3057\u3066\u3044\u307E\u3059\uFF08JIS X 0125 \u9644\u5C5E\u66F81\u300C\u8868\u306E\u5206\u96E2\u300D\uFF09\u3002\u5404\u8868\u306B\u306F\u3001\u305D\u306E\u52D5\u4F5C\u306B\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3060\u3051\u304C\u4E26\u3073\u307E\u3059\u3002\u3069\u306E\u8868\u3082\u3001\u6761\u4EF6\u306E\u7D44\u5408\u305B\u306E\u3069\u306E1\u3064\u3082\u3001\u305F\u30601\u3064\u306E\u898F\u5247\uFF08\u5217\uFF09\u3067\u3060\u3051\u6E80\u8DB3\u3055\u308C\u307E\u3059\u3002\u898F\u5247\u756A\u53F7\u3092\u62BC\u3059\u3068\u3001\u305D\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u4E0B\u306E\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3059\u3002`, "muted"));
+    hit.parts.forEach((part, order) => drawDecision(host, part, hit.combined, order));
+    host.append(element("p", !cov.complete ? "\u5B8C\u5099\u6027\u306F\u3001\u3053\u306E\u8868\u3067\u306F\u8A08\u7B97\u306B\u6642\u9593\u304C\u304B\u304B\u308B\u305F\u3081\u3001\u3053\u3053\u306B\u306F\u8868\u793A\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u300C\u691C\u8A3C\u300D\u3067\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002" : cov.uncovered === 0n ? `\u5B8C\u5099\u6027\uFF1A\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${total.toLocaleString("ja-JP")}\u4EF6\u306E\u3059\u3079\u3066\u306B\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u3059\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u3059\uFF09\u3002` : `\u5B8C\u5099\u6027\uFF1A\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${total.toLocaleString("ja-JP")}\u4EF6\u306E\u3046\u3061${cov.uncovered.toLocaleString("ja-JP")}\u4EF6\u306B\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5B8C\u5099\u3057\u3066\u3044\u307E\u305B\u3093\uFF09\u3002\u300C\u691C\u8A3C\u300D\u3067\u7BC4\u56F2\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002`, cov.complete && cov.uncovered === 0n ? "check-summary" : cov.complete ? "check-empty" : "muted"));
+  }
+  function drawDecision(host, part, combined, order) {
+    const sub = part.table, found = part.found, names = sub.outputs.map((o) => o.name).join("\u30FB");
+    if (!combined) host.append(element("h3", `\u6C7A\u5B9A\u8868 ${order + 1}\uFF1A${names}`));
+    if (!found) {
+      host.append(element("p", `\u300C${names}\u300D\u306E\u6C7A\u5B9A\u8868\u306F\u3001\u8A08\u7B97\u4E88\u7B97\u3092\u8D85\u3048\u305F\u305F\u3081\u8868\u793A\u3067\u304D\u307E\u305B\u3093\u3002\u300C\u7C21\u5358\u5316\u300D\u3067\u898F\u5247\u3092\u7D50\u5408\u3057\u3066\u304B\u3089\u8A66\u3057\u3066\u304F\u3060\u3055\u3044\u3002`, "check-empty"));
+      return;
+    }
+    const free = !sub.conditions.length;
+    if (free) host.append(element("p", `\u300C${names}\u300D\u306F\u3001\u6761\u4EF6\u306B\u3088\u3089\u305A\u6307\u5B9A\u3055\u308C\u3066\u3044\u307E\u3059\uFF08\u6761\u4EF6\u6307\u5B9A\u306E\u306A\u3044\u898F\u5247\u3060\u3051\u304C\u6307\u5B9A\u3057\u3066\u3044\u307E\u3059\uFF09\u3002\u6761\u4EF6\u306E\u884C\u306F\u306A\u304F\u3001\u898F\u5247\u306F1\u3064\u3067\u3059\u3002`, "muted"));
+    const show = (v, at) => sub.outputs[at].kind === "action" ? v ? "X" : "\u2212" : v === "" ? "\uFF08\u7A7A\u6587\u5B57\uFF09" : String(v);
+    const columns = found.flatMap((x) => x.chunks.map((chunk) => ({ pattern: x, chunk }))), shown = columns.slice(0, 200);
+    const gap = (col) => combined && !col.pattern.satisfied;
+    const keyOf = (chunk) => `${order}:${stable(chunk.selections)}`, wrap = element("div", "", "jis-wrap"), grid = element("table", "", "jis-table"), head = element("tr"), thead = element("thead"), body = element("tbody");
+    const mark = (col, extra = "") => `${gap(col) ? "gap " : ""}${keyOf(col.chunk) === pickedColumn ? "picked " : ""}${extra}`.trim();
+    head.append(element("th", "\u898F\u5247"));
+    shown.forEach((col, i) => {
+      const th = element("th", "", mark(col)), pick = button(`${i + 1}${gap(col) ? " *" : ""}`, () => {
+        checkPicks = {};
+        for (const sel of col.chunk.selections) checkPicks[sel.conditionId] = sel.partitionIds[0];
+        pickedColumn = keyOf(col.chunk);
+        renderDecision();
+        renderCheck();
+        message(`\u6C7A\u5B9A\u8868${combined ? "" : ` ${order + 1}`}\u306E\u898F\u5247${i + 1}\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
+        const target = $("check");
+        target.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }, "column-button");
+      pick.title = "\u3053\u306E\u898F\u5247\u306E\u6761\u4EF6\u6307\u5B9A\u3092\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u306B\u53CD\u6620";
+      th.append(pick);
+      head.append(th);
+    });
+    thead.append(head);
+    grid.append(thead);
+    for (const c of sub.conditions) {
+      const tr = element("tr");
+      tr.append(element("th", c.name));
+      for (const col of shown) {
+        const sel = col.chunk.selections.find((x) => x.conditionId === c.id);
+        tr.append(element("td", sel ? sel.partitionIds.map((id2) => c.partitions.find((x) => x.id === id2).label).join("\u30FB") : "\u2212", mark(col)));
+      }
+      body.append(tr);
+    }
+    sub.outputs.forEach((o, at) => {
+      const tr = element("tr", "", at === 0 ? "divider" : "");
+      tr.append(element("th", o.name));
+      for (const col of shown) {
+        const values = col.pattern.outputs[at].values;
+        tr.append(element("td", gap(col) ? "" : values.length === 0 ? "\u2212" : values.length > 1 ? `\u4E0D\u4E00\u81F4\uFF08${values.map((v) => show(v, at)).join("\uFF0F")}\uFF09` : show(values[0], at), mark(col, values.length > 1 ? "clash" : "")));
+      }
+      body.append(tr);
+    });
+    if (!free) {
+      const sizes = element("tr", "", sub.outputs.length ? "count" : "count divider");
+      sizes.append(element("th", "\u898F\u5247\u6570\uFF08\u7D44\u5408\u305B\u6570\uFF09"));
+      shown.forEach((col) => sizes.append(element("td", col.chunk.size.toLocaleString("ja-JP"), mark(col))));
+      body.append(sizes);
+    }
+    grid.append(body);
+    wrap.append(grid);
+    host.append(wrap);
+    const all = part.columns, sum = columns.reduce((n, c) => n + c.chunk.size, 0n);
+    if (!free) host.append(element("p", `\u898F\u5247${all}\u500B\u3002\u898F\u5247\u6570\u306E\u691C\u67FB\uFF1A\u5404\u898F\u5247\u306E\u7D44\u5408\u305B\u6570\u306E\u5408\u8A08\u306F${sum.toLocaleString("ja-JP")}\u3067\u3001${combined ? "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B" : "\u3053\u306E\u8868\u306E\u6761\u4EF6\u306E\u5168\u7D44\u5408\u305B"}${count(sub).toLocaleString("ja-JP")}\u4EF6\u3068${sum === count(sub) ? "\u4E00\u81F4\u3057\u307E\u3059" : "\u4E00\u81F4\u3057\u307E\u305B\u3093"}\u3002${all > shown.length ? `\u5148\u982D${shown.length}\u898F\u5247\u3092\u8868\u793A\u3057\u3066\u3044\u307E\u3059\u3002` : ""}${combined && columns.some((c) => !c.pattern.satisfied) ? "\u300C*\u300D\u306E\u5217\u306F\u3001\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u304C\u306A\u3044\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3067\u3059\u3002" : ""}`, "muted"));
+    if (found.some((x) => x.outputs.some((o) => o.values.length > 1))) host.append(element("p", "\u300C\u4E0D\u4E00\u81F4\u300D\u306E\u6B04\u306F\u3001\u540C\u3058\u52D5\u4F5C\u306B\u7570\u306A\u308B\u5024\u3092\u6307\u5B9A\u3059\u308B\u898F\u5247\u304C\u540C\u6642\u306B\u6E80\u8DB3\u3055\u308C\u308B\u7D44\u5408\u305B\u3067\u3059\u3002\u300C\u691C\u8A3C\u300D\u3067\u898F\u5247\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044\u3002", "check-empty"));
+  }
+  function renderPanel() {
+    const host = $("side-panel");
+    host.replaceChildren();
+    host.hidden = panel === "none";
+    if (panel === "none") return;
+    const head = element("div", "", "panel-heading");
+    head.append(element("h2", panel === "diagnostics" ? "\u691C\u8A3C\uFF08\u5B8C\u5099\u6027\u3068\u52D5\u4F5C\u6307\u5B9A\uFF09" : panel === "merge" ? "\u8868\u306E\u7C21\u5358\u5316\uFF08\u898F\u5247\u306E\u7D50\u5408\uFF09" : "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B"), button("\u9589\u3058\u308B", () => {
+      panel = "none";
+      renderPanel();
+    }));
+    host.append(head);
+    try {
+      if (panel === "diagnostics") {
+        const ds = diagnose(table);
+        host.append(element("p", ds.length ? `${ds.length}\u4EF6\u306E\u8A3A\u65AD\u304C\u3042\u308A\u307E\u3059\u3002` : "\u5B9A\u7FA9\u3057\u305F\u5024\u57DF\u3067\u554F\u984C\u306F\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u696D\u52D9\u4E0A\u306E\u6B63\u3057\u3055\u3092\u4FDD\u8A3C\u3059\u308B\u5224\u5B9A\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002"));
+        ds.forEach((d) => {
+          const row = element("div", "", `diagnostic ${d.level}`);
+          const index = table.rules.findIndex((r) => r.id === d.target);
+          row.append(element("strong", index >= 0 ? `\u898F\u5247 #${index + 1}` : d.target === "rules" ? "\u898F\u5247\u5168\u4F53" : table.outputs.find((o) => o.id === d.target)?.name ?? d.target), element("span", d.message));
+          host.append(row);
+        });
+      } else if (panel === "merge") {
+        host.append(element("p", "\u6761\u4EF6\u306E\u3069\u306E\u7D44\u5408\u305B\u306B\u3064\u3044\u3066\u3082\u52D5\u4F5C\u304C\u5909\u308F\u3089\u306A\u3044\u3068\u78BA\u8A8D\u3067\u304D\u305F\u5019\u88DC\u3060\u3051\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u52D5\u4F5C\u6307\u5B9A\u304C\u3059\u3079\u3066\u540C\u3058\u898F\u5247\u30921\u3064\u306B\u7D50\u5408\u3057\u3001\u6761\u4EF6\u6307\u5B9A\u3092\u6574\u7406\u3057\u307E\u3059\u3002\u5168\u7D44\u5408\u305B\u3092\u5217\u6319\u3067\u304D\u308B\u8868\u306F\u5168\u7D44\u5408\u305B\u3067\u6BD4\u8F03\u3057\u3001\u8D85\u3048\u308B\u8868\u306F\u6761\u4EF6\u6307\u5B9A\u306E\u7BC4\u56F2\u304C\u4E00\u81F4\u3059\u308B\u3053\u3068\u3092\u8A3C\u660E\u3057\u307E\u3059\u3002\u627F\u8A8D\u524D\u306F\u6B63\u672C\u3092\u5909\u66F4\u3057\u307E\u305B\u3093\u3002"));
+        const clash = contradictions(table).pairs;
+        if (clash) host.append(element("p", `\u3053\u306E\u8868\u306B\u306F\u52D5\u4F5C\u6307\u5B9A\u304C\u4E00\u81F4\u3057\u306A\u3044\u898F\u5247\u304C${clash}\u7D44\u3042\u308A\u307E\u3059\u3002\u7D50\u5408\u3057\u3066\u3082\u4E0D\u4E00\u81F4\u306F\u305D\u306E\u307E\u307E\u6B8B\u308A\u307E\u3059\u3002\u5148\u306B\u300C\u691C\u8A3C\u300D\u3067\u76F4\u3059\u3053\u3068\u3092\u52E7\u3081\u307E\u3059\u3002`, "check-empty"));
+        const numbers = (ids) => ids.map((id2) => `#${table.rules.findIndex((r) => r.id === id2) + 1}`).join(" ");
+        const reapply = (next, note) => {
+          commit(next, note);
+          refreshMerge();
+          panel = "merge";
+          renderPanel();
+        };
+        if (compressed && compressed.steps > 0) {
+          const all = compressed, row = element("div", "", "candidate"), blocks = (t) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
+          row.append(element("strong", `\u7E70\u308A\u8FD4\u3057\u7D50\u5408\uFF1A${table.rules.length}\u898F\u5247 \u2192 ${all.table.rules.length}\u898F\u5247`), element("span", `\u7D50\u5408\u3068\u518D\u8A08\u7B97\u3092${all.steps}\u56DE\u7E70\u308A\u8FD4\u3057\u305F\u7D50\u679C\u3067\u3059\u3002OR\u30D6\u30ED\u30C3\u30AF\u306F${blocks(table)}\u4EF6 \u2192 ${blocks(all.table)}\u4EF6\u3002\u5404\u56DE\u3068\u3082\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059${all.complete ? "" : `\u30021\u56DE\u306E\u8A08\u7B97\u306E\u4E0A\u9650\uFF08${all.steps}\u56DE\uFF09\u3067\u6253\u3061\u5207\u3063\u305F\u305F\u3081\u3001\u307E\u3060\u7D50\u5408\u3067\u304D\u308B\u898F\u5247\u304C\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u53CD\u6620\u3059\u308B\u3068\u3001\u7D9A\u304D\u306E\u5019\u88DC\u3092\u8868\u793A\u3057\u307E\u3059`}`), button("\u7C21\u5358\u5316\u5F8C\u306EJSON\u3092\u78BA\u8A8D", () => {
+            const m = modal("\u7E70\u308A\u8FD4\u3057\u9069\u7528\u5F8C\u306E\u8868");
+            m.form.append(element("pre", encode(all.table)), button("\u9589\u3058\u308B", m.close));
+          }), button("\u627F\u8A8D\u3057\u3066\u4E00\u62EC\u3067\u53CD\u6620", () => {
+            if (stable(table) !== all.base) throw new Error("\u8868\u304C\u5909\u66F4\u3055\u308C\u305F\u305F\u3081\u518D\u8A08\u7B97\u3057\u3066\u304F\u3060\u3055\u3044");
+            reapply(all.table, `${all.steps}\u56DE\u306E\u7D50\u5408\u3092\u53CD\u6620\u3057\u307E\u3057\u305F\u3002`);
+          }, "primary"));
+          host.append(row);
+        }
+        if (!candidates.length) host.append(element("p", "\u627F\u8A8D\u53EF\u80FD\u306A\u7D50\u5408\u5019\u88DC\u306F\u3042\u308A\u307E\u305B\u3093\u3002", "muted"));
+        candidates.forEach((c) => {
+          const row = element("div", "", "candidate"), sources = c.before.map((id2) => table.rules.find((r) => r.id === id2)), from = sources.reduce((n, r) => n + r.anyOf.length, 0), to = c.replacement.anyOf.length;
+          const toAll = c.replacement.anyOf.some((clause2) => table.conditions.some((x) => !clause2.selections.some((s) => s.conditionId === x.id) && sources.some((r) => r.anyOf.some((o) => o.selections.some((s) => s.conditionId === x.id)))));
+          row.append(element("strong", c.before.length > 1 ? `${c.before.length}\u898F\u5247\u3092\u7D50\u5408 \u2192 1\u898F\u5247` : from > to ? `\u898F\u5247 ${numbers(c.before)} \u306E\u6761\u4EF6\u6307\u5B9A\u3092\u6574\u7406` : `\u898F\u5247 ${numbers(c.before)} \u304B\u3089\u3001\u3059\u3079\u3066\u306E\u5024\u3092\u9078\u3093\u3060\u6761\u4EF6\u3092\u5916\u3059`), element("span", `\u5BFE\u8C61\uFF1A\u898F\u5247 ${numbers(c.before)} \uFF0F OR\u30D6\u30ED\u30C3\u30AF ${from}\u4EF6 \u2192 ${to}\u4EF6 \uFF0F ${c.proof === "structural" ? "\u6761\u4EF6\u306E\u96C6\u5408\u306E\u4E00\u81F4\u304B\u3089\u7B49\u4FA1\u6027\u3092\u8A3C\u660E" : `${c.checked}\u7D44\u5408\u305B\u3067\u7B49\u4FA1\u6027\u78BA\u8A8D`}${toAll ? " \uFF0F \u3059\u3079\u3066\u306E\u5024\u304C\u305D\u308D\u3063\u305F\u6761\u4EF6\u306F\u3001\u6761\u4EF6\u6307\u5B9A\u304B\u3089\u5916\u3057\u307E\u3059\uFF08\u7121\u95A2\u4FC2\u306B\u306A\u308A\u3001\u3042\u3068\u3067\u8FFD\u52A0\u3057\u305F\u5024\u3082\u5BFE\u8C61\u306B\u306A\u308A\u307E\u3059\uFF09" : ""}`), button("\u5BFE\u8C61\u6761\u4EF6\u3092\u78BA\u8A8D", () => {
+            const m = modal("\u7D50\u5408\u3059\u308B\u898F\u5247");
+            m.form.append(element("pre", JSON.stringify({ sourceRules: c.before, proposed: c.replacement }, null, 2)), button("\u9589\u3058\u308B", m.close));
+          }), button("\u627F\u8A8D\u3057\u3066\u7D50\u5408", () => reapply(applyCandidate(table, c), "\u627F\u8A8D\u3057\u305F\u7D50\u5408\u3092\u53CD\u6620\u3057\u3001\u6B8B\u308A\u306E\u5019\u88DC\u3092\u518D\u8A08\u7B97\u3057\u307E\u3057\u305F\u3002"), "primary"));
+          host.append(row);
+        });
+        const idle2 = table.outputs.length ? table.rules.filter((r) => r.directives.every((d) => d.state === "unset")).length : 0;
+        if (idle2) host.append(element("p", `\u52D5\u4F5C\u3092\u4F55\u3082\u6307\u5B9A\u3057\u3066\u3044\u306A\u3044\u898F\u5247\u306F\u5BFE\u8C61\u5916\u3067\u3059\uFF08${idle2}\u4EF6\uFF09\u3002`, "muted"));
+        const distinct = new Set(table.rules.map((r) => stable(r.directives))).size;
+        if (!candidates.length && table.rules.length) host.append(element("p", `\u73FE\u5728\u306E${table.rules.length}\u898F\u5247\u306F\u3001\u52D5\u4F5C\u6307\u5B9A\u304C${distinct}\u7A2E\u985E\u3067\u3059\u3002\u540C\u3058\u52D5\u4F5C\u6307\u5B9A\u306E\u898F\u5247\u306F\u3059\u3067\u306B\u7D50\u5408\u6E08\u307F\u3067\u3001\u3053\u308C\u4EE5\u4E0A\u306F\u7D50\u5408\u3067\u304D\u307E\u305B\u3093\u3002\u3053\u3053\u3067\u306E\u898F\u5247\u306E\u6570\u306F\u3001\u6C7A\u5B9A\u8868\uFF08\u5358\u9069\u5408\uFF09\u306E\u898F\u5247\u306E\u6570\u3068\u306F\u5225\u3067\u3059\u3002`, "muted"));
+      } else {
+        const total = count(table), pre = element("pre");
+        const effects = (ds) => ds.map((d) => `${table.outputs.find((o) => o.id === d.outputId)?.name}=${d.state === "unset" ? "\u2212" : JSON.stringify(d.value)}`).join(", ");
+        const number = (ruleId) => table.rules.findIndex((r) => r.id === ruleId) + 1;
+        host.append(element("p", "\u7279\u5B9A\u306E\u6761\u4EF6\u306E\u7D44\u5408\u305B\u3060\u3051\u3092\u898B\u308B\u306B\u306F\u3001\u300C\u6C7A\u5B9A\u8868\u306E\u89E3\u91C8\u300D\u3092\u4F7F\u3063\u3066\u304F\u3060\u3055\u3044\u3002", "muted"));
+        if (total > 1000n) host.append(element("p", `\u5168${total.toLocaleString("ja-JP")}\u7D44\u5408\u305B\u306E\u3046\u3061\u5148\u982D1,000\u4EF6\u3092\u8868\u793A\u3057\u307E\u3059\u3002\u5143\u30C7\u30FC\u30BF\u306F\u5207\u308A\u6368\u3066\u3066\u3044\u307E\u305B\u3093\u3002`));
+        pre.textContent = expandRows(table, 1e3).map((row, i) => {
+          const conditions = table.conditions.map((c) => `${c.name}=${c.partitions.find((p) => p.id === row.atom[c.id])?.label}`).join(" / ");
+          const lines = row.matches.map((match, order) => `${order + 1}. \u898F\u5247 #${number(match.ruleId)}: ${effects(match.directives)}`).join("\n    ");
+          return `${i + 1}. ${conditions}
+    ${lines || "\u6E80\u8DB3\u3055\u308C\u308B\u898F\u5247\u306A\u3057"}`;
+        }).join("\n\n");
+        host.append(pre);
+      }
+    } catch (e) {
+      host.append(element("p", `\u3053\u306E\u8868\u793A\u306F\u8A08\u7B97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A${e.message}`, "muted"));
+    }
+  }
+  function render() {
+    const title = $("title");
+    title.value = table.title;
+    title.onchange = () => void run(() => commit({ ...table, title: title.value }));
+    $("file-actions").replaceChildren(button("\uFF0B \u65B0\u3057\u3044\u8868", clearWorkspace), button("JSON\u3092\u958B\u304F", () => fileTask(openFile)), button("\u4FDD\u5B58", () => fileTask(save)), button("\u5225\u540D\u3067\u4FDD\u5B58", () => fileTask(saveAs)), button("\u30B5\u30F3\u30D7\u30EB\u3092\u958B\u304F", loadDemo, "sample-button"));
+    $("edit-actions").replaceChildren(button("\uFF0B \u6761\u4EF6", () => conditionDialog()), button("\uFF0B \u52D5\u4F5C", () => outputDialog()), button("\uFF0B \u898F\u5247", () => {
+      if (!table.conditions.length) throw new Error("\u5148\u306B\u6761\u4EF6\u3092\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044");
+      ruleDialog(null);
+    }, "primary"), button("\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210", () => {
+      const n = count(table);
+      if (n > BigInt(LIMIT)) throw new Error(`\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${n.toLocaleString("ja-JP")}\u4EF6\u306F\u3001\u898F\u5247\u3092\u4F5C\u6210\u3067\u304D\u308B\u4E0A\u9650${LIMIT.toLocaleString("ja-JP")}\u4EF6\u3092\u8D85\u3048\u307E\u3059\u3002\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u8A18\u8FF0\u3057\u3066\u304F\u3060\u3055\u3044`);
+      if (n > 1000n && !confirm(`\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B${n}\u4EF6\u306E\u898F\u5247\u3092\u4F5C\u6210\u3057\u307E\u3059\u3002\u7D9A\u3051\u307E\u3059\u304B\uFF1F`)) return;
+      if (table.rules.length) {
+        regenerateDialog();
+        return;
+      }
+      commit(generate(table), "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B\u306E\u898F\u5247\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\u3002\u5404\u898F\u5247\u3092\u62BC\u3057\u3066\u52D5\u4F5C\u6307\u5B9A\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002");
+    }), button("\u691C\u8A3C", () => {
+      panel = "diagnostics";
+      renderPanel();
+    }), button("\u7C21\u5358\u5316", async () => {
+      message("\u7D50\u5408\u3067\u304D\u308B\u898F\u5247\u3068\u7B49\u4FA1\u6027\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059\u2026");
+      await new Promise((r) => setTimeout(r, 0));
+      refreshMerge();
+      panel = "merge";
+      renderPanel();
+      message(`${candidates.length}\u4EF6\u306E\u627F\u8A8D\u53EF\u80FD\u306A\u7D50\u5408\u5019\u88DC\u304C\u3042\u308A\u307E\u3059`);
+    }), button("\u5168\u7D44\u5408\u305B", () => {
+      panel = "expand";
+      renderPanel();
+    }));
+    const counts = $("counts");
+    counts.replaceChildren();
+    for (const [value, label] of [[count(table).toLocaleString("ja-JP"), "\u6761\u4EF6\u6307\u5B9A\u306E\u5168\u7D44\u5408\u305B"], [String(table.rules.length), "\u898F\u5247"]]) {
+      const item = element("div");
+      item.append(element("strong", value), element("span", label));
+      counts.append(item);
+    }
+    const pattern = element("div"), hit = table.rules.length ? singleHit() : null;
+    pattern.append(element("strong", !table.rules.length ? "\u2014" : !hit ? "\u672A\u66F4\u65B0" : hit.combined && hit.parts[0]?.found ? String(hit.parts[0].found.filter((x) => x.satisfied).length) : `${hit.parts.length}\u8868`), element("span", !hit || hit.combined ? "\u52D5\u4F5C\u6307\u5B9A\u306E\u7D44\u5408\u305B" : "\u6C7A\u5B9A\u8868\uFF08\u5206\u96E2\uFF09"));
+    counts.append(pattern);
+    const defs = $("definition-list");
+    defs.replaceChildren();
+    for (const c of table.conditions) {
+      const chip = element("div", "", "definition-chip");
+      chip.append(button(`${c.name} \xB7 \u5024${c.partitions.length}\u500B`, () => conditionDialog(c)), button("\xD7", () => {
+        const next = clone(table);
+        next.conditions = next.conditions.filter((x) => x.id !== c.id);
+        if (!next.conditions.length && table.rules.length) {
+          if (!confirm("\u6700\u5F8C\u306E\u6761\u4EF6\u3092\u524A\u9664\u3059\u308B\u3068\u898F\u5247\u3092\u4FDD\u6301\u3067\u304D\u307E\u305B\u3093\u3002\u5148\u306BJSON\u3092\u4FDD\u5B58\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u898F\u5247\u3082\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+          commit({ ...next, rules: [] });
+        } else {
+          if (table.rules.length && !confirm(`\u6761\u4EF6\u300C${c.name}\u300D\u3068\u305D\u306E\u5024\u306E\u5B9A\u7FA9\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F\u898F\u5247\u306F\u4FDD\u6301\u3057\u3001\u3053\u306E\u6761\u4EF6\u306E\u6761\u4EF6\u6307\u5B9A\u3060\u3051\u3092\u5916\u3057\u307E\u3059\u3002`)) return;
+          applyDefinitions(next, () => {
+          });
+        }
+      }, "tiny"));
+      defs.append(chip);
+    }
+    for (const o of table.outputs) {
+      const chip = element("div", "", "definition-chip output-chip");
+      chip.append(button(`${o.name} \xB7 ${o.kind === "action" ? "\u5236\u9650\u6307\u5B9A" : `\u62E1\u5F35\u6307\u5B9A ${o.type}`}`, () => outputDialog(o)), button("\xD7", () => {
+        if (!confirm(`\u52D5\u4F5C\u300C${o.name}\u300D\u3068\u5165\u529B\u6E08\u307F\u306E\u52D5\u4F5C\u6307\u5B9A\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F`)) return;
+        const next = clone(table);
+        next.outputs = next.outputs.filter((x) => x.id !== o.id);
+        next.rules.forEach((r) => {
+          r.directives = r.directives.filter((d) => d.outputId !== o.id);
+        });
+        commit(next);
+      }, "tiny"));
+      defs.append(chip);
+    }
+    const wrap = $("table-wrap");
+    wrap.replaceChildren();
+    if (!table.rules.length) {
+      const blank = element("div", "", "empty-state");
+      blank.append(element("div", "\u229E", "empty-icon"), element("h2", "\u6700\u521D\u306E\u30EB\u30FC\u30EB\u3092\u3064\u304F\u308A\u307E\u3057\u3087\u3046"), element("p", table.conditions.length ? "\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\u898F\u5247\u306B\u306F\u3001\u95A2\u4FC2\u3059\u308B\u6761\u4EF6\u3068\u3001\u5B9F\u884C\u3059\u308B\u52D5\u4F5C\u3060\u3051\u3092\u66F8\u304D\u307E\u3059\u3002\n\u66F8\u3044\u305F\u898F\u5247\u306F\u300C\u6761\u4EF6 \u2192 \u52D5\u4F5C\u300D\u306E\u5F62\u30671\u884C\u305A\u3064\u4E26\u3073\u307E\u3059\u3002" : "\u307E\u305A\u300C\uFF0B \u6761\u4EF6\u300D\u3068\u300C\uFF0B \u52D5\u4F5C\u300D\u3092\u5B9A\u7FA9\u3057\u3001\u300C\uFF0B \u898F\u5247\u300D\u3067\u898F\u5247\u30921\u3064\u305A\u3064\u66F8\u304D\u307E\u3059\u3002\n\u30B5\u30F3\u30D7\u30EB\u306A\u3089\u3001\u7DE8\u96C6\u304B\u3089\u7C21\u5358\u5316\u307E\u3067\u3072\u3068\u901A\u308A\u8A66\u305B\u307E\u3059\u3002"), button("\u30B5\u30F3\u30D7\u30EB\u3067\u8A66\u3059 \u2192", loadDemo, "primary"));
+      wrap.append(blank);
+    } else {
+      const list = element("div", "", "rule-list");
+      table.rules.slice(page * 40, page * 40 + 40).forEach((r, offset) => {
+        const index = page * 40 + offset, item = element("div", "", "rule-item");
+        item.id = `row-${r.id}`;
+        const text2 = button("", () => ruleDialog(r.id), "rule-text");
+        text2.title = "\u3053\u306E\u898F\u5247\u3092\u7DE8\u96C6";
+        text2.append(element("span", ruleText(r), "rule-if"), element("span", "\u2192", "rule-arrow"), element("span", actionText(r), "rule-then"));
+        const controls = element("div", "", "rule-controls");
+        const up = button("\u2191", () => {
+          if (!index) return;
+          const next = clone(table);
+          [next.rules[index - 1], next.rules[index]] = [next.rules[index], next.rules[index - 1]];
+          commit(next);
+        }, "tiny");
+        up.disabled = index === 0;
+        up.title = "\u898F\u5247\u3092\u4E0A\u3078";
+        const down = button("\u2193", () => {
+          if (index >= table.rules.length - 1) return;
+          const next = clone(table);
+          [next.rules[index + 1], next.rules[index]] = [next.rules[index], next.rules[index + 1]];
+          commit(next);
+        }, "tiny");
+        down.disabled = index === table.rules.length - 1;
+        down.title = "\u898F\u5247\u3092\u4E0B\u3078";
+        controls.append(up, down, button("\xD7", () => {
+          if (!confirm("\u3053\u306E\u898F\u5247\u3092\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F")) return;
+          const next = clone(table);
+          next.rules.splice(index, 1);
+          commit(next);
+        }, "tiny"));
+        item.append(element("span", `#${index + 1}`, "rule-no"), text2, controls);
+        list.append(item);
+      });
+      wrap.append(list);
+    }
+    const pages = $("pagination");
+    pages.replaceChildren();
+    if (table.rules.length > 40) {
+      const prev = button("\u2190 \u524D\u3078", () => {
+        page--;
+        render();
+      });
+      prev.disabled = page === 0;
+      const next = button("\u6B21\u3078 \u2192", () => {
+        page++;
+        render();
+      });
+      next.disabled = (page + 1) * 40 >= table.rules.length;
+      pages.append(prev, element("span", `${page + 1} / ${Math.ceil(table.rules.length / 40)}\u30DA\u30FC\u30B8 \xB7 1\u30DA\u30FC\u30B840\u898F\u5247`), next);
+    }
+    $("help-actions").replaceChildren(button("\u5BFE\u5FDCJSON Schema\u3092\u66F8\u51FA", () => download(JSON.stringify(documentSchema, null, 2), "decision-table.schema.json")), button("\u5916\u90E8\u30D5\u30A1\u30A4\u30EB\u3092\u518D\u78BA\u8A8D", () => poll(true)), button("\u73FE\u5728\u306EJSON\u3092\u78BA\u8A8D", () => {
+      const m = modal("\u73FE\u5728\u306EJSON");
+      m.form.append(element("pre", encode(table)), button("\u9589\u3058\u308B", m.close));
+    }));
+    updateStatus();
+    renderPanel();
+    renderDecision();
+    renderCheck();
+  }
+  window.addEventListener("beforeunload", (e) => {
+    if (dirty()) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) void poll(true);
+    else {
+      fileMessage = session ? "\u691C\u77E5\u4F11\u6B62\u4E2D\uFF08\u5FA9\u5E30\u5F8C\u306B\u518D\u78BA\u8A8D\uFF09" : fileMessage;
+      updateStatus();
+    }
+  });
+  setInterval(() => void poll(), 1e3);
+  render();
+})();
+</script></body></html>

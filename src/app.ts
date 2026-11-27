@@ -1,5 +1,5 @@
 // TASK-001..012 / SCR-001..005. Wording follows JIS X 0125 where the standard has a term / REQ-001..018. All user content uses textContent.
-import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, contradictions, decisionTables, coverage, LIMIT, type Scalar, type Pattern, type Chunk, type Rule, type DecisionPart, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
+import { emptyTable, uid, clone, stable, decode, encode, validate, assertValid, count, generate, diagnose, proposeMerges, applyCandidate, regeneratePreserving, expandRows, addRule, migrateRules, inspect, compressAll, choiceLines, parseChoiceLines, retainPartitions, carryDirective, contradictions, decisionTables, coverage, LIMIT, type Scalar, type Pattern, type Chunk, type Rule, type DecisionPart, type Table, type Condition, type Output, type Partition, type Clause, type Candidate, type Directive, type DataType } from './core.ts';
 import { FileCoordinator, writeVerified, type Handle, type Observation } from './files.ts';
 import { documentSchema } from './schema.ts';
 type PickerWindow = Window & { showOpenFilePicker?: (o: unknown) => Promise<Handle[]>; showSaveFilePicker?: (o: unknown) => Promise<Handle> };
@@ -40,12 +40,12 @@ function ruleText(r: Pick<Rule, 'anyOf'>): string {
   }).join(' かつ ') : 'すべての組合せ（条件指定なし）').join(' ／ または ');
 }
 // TASK-003: result of applying every candidate repeatedly. Recomputed, never saved.
-let compressed: { table: Table; steps: number; base: string } | null = null;
+let compressed: { table: Table; steps: number; complete: boolean; base: string } | null = null;
 // INS-002 / CHG-004: partitions chosen in the "決定表の解釈" section; view state only, never saved.
 let checkPicks: Record<string, string> = {};
 let pending: Observation | null = null, fileMessage = 'ファイル未連携', status = '新しい表を作成するか、サンプルを試してください。';
 const root = document.getElementById('app')!;
-root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.3.0</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と動作をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">規則の記述 ／ 表見出し</label><input id="title" aria-label="表見出し" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">この表は、複数の規則が同じ条件の組合せで満足される書き方（多重適合）ができます。規則には、関係する条件と、実行する動作（「X」または値）だけを書きます。満足された規則の動作指定を動作ごとに合わせて解釈します。JIS X 0125 が定める決定表は単適合（条件の組合せごとに満足される規則が1つ）で、この下は規則を1行ずつ並べたリストで、規則には関係する条件と実行する動作だけを書きます。規格の形の決定表は、その下の「決定表（単適合）」に別表として表示します。同じ動作に異なる値を指定する規則が同時に満足される場合は「検証」で指摘します。規則の順番は意味をもちません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="side-panel" class="side-panel" hidden></section><section id="decision" class="check-panel" hidden></section><section id="check" class="check-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と、条件のとり得る値を定義します。動作を定義します（X／−で指定する制限指定、または語句・値で指定する拡張指定）。</li><li>「＋ 規則」で規則を1つずつ書きます。条件指定は、関係する条件だけ値を選びます。動作指定は、その規則で実行する動作にだけ「X」または値を入れます。書かなかった条件と動作は、決定表では「−」になります。条件の値が少ない表は、条件指定の全組合せの規則を作成することもできます。</li><li>「検証」で、完備性（条件指定のすべての組合せに満足される規則があるか）と、動作指定の不一致を確認します。</li><li>表の下の「決定表の解釈」で条件の値を選ぶと、実行される動作を確認できます。その上の「決定表（単適合）」は、規則の記述から求めた単適合決定表です（条件・動作が行、規則が列）。規則番号を押すと、その条件指定が「決定表の解釈」に入ります。</li><li>「簡単化」で、動作指定が同じ規則を結合し、すべての値がそろった条件を条件指定から外して整理します。等価性を確認できた候補だけを表示し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
+root.innerHTML = `<aside class="rail"><div class="brand-mark">dt<span>∴</span></div><div class="rail-line"></div><span class="vertical">CONDITIONS INTO CLARITY</span><span class="rail-version">v0.3.1</span></aside><main><header><div><p class="eyebrow">DECISION TABLE TOOLKIT</p><h1>条件を整理。<span>判断を明確に。</span></h1><p class="intro">条件と動作をひとつの表に。オフラインで編集・検証・共有できます。</p></div><div class="header-meta"><span class="dot"></span> LOCAL & OFFLINE<br><small>Chrome / JSON schema 1.0・1.1</small></div></header><nav id="file-actions" aria-label="ファイル操作"></nav><section class="workspace"><div class="workspace-top"><div><label class="title-label" for="title">規則の記述 ／ 表見出し</label><input id="title" aria-label="表見出し" maxlength="256"></div><div id="counts" class="stats"></div></div><div class="toolbar"><div id="edit-actions"></div><div id="table-state"></div></div><div class="notice">この表は、複数の規則が同じ条件の組合せで満足される書き方（多重適合）ができます。規則には、関係する条件と、実行する動作（「X」または値）だけを書きます。満足された規則の動作指定を動作ごとに合わせて解釈します。JIS X 0125 が定める決定表は単適合（条件の組合せごとに満足される規則が1つ）で、この下は規則を1行ずつ並べたリストで、規則には関係する条件と実行する動作だけを書きます。規格の形の決定表は、その下の「決定表（単適合）」に別表として表示します。同じ動作に異なる値を指定する規則が同時に満足される場合は「検証」で指摘します。規則の順番は意味をもちません。業務処理は実行しません。JIS完全準拠を保証しません。</div><div id="definition-list"></div><div id="table-wrap"></div><div id="pagination"></div></section><section id="side-panel" class="side-panel" hidden></section><section id="decision" class="check-panel" hidden></section><section id="check" class="check-panel" hidden></section><footer><div id="status" role="status" aria-live="polite"></div><div id="file-state"></div></footer><section id="external-actions"></section><details class="help"><summary>使い方と保存・ファイル連携について</summary><ol><li>条件と、条件のとり得る値を定義します。動作を定義します（X／−で指定する制限指定、または語句・値で指定する拡張指定）。</li><li>「＋ 規則」で規則を1つずつ書きます。条件指定は、関係する条件だけ値を選びます。動作指定は、その規則で実行する動作にだけ「X」または値を入れます。書かなかった条件と動作は、決定表では「−」になります。条件の値が少ない表は、条件指定の全組合せの規則を作成することもできます。</li><li>「検証」で、完備性（条件指定のすべての組合せに満足される規則があるか）と、動作指定の不一致を確認します。</li><li>表の下の「決定表の解釈」で条件の値を選ぶと、実行される動作を確認できます。その上の「決定表（単適合）」は、規則の記述から求めた単適合決定表です（条件・動作が行、規則が列）。規則番号を押すと、その条件指定が「決定表の解釈」に入ります。</li><li>「簡単化」で、動作指定が同じ規則を結合し、すべての値がそろった条件を条件指定から外して整理します。等価性を確認できた候補だけを表示し、承認して反映します。</li><li>JSONで保存・共有します。Chromeで選択したファイルは1秒を目安に再確認します。</li></ol><p>外部ツールと同じファイルへ同時に保存しないでください。ブラウザだけでOS全体の排他は保証できません。保存前に他ツールの編集を停止するか、別名へ書き出してください。バックグラウンド中は検知が遅れます。権限やAPIによって利用できない機能があります。ファイル選択・ダウンロードだけの利用では継続確認はできません。未保存内容はページを閉じると失われます。</p><div id="help-actions"></div></details></main>`;
 const $ = (id: string) => document.getElementById(id)!;
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = '', cls = ''): HTMLElementTagNameMap[K] { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; }
 function button(text: string, action: () => unknown, cls = ''): HTMLButtonElement { const b = element('button', text, cls); b.type = 'button'; b.addEventListener('click', () => void run(action)); return b; }
@@ -110,8 +110,8 @@ function conditionDialog(original?: Condition) {
     if (type.value === 'boolean') defs.append(element('p', 'true / false の2つの値を定義します。'));
     else if (type.value === 'enum' || type.value === 'string') {
       choices = element('textarea'); choices.rows = 5; choices.placeholder = '優良\n一般\n新規';
-      choices.value = original?.partitions.filter(p => p.kind === 'values').flatMap(p => p.values.map(v => typeof v === 'string' ? JSON.stringify(v) : String(v))).join('\n') ?? '';
-      field('候補値（1行1値。空文字は ""、空白を保つ値は引用符で指定）', choices, defs);
+      choices.value = original ? choiceLines(original) : '';
+      field('候補値（1行1値。空文字は ""、空白を保つ値は引用符で指定。複数の候補を1つの値にまとめる場合は ["A","B"] と書く）', choices, defs);
     } else {
       rows = element('div'); defs.append(element('p', '数値は10進数、日付はYYYY-MM-DDで指定。区間の重複・逆転・空区間は拒否します。'), rows, button('＋ 範囲を追加', () => addRange()));
       const existing = original?.type === type.value ? original.partitions.filter((p): p is Extract<Partition, { kind: 'range' }> => p.kind === 'range') : [];
@@ -124,11 +124,11 @@ function conditionDialog(original?: Condition) {
     if (!name.value.trim()) throw new Error('条件名を入力してください');
     let partitions: Partition[];
     if (type.value === 'boolean') partitions = [true, false].map(v => ({ id: uid('p'), label: String(v), kind: 'values', values: [v] }));
-    else if (type.value === 'enum' || type.value === 'string') partitions = choices.value.split(/\r?\n/).filter(s => s.length > 0).map(s => { const v: unknown = s.startsWith('"') ? JSON.parse(s) : s; if (typeof v !== 'string') throw new Error('文字列を指定してください'); return { id: uid('p'), label: v === '' ? '（空文字）' : v, kind: 'values', values: [v] }; });
+    else if (type.value === 'enum' || type.value === 'string') partitions = parseChoiceLines(choices.value).map(x => ({ id: uid('p'), label: x.label, kind: 'values', values: x.values }));
     else partitions = rangeRows.map(r => ({ id: uid('p'), label: r.label.value || `${r.li.checked ? '[' : '('}${r.low.value || '−∞'}, ${r.high.value || '∞'}${r.hi.checked ? ']' : ')'}`, kind: 'range', range: { lower: r.low.value || null, upper: r.high.value || null, lowerInclusive: r.li.checked, upperInclusive: r.hi.checked } }));
     if (missing.checked) partitions.push({ id: uid('p'), label: '未定義', kind: 'missing' });
-    // Retain identifiers for unchanged partitions rather than resetting existing results on rename.
-    if (original) partitions = partitions.map(p => { const prior = original.partitions.find(old => stable({ ...old, id: '', label: '' }) === stable({ ...p, id: '', label: '' })); return prior ? { ...p, id: prior.id } : p; });
+    // DEF-009: unchanged entries keep their id and label, so rules that refer to them are kept.
+    if (original) partitions = retainPartitions(original, partitions);
     const c: Condition = { id: original?.id ?? uid('c'), name: name.value, type: type.value as DataType, partitions }, next = clone(table);
     if (original) next.conditions[next.conditions.findIndex(c => c.id === original.id)] = c; else next.conditions.push(c);
     applyDefinitions(next, m.close);
@@ -144,9 +144,11 @@ function outputDialog(original?: Output) {
     const o: Output = kind.value === 'action' ? { id: original?.id ?? uid('o'), name: name.value, kind: 'action' } : { id: original?.id ?? uid('o'), name: name.value, kind: 'result', type: type.value as DataType, ...(type.value === 'enum' ? { values: choices.value.split(/\r?\n/).filter(Boolean) } : {}) };
     const next = clone(table); if (original) next.outputs[next.outputs.findIndex(x => x.id === original.id)] = o; else next.outputs.push(o);
     // Output-only changes preserve rule order, OR clauses and matching multiplicity.
-    next.rules.forEach(r => { r.directives = next.outputs.map(output => { const before = table.outputs.find(x => x.id === output.id); const d = r.directives.find(d => d.outputId === output.id); return before && stable({ ...before, name: '' }) === stable({ ...output, name: '' }) && d ? d : { outputId: output.id, state: 'unset' }; }); });
+    // DEF-012: every action entry that is still valid under the new definition is kept; the rest are counted and confirmed.
+    let lost = 0;
+    next.rules.forEach(r => { r.directives = next.outputs.map(output => { const d = r.directives.find(d => d.outputId === output.id), kept = carryDirective(table.outputs.find(x => x.id === output.id), output, d); if (d?.state === 'set' && kept.state === 'unset') lost++; return kept; }); });
     assertValid(next);
-    if (original && table.rules.length && !confirm('型や候補の変更で保持できない動作指定は空欄に戻ります。変更を反映しますか？')) return;
+    if (lost && !confirm(`形式・型・候補の変更により、動作指定${lost}件が保持できず空欄に戻ります。変更を反映しますか？`)) return;
     commit(next); m.close();
   }, 'primary')); m.form.append(actions);
 }
@@ -321,7 +323,9 @@ function drawDecision(host: HTMLElement, part: DecisionPart, combined: boolean, 
   const sub = part.table, found = part.found, names = sub.outputs.map(o => o.name).join('・');
   if (!combined) host.append(element('h3', `決定表 ${order + 1}：${names}`));
   if (!found) { host.append(element('p', `「${names}」の決定表は、計算予算を超えたため表示できません。「簡単化」で規則を結合してから試してください。`, 'check-empty')); return; }
-  if (!sub.conditions.length) { host.append(element('p', `「${names}」は、条件によらず指定されています（条件指定のない規則があります）。`, 'muted')); return; }
+  // DEF-010: a table without conditions still shows what its one rule specifies.
+  const free = !sub.conditions.length;
+  if (free) host.append(element('p', `「${names}」は、条件によらず指定されています（条件指定のない規則だけが指定しています）。条件の行はなく、規則は1つです。`, 'muted'));
   const show = (v: Scalar, at: number) => sub.outputs[at].kind === 'action' ? (v ? 'X' : '−') : v === '' ? '（空文字）' : String(v);
   const columns = found.flatMap(x => x.chunks.map(chunk => ({ pattern: x, chunk }))), shown = columns.slice(0, 200);
   // In a separated table, a column where none of its rules is satisfied simply has "−" actions; only the combined table can show gaps.
@@ -349,10 +353,10 @@ function drawDecision(host: HTMLElement, part: DecisionPart, combined: boolean, 
     for (const col of shown) { const values = col.pattern.outputs[at].values; tr.append(element('td', gap(col) ? '' : values.length === 0 ? '−' : values.length > 1 ? `不一致（${values.map(v => show(v, at)).join('／')}）` : show(values[0], at), mark(col, values.length > 1 ? 'clash' : ''))); }
     body.append(tr);
   });
-  const sizes = element('tr', '', sub.outputs.length ? 'count' : 'count divider'); sizes.append(element('th', '規則数（組合せ数）')); shown.forEach(col => sizes.append(element('td', col.chunk.size.toLocaleString('ja-JP'), mark(col)))); body.append(sizes);
+  if (!free) { const sizes = element('tr', '', sub.outputs.length ? 'count' : 'count divider'); sizes.append(element('th', '規則数（組合せ数）')); shown.forEach(col => sizes.append(element('td', col.chunk.size.toLocaleString('ja-JP'), mark(col)))); body.append(sizes); }
   grid.append(body); wrap.append(grid); host.append(wrap);
   const all = part.columns, sum = columns.reduce((n, c) => n + c.chunk.size, 0n);
-  host.append(element('p', `規則${all}個。規則数の検査：各規則の組合せ数の合計は${sum.toLocaleString('ja-JP')}で、${combined ? '条件指定の全組合せ' : 'この表の条件の全組合せ'}${count(sub).toLocaleString('ja-JP')}件と${sum === count(sub) ? '一致します' : '一致しません'}。${all > shown.length ? `先頭${shown.length}規則を表示しています。` : ''}${combined && columns.some(c => !c.pattern.satisfied) ? '「*」の列は、満足される規則がない条件の組合せです。' : ''}`, 'muted'));
+  if (!free) host.append(element('p', `規則${all}個。規則数の検査：各規則の組合せ数の合計は${sum.toLocaleString('ja-JP')}で、${combined ? '条件指定の全組合せ' : 'この表の条件の全組合せ'}${count(sub).toLocaleString('ja-JP')}件と${sum === count(sub) ? '一致します' : '一致しません'}。${all > shown.length ? `先頭${shown.length}規則を表示しています。` : ''}${combined && columns.some(c => !c.pattern.satisfied) ? '「*」の列は、満足される規則がない条件の組合せです。' : ''}`, 'muted'));
   if (found.some(x => x.outputs.some(o => o.values.length > 1))) host.append(element('p', '「不一致」の欄は、同じ動作に異なる値を指定する規則が同時に満足される組合せです。「検証」で規則を確認してください。', 'check-empty'));
 }
 function renderPanel() {
@@ -371,7 +375,7 @@ function renderPanel() {
     if (compressed && compressed.steps > 0) {
       // "部分的に圧縮を繰り返す": every step is one proven candidate; the user approves the end result once.
       const all = compressed, row = element('div', '', 'candidate'), blocks = (t: Table) => t.rules.reduce((n, r) => n + r.anyOf.length, 0);
-      row.append(element('strong', `繰り返し結合：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `結合と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています`), button('簡単化後のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の結合を反映しました。`); }, 'primary'));
+      row.append(element('strong', `繰り返し結合：${table.rules.length}規則 → ${all.table.rules.length}規則`), element('span', `結合と再計算を${all.steps}回繰り返した結果です。ORブロックは${blocks(table)}件 → ${blocks(all.table)}件。各回とも等価性を確認しています${all.complete ? '' : `。1回の計算の上限（${all.steps}回）で打ち切ったため、まだ結合できる規則が残っています。反映すると、続きの候補を表示します`}`), button('簡単化後のJSONを確認', () => { const m = modal('繰り返し適用後の表'); m.form.append(element('pre', encode(all.table)), button('閉じる', m.close)); }), button('承認して一括で反映', () => { if (stable(table) !== all.base) throw new Error('表が変更されたため再計算してください'); reapply(all.table, `${all.steps}回の結合を反映しました。`); }, 'primary'));
       host.append(row);
     }
     if (!candidates.length) host.append(element('p', '承認可能な結合候補はありません。', 'muted'));
