@@ -1,0 +1,45 @@
+# Publishes the released single-file HTML to GitHub Pages.
+# The site is the same file people download: index.html is the release named by package.json's version.
+# No build runs here and no dependency is installed, so what is served is what was reviewed and committed.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble the site from the released HTML
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          release="releases/decision-table-toolkit-v${version}.html"
+          test -f "$release"
+          mkdir -p _site/releases
+          cp "$release" _site/index.html
+          cp releases/*.html _site/releases/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

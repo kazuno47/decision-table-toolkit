@@ -6,6 +6,13 @@
 
 ## 起動
 
+使い方は2通りあり、どちらも同じHTMLです。
+
+- **Web版**: https://kazuno47.github.io/decision-table-toolkit/ をChromeで開きます。常に最新の版です。以前の版は `https://kazuno47.github.io/decision-table-toolkit/releases/decision-table-toolkit-v0.2.3.html` のように版を指定して開けます。
+- **ダウンロード版**: 下のHTMLをダウンロードして、手元のファイルをChromeで開きます。ネットワークにつながっていなくても使え、ファイルを入れ替えない限り中身は変わりません。
+
+どちらの場合も、作成した表や読み込んだJSONはブラウザの中だけで扱い、どこにも送信しません。HTMLは外部への通信を禁止する設定（Content-Security-Policy の `connect-src 'none'`）を含み、外部のスクリプトや画像も読み込みません。Web版は、このリポジトリの `releases/` にあるHTMLをそのまま配信しています（配信のためのビルドは行いません）。
+
 [ビルド済みHTML（v0.2.4）](releases/decision-table-toolkit-v0.2.4.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・簡単化・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
 
 以前の[v0.2.3](releases/decision-table-toolkit-v0.2.3.html)、[v0.2.2](releases/decision-table-toolkit-v0.2.2.html)、[v0.2.1](releases/decision-table-toolkit-v0.2.1.html)、[v0.2.0](releases/decision-table-toolkit-v0.2.0.html)と初版の[v0.1.0](releases/decision-table-toolkit-v0.1.0.html)も残しています。版によって表の解釈が異なります（「版による違い」を参照）。v0.1.0はスキーマ1.1のJSONを読み込めません。
@@ -76,6 +83,8 @@ Chromeのファイル選択で連携したJSONは、前景で約1秒ごとに再
 APIや権限が使えない環境では明示読込・ダウンロード方式となり、継続確認はできません。ダウンロードの開始は実ファイルの保存完了とは区別します。編集中データはメモリ上にあるため、ページを閉じる前に保存してください。
 
 ## 開発・検証
+
+プルリクエストとmainへのpushごとに、GitHub Actionsで型検査・テスト・ビルドを実行し、ビルド結果が `releases/` の最新版のHTMLと1バイトも違わないことを確認します（[CI](.github/workflows/ci.yml)）。mainへのマージ後、`package.json` の版に対応する `releases/` のHTMLをGitHub Pagesへ配信します（[Pages](.github/workflows/pages.yml)）。
 
 動作確認環境: Node.js 26.5.0 / npm 11.17.0 / TypeScript 5.9.3、macOS上のChrome。テストはNodeのTypeScript直接実行機能を使用します。
 
