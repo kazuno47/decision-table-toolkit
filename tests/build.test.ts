@@ -14,3 +14,18 @@ test('single HTML packaging preserves dollar sequences and produces parseable, s
   assert.equal(html.includes('<!--SCRIPT-->'), false); assert.equal(html.includes('<!--STYLE-->'), false);
   assert.ok(html.includes("connect-src 'none'")); assert.equal(html.includes('/.ads/'), false);
 });
+// TASK-014 / REQ-019: the engine is one dependency-free ES module that can be imported as built, with the release's version.
+test('the built engine is a self-contained ES module that interprets a table', async () => {
+  execFileSync(process.execPath, ['scripts/build.mjs', '--offline-compiler'], { cwd: new URL('..', import.meta.url), stdio: 'pipe' });
+  const source = readFileSync(new URL('../dist/decision-table-engine.js', import.meta.url), 'utf8'), pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(/^\s*import\s/m.test(source), false); assert.equal(/\brequire\(['"](?!\.\/(schema|core|engine)\.ts)/.test(source), false);
+  assert.equal(source.includes('document.'), false); assert.ok(source.startsWith(`// Decision Table Toolkit - engine v${pkg.version}`));
+  const engine = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+  assert.equal(engine.version, pkg.version); assert.ok(readFileSync(new URL('../src/app.ts', import.meta.url), 'utf8').includes(`rail-version">v${pkg.version}<`));
+  const t = engine.load(JSON.stringify({ schemaVersion: '1.1', id: 't', title: 't', conditions: [{ id: 'c', name: '金額', type: 'number', partitions: [{ id: 'low', label: '100未満', kind: 'range', range: { lower: null, upper: '100', lowerInclusive: false, upperInclusive: false } }, { id: 'high', label: '100以上', kind: 'range', range: { lower: '100', upper: null, lowerInclusive: true, upperInclusive: false } }] }],
+    outputs: [{ id: 'o', name: '承認', kind: 'action' }], rules: [{ id: 'r', anyOf: [{ selections: [{ conditionId: 'c', partitionIds: ['high'] }] }], directives: [{ outputId: 'o', state: 'set', value: true }] }] }));
+  assert.deepEqual(engine.classify(t, { 金額: 100 }), { c: 'high' });
+  assert.equal(engine.evaluate(t, engine.classify(t, { 金額: '99.99' })).actions[0].executed, false);
+  assert.equal(engine.evaluate(t, { c: 'high' }).actions[0].executed, true);
+  assert.equal(readFileSync(new URL('../dist/decision-table-engine.d.ts', import.meta.url), 'utf8'), readFileSync(new URL('../types/decision-table-engine.d.ts', import.meta.url), 'utf8'));
+});

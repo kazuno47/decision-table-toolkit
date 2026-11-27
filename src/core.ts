@@ -1,4 +1,4 @@
-// TASK-001..012 / REQ-001..013. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
+// TASK-001..014 / REQ-001..013, REQ-019. Wording follows JIS X 0125 (decision tables) where the standard has a term. / DOM-001..009 / DR-010,011 / API-001..005.
 import { checkShape } from './schema.ts';
 export type DataType = 'boolean' | 'enum' | 'number' | 'string' | 'date';
 export type Scalar = boolean | string;
@@ -562,4 +562,20 @@ export function decisionTables(t: Table, maxColumns = 200): { combined: boolean;
   const add = (outputs: number[]) => { const table = separate(t, outputs), found = table.conditions.length ? patterns(table, 1000) : []; parts.push({ outputs, table, found, columns: size(found) }); return found !== null && size(found) <= maxColumns; };
   for (const group of actionGroups(t)) { if (add(group) || group.length === 1) continue; parts.pop(); group.forEach(o => add([o])); }
   return { combined: false, parts };
+}
+// ---------------------------------------------------------------------------------------------
+// TASK-014 (INS-013) / REQ-019: the condition entry (partition) that contains a raw value, or null when none does.
+// null as a value means "no value" and fits only a 'missing' entry. Bounds and decimals are compared exactly as in validate.
+export function partitionOf(c: Condition, value: Scalar | null): string | null {
+  if (value !== null && !validValue(c.type, value)) throw new Error(`条件「${c.name}」の型（${c.type}）に合わない値です: ${String(value)}`);
+  for (const p of c.partitions) {
+    if (p.kind === 'missing') { if (value === null) return p.id; continue; }
+    if (value === null) continue;
+    if (p.kind === 'values') { if (p.values.includes(value)) return p.id; continue; }
+    if (typeof value !== 'string' || (c.type !== 'number' && c.type !== 'date')) continue;
+    const i = interval(c.type, p.range), v = c.type === 'date' ? day(value) : value;
+    const low = i.low === null ? 1 : cmp(v, i.low), high = i.high === null ? -1 : cmp(v, i.high);
+    if ((low > 0 || (low === 0 && i.li)) && (high < 0 || (high === 0 && i.hi))) return p.id;
+  }
+  return null;
 }
