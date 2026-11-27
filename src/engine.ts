@@ -3,7 +3,7 @@
 // It knows nothing about any particular consumer: only conditions, actions and rules. It executes nothing.
 import { assertValid, clone, decode, inspect, partitionOf, type Condition, type Scalar, type Table } from './core.ts';
 export type { Table, Scalar } from './core.ts';
-export const version: string = '0.3.0';
+export const version: string = '0.3.1';
 export type ConditionInfo = { id: string; name: string; type: Condition['type']; values: { id: string; label: string }[] };
 export type ActionInfo = { id: string; name: string; kind: 'action' | 'result' };
 // determined: the same for every input the given values leave open. none: no rule specifies the action there ("-").

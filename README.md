@@ -13,9 +13,9 @@
 
 どちらの場合も、作成した表や読み込んだJSONはブラウザの中だけで扱い、どこにも送信しません。HTMLは外部への通信を禁止する設定（Content-Security-Policy の `connect-src 'none'`）を含み、外部のスクリプトや画像も読み込みません。Web版は、このリポジトリの `releases/` にあるHTMLをそのまま配信しています（配信のためのビルドは行いません）。
 
-[ビルド済みHTML（v0.3.0）](releases/decision-table-toolkit-v0.3.0.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・簡単化・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
+[ビルド済みHTML（v0.3.1）](releases/decision-table-toolkit-v0.3.1.html)をダウンロードし、Chromeで開いてください。自分でビルドした場合は `dist/decision-table-toolkit.html` を使用します。画面の「サンプルを開く」から編集・検証・簡単化・JSON保存を試せます。現在は初期開発版で、対応対象はPCのChromeのみです。
 
-以前の[v0.2.4](releases/decision-table-toolkit-v0.2.4.html)、[v0.2.3](releases/decision-table-toolkit-v0.2.3.html)、[v0.2.2](releases/decision-table-toolkit-v0.2.2.html)、[v0.2.1](releases/decision-table-toolkit-v0.2.1.html)、[v0.2.0](releases/decision-table-toolkit-v0.2.0.html)と初版の[v0.1.0](releases/decision-table-toolkit-v0.1.0.html)も残しています。版によって表の解釈が異なります（「版による違い」を参照）。v0.1.0はスキーマ1.1のJSONを読み込めません。
+以前の[v0.3.0](releases/decision-table-toolkit-v0.3.0.html)、[v0.2.4](releases/decision-table-toolkit-v0.2.4.html)、[v0.2.3](releases/decision-table-toolkit-v0.2.3.html)、[v0.2.2](releases/decision-table-toolkit-v0.2.2.html)、[v0.2.1](releases/decision-table-toolkit-v0.2.1.html)、[v0.2.0](releases/decision-table-toolkit-v0.2.0.html)と初版の[v0.1.0](releases/decision-table-toolkit-v0.1.0.html)も残しています。版によって表の解釈が異なります（「版による違い」を参照）。v0.1.0はスキーマ1.1のJSONを読み込めません。
 
 1. 「＋ 条件」で条件と、条件のとり得る値を定義します（Boolean / Enum / Number / String / Date。数値と日付は範囲で定義します）。
 2. 「＋ 動作」で動作を定義します。動作指定の形式は、X／−で指定する制限指定か、語句・値で指定する拡張指定です。
@@ -46,7 +46,7 @@ JIS X 0125 は単適合決定表（条件の組合せのどの一つも、ただ
 | v0.2.0 | 規則の動作指定全体が同じでなければ不一致とする |
 | v0.2.1 | 動作ごとに合わせる。制限指定はどれかが「X」なら実行、拡張指定は値が異なれば不一致 |
 
-v0.2.2では、規則の記述を「関係する条件だけを書く」表示に改め、決定表（単適合）を独立した1つの表にして、規則番号から「決定表の解釈」へ値を反映できるようにしました。v0.2.3では、規則の記述を表ではなくリストにしました。規則は「条件 → 動作」の形で1行ずつ並び、指定した条件と動作だけを表示します。v0.2.4では、1つの表に書き切れない大きな決定表を、動作ごとの複数の決定表に分離して表示するようにしました。表の解釈はv0.2.1と同じです。 v0.3.0では、表の解釈は変えずに、他のソフトウェアから使う判定エンジンを追加しました。
+v0.2.2では、規則の記述を「関係する条件だけを書く」表示に改め、決定表（単適合）を独立した1つの表にして、規則番号から「決定表の解釈」へ値を反映できるようにしました。v0.2.3では、規則の記述を表ではなくリストにしました。規則は「条件 → 動作」の形で1行ずつ並び、指定した条件と動作だけを表示します。v0.2.4では、1つの表に書き切れない大きな決定表を、動作ごとの複数の決定表に分離して表示するようにしました。表の解釈はv0.2.1と同じです。 v0.3.0では、表の解釈は変えずに、他のソフトウェアから使う判定エンジンを追加しました。v0.3.1では、条件や動作の定義を編集したときに、変更していない値・規則・動作指定が失われる不具合を修正しました（複数の候補を1つの値にまとめた条件、Enumの候補を追加・並べ替えした動作）。
 
 v0.2.1では画面の用語を規格に合わせました。以前の版との対応は次のとおりです。
 
@@ -86,13 +86,13 @@ APIや権限が使えない環境では明示読込・ダウンロード方式�
 
 このツールで作った決定表のJSONを、別のソフトウェアから読み込んで解釈するための部品です。画面の「決定表の解釈」と同じ処理を、依存のない1つのESモジュールにまとめています。ブラウザでもNode.jsでも動きます。外部への通信はせず、動作の実行もしません。返すのは「どの動作が実行されるか」だけです。
 
-- [decision-table-engine-v0.3.0.js](releases/decision-table-engine-v0.3.0.js)（本体）
-- [decision-table-engine-v0.3.0.d.ts](releases/decision-table-engine-v0.3.0.d.ts)（TypeScriptの型定義）
+- [decision-table-engine-v0.3.1.js](releases/decision-table-engine-v0.3.1.js)（本体）
+- [decision-table-engine-v0.3.1.d.ts](releases/decision-table-engine-v0.3.1.d.ts)（TypeScriptの型定義）
 
 2つのファイルを自分のプロジェクトにコピーして使います。版ごとにファイル名が変わるので、取り込んだ版が勝手に変わることはありません。
 
 ```js
-import { load, conditions, classify, evaluate } from './decision-table-engine-v0.3.0.js';
+import { load, conditions, classify, evaluate } from './decision-table-engine-v0.3.1.js';
 
 const table = load(jsonText);            // 読み込みと検証（画面と同じ検証。不正なら例外）
 conditions(table);                       // 入力画面を作るための条件と値の一覧

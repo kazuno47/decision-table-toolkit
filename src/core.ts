@@ -579,3 +579,33 @@ export function partitionOf(c: Condition, value: Scalar | null): string | null {
   }
   return null;
 }
+// ---------------------------------------------------------------------------------------------
+// DEF-009 (issue #11): editing a condition keeps what it does not change. One line of the editor is one condition entry;
+// an entry holding several candidates is written as a JSON array, so opening and saving a table leaves entries as they were.
+export function choiceLines(c: Pick<Condition, 'partitions'>): string {
+  return c.partitions.flatMap(p => p.kind !== 'values' ? [] : [p.values.length === 1 ? (typeof p.values[0] === 'string' ? JSON.stringify(p.values[0]) : String(p.values[0])) : JSON.stringify(p.values)]).join('\n');
+}
+export function parseChoiceLines(text: string): { label: string; values: string[] }[] {
+  return text.split(/\r?\n/).filter(s => s.length > 0).map(s => {
+    let v: unknown = s;
+    if (s.startsWith('"')) { v = JSON.parse(s); if (typeof v !== 'string') throw new Error('文字列を指定してください'); }
+    else if (s.startsWith('[')) { try { const list: unknown = JSON.parse(s); if (Array.isArray(list) && list.length > 0 && list.every(x => typeof x === 'string')) v = list; } catch { /* not a list: the line is one literal value */ } }
+    const values = Array.isArray(v) ? v as string[] : [v as string];
+    return { label: values.map(x => x === '' ? '（空文字）' : x).join('・'), values };
+  });
+}
+// An entry with the same content as before keeps its id (rules keep referring to it) and, unless the editor lets the
+// user rename it (ranges), its label.
+export function retainPartitions(original: Pick<Condition, 'partitions'>, partitions: Partition[]): Partition[] {
+  const content = (p: Partition) => stable({ ...p, id: '', label: '' }), used = new Set<string>();
+  return partitions.map(p => { const prior = original.partitions.find(old => !used.has(old.id) && content(old) === content(p)); if (!prior) return p; used.add(prior.id); return { ...p, id: prior.id, label: p.kind === 'range' ? p.label : prior.label }; });
+}
+// DEF-012 (issue #14): when an action's definition changes, an action entry that is still valid is kept.
+// It is kept only within the same form and type; for an enum the value must still be among the candidates.
+export function carryDirective(before: Output | undefined, after: Output, d: Directive | undefined): Directive {
+  const unset: Directive = { outputId: after.id, state: 'unset' };
+  if (!before || !d || d.state !== 'set' || before.kind !== after.kind) return unset;
+  if (after.kind === 'action') return typeof d.value === 'boolean' ? { outputId: after.id, state: 'set', value: d.value } : unset;
+  if (before.kind !== 'result' || before.type !== after.type || !validValue(after.type, d.value, after.values)) return unset;
+  return { outputId: after.id, state: 'set', value: d.value };
+}
